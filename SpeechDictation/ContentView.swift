@@ -35,6 +35,13 @@ struct ContentView: View {
                 }
                 .padding()
             }
+            Slider(value: $speechRecognizer.volume, in: 1...100, step: 1) {
+                Text("Volume")
+            }
+            .padding()
+            .onChange(of: speechRecognizer.volume) { newValue in
+                print("Volume set to \(newValue)")
+            }
         }
         .padding()
     }

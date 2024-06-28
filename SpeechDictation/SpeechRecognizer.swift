@@ -11,8 +11,14 @@ import Speech
 
 class SpeechRecognizer: ObservableObject {
     @Published var transcribedText: String = "Listening..."
-    @Published var audioSamples: [Float] = [] // Array to store audio samples
+    @Published var audioSamples: [Float] = []
+    @Published var volume: Float = 10.0 { // Start at 10
+            didSet {
+                adjustVolume()
+            }
+        }
 
+    
     var audioEngine: AVAudioEngine!
     private var speechRecognizer: SFSpeechRecognizer!
     private var request: SFSpeechAudioBufferRecognitionRequest?
@@ -94,6 +100,8 @@ class SpeechRecognizer: ObservableObject {
         } catch {
             print("Audio engine failed to start: \(error)")
         }
+        
+        adjustVolume()
     }
     
     private func processAudioBuffer(buffer: AVAudioPCMBuffer) {
@@ -118,5 +126,11 @@ class SpeechRecognizer: ObservableObject {
         
         request = nil
         recognitionTask = nil
+    }
+    
+    private func adjustVolume() {
+        if let inputNode = audioEngine?.inputNode {
+            inputNode.volume = volume / 100.0 // Scale from 1 to 10
+        }
     }
 }
