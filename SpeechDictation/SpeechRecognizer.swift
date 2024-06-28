@@ -30,6 +30,7 @@ class SpeechRecognizer: ObservableObject {
     
     init() {
         requestAuthorization()
+        configureAudioSession()
     }
     
     private func requestAuthorization() {
@@ -58,6 +59,17 @@ class SpeechRecognizer: ObservableObject {
                     self.transcribedText = "Microphone access denied"
                 }
             }
+        }
+    }
+    
+    private func configureAudioSession() {
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
+            try audioSession.setActive(true)
+            print("Audio session configured")
+        } catch {
+            print("Failed to configure audio session: \(error)")
         }
     }
     
@@ -371,6 +383,7 @@ class SpeechRecognizer: ObservableObject {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer?.prepareToPlay()
             audioPlayer?.play()
+            print("Audio playback started")
         } catch {
             print("Error initializing AVAudioPlayer: \(error)")
             return
