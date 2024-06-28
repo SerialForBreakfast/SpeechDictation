@@ -9,6 +9,9 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var speechRecognizer = SpeechRecognizer()
+    //    @State private var fileURL: URL? = URL(string: "https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.mp3")
+    @State private var fileURL: URL? = URL(string: "http://traffic.libsyn.com/shitecom/KATG-2024-06-23.mp3")
+    
     
     var body: some View {
         VStack {
@@ -32,6 +35,14 @@ struct ContentView: View {
                     self.speechRecognizer.stopTranscribing()
                 }) {
                     Text("Stop Recording")
+                }
+                .padding()
+                Button(action: {
+                    if let fileURL = fileURL {
+                        self.speechRecognizer.transcribeAudioFile(from: fileURL)
+                    }
+                }) {
+                    Text("Play File URL")
                 }
                 .padding()
             }
