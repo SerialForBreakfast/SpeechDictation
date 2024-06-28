@@ -24,6 +24,7 @@ class SpeechRecognizer: ObservableObject {
     private var speechRecognizer: SFSpeechRecognizer?
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
+    private var audioPlayer: AVAudioPlayer?
     private let audioSamplesQueue: DispatchQueue = DispatchQueue(label: "audioSamplesQueue", qos: .userInitiated)
     private let volumeQueue: DispatchQueue = DispatchQueue(label: "volumeQueue", qos: .userInitiated)
     
@@ -70,7 +71,7 @@ class SpeechRecognizer: ObservableObject {
             fatalError("Unable to create a SFSpeechAudioBufferRecognitionRequest object")
         }
         
-        guard let inputNode: AVAudioInputNode = audioEngine?.inputNode else {
+        guard let inputNode = audioEngine?.inputNode else {
             fatalError("Audio engine has no input node")
         }
         
@@ -89,7 +90,7 @@ class SpeechRecognizer: ObservableObject {
             }
         }
         
-        let recordingFormat: AVAudioFormat = inputNode.outputFormat(forBus: 0)
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, time in
             self.processAudioBuffer(buffer: buffer)
@@ -107,13 +108,13 @@ class SpeechRecognizer: ObservableObject {
         adjustVolume() // Apply initial volume
     }
     
+    
     private func processAudioBuffer(buffer: AVAudioPCMBuffer) {
-        let frameLength: Int = Int(buffer.frameLength)
-        guard let channelData: UnsafeMutablePointer<Float> = buffer.floatChannelData?[0] else { return }
-        
-        let samples: [Float] = Array(UnsafeBufferPointer(start: channelData, count: frameLength))
+        let frameLength = Int(buffer.frameLength)
+        guard let channelData = buffer.floatChannelData?[0] else { return }
+        let samples = Array(UnsafeBufferPointer(start: channelData, count: frameLength))
         audioSamplesQueue.async {
-            var newSamples: [Float] = self.audioSamples
+            var newSamples = self.audioSamples
             newSamples.append(contentsOf: samples)
             if newSamples.count > 1000 {
                 newSamples.removeFirst(newSamples.count - 1000)
@@ -123,6 +124,7 @@ class SpeechRecognizer: ObservableObject {
             }
         }
     }
+
     
     private func adjustVolume() {
         volumeQueue.async {
@@ -186,121 +188,6 @@ class SpeechRecognizer: ObservableObject {
         }
         task.resume()
     }
-    
-    //
-    //    func transcribeAudioFile(from url: URL) {
-    //           downloadAudioFile(from: url) { localURL in
-    //               guard let localURL = localURL else {
-    //                   DispatchQueue.main.async {
-    //                       self.transcribedText = "Failed to download audio file"
-    //                   }
-    //                   return
-    //               }
-    //               self.convertMP3ToM4A(mp3URL: localURL) { m4aURL in
-    //                   guard let m4aURL = m4aURL else {
-    //                       DispatchQueue.main.async {
-    //                           self.transcribedText = "Failed to convert audio file to M4A"
-    //                       }
-    //                       return
-    //                   }
-    //                   self.convertM4AToWAV(m4aURL: m4aURL) { wavURL in
-    //                       guard let wavURL = wavURL else {
-    //                           DispatchQueue.main.async {
-    //                               self.transcribedText = "Failed to convert audio file to WAV"
-    //                           }
-    //                           return
-    //                       }
-    //                       self.transcribeLocalAudioFile(from: wavURL)
-    //                   }
-    //               }
-    //           }
-    //       }
-    //
-    //       private func transcribeLocalAudioFile(from url: URL) {
-    //           let recognizer = SFSpeechRecognizer()
-    //           let request = SFSpeechURLRecognitionRequest(url: url)
-    //
-    //           recognizer?.recognitionTask(with: request) { result, error in
-    //               if let result = result {
-    //                   DispatchQueue.main.async {
-    //                       self.transcribedText = result.bestTranscription.formattedString
-    //                   }
-    //               }
-    //
-    //               if let error = error {
-    //                   print("Recognition error: \(error)")
-    //                   DispatchQueue.main.async {
-    //                       self.transcribedText = "Recognition error: \(error.localizedDescription)"
-    //                   }
-    //               }
-    //           }
-    //       }
-    //
-    //    func convertM4AToWAV(m4aURL: URL, completion: @escaping (URL?) -> Void) {
-    //            let audioFile = try? AVAudioFile(forReading: m4aURL)
-    //            let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("wav")
-    //
-    //            guard let audioFile = audioFile else {
-    //                print("Failed to read M4A file.")
-    //                completion(nil)
-    //                return
-    //            }
-    //
-    //            let format = audioFile.processingFormat
-    //            let frameCount = UInt32(audioFile.length)
-    //            guard let pcmBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
-    //                print("Failed to create PCM buffer.")
-    //                completion(nil)
-    //                return
-    //            }
-    //
-    //            do {
-    //                try audioFile.read(into: pcmBuffer)
-    //            } catch {
-    //                print("Error reading audio file: \(error)")
-    //                completion(nil)
-    //                return
-    //            }
-    //
-    //            guard let outputFile = try? AVAudioFile(forWriting: outputURL, settings: format.settings) else {
-    //                print("Failed to create output WAV file.")
-    //                completion(nil)
-    //                return
-    //            }
-    //
-    //            do {
-    //                try outputFile.write(from: pcmBuffer)
-    //                completion(outputURL)
-    //            } catch {
-    //                print("Error writing WAV file: \(error)")
-    //                completion(nil)
-    //            }
-    //        }
-    //
-    //    func convertMP3ToM4A(mp3URL: URL, completion: @escaping (URL?) -> Void) {
-    //        let asset = AVAsset(url: mp3URL)
-    //        guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else {
-    //            print("Cannot create export session.")
-    //            completion(nil)
-    //            return
-    //        }
-    //
-    //        let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("m4a")
-    //        exportSession.outputFileType = .m4a
-    //        exportSession.outputURL = outputURL
-    //
-    //        exportSession.exportAsynchronously {
-    //            switch exportSession.status {
-    //            case .completed:
-    //                completion(outputURL)
-    //            case .failed, .cancelled:
-    //                print("Export failed: \(String(describing: exportSession.error))")
-    //                completion(nil)
-    //            default:
-    //                break
-    //            }
-    //        }
-    //    }
     
     func verifyAudioFile(url: URL, completion: @escaping (Bool) -> Void) {
         let asset: AVAsset = AVAsset(url: url)
@@ -453,7 +340,7 @@ class SpeechRecognizer: ObservableObject {
                     return
                 }
                 print("Starting transcription of M4A file")
-                self.transcribeLocalAudioFile(from: m4aURL)
+                self.playAndTranscribeAudioFile(from: m4aURL)
             }
         }
     }
@@ -470,6 +357,36 @@ class SpeechRecognizer: ObservableObject {
                 }
             }
             
+            if let error = error {
+                print("Recognition error: \(error)")
+                DispatchQueue.main.async {
+                    self.transcribedText = "Recognition error: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+    
+    private func playAndTranscribeAudioFile(from url: URL) {
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.prepareToPlay()
+            audioPlayer?.play()
+        } catch {
+            print("Error initializing AVAudioPlayer: \(error)")
+            return
+        }
+
+        let recognizer: SFSpeechRecognizer? = SFSpeechRecognizer()
+        let request: SFSpeechURLRecognitionRequest = SFSpeechURLRecognitionRequest(url: url)
+
+        recognizer?.recognitionTask(with: request) { result, error in
+            if let result = result {
+                DispatchQueue.main.async {
+                    self.transcribedText = result.bestTranscription.formattedString
+                    print("Transcription result: \(result.bestTranscription.formattedString)")
+                }
+            }
+
             if let error = error {
                 print("Recognition error: \(error)")
                 DispatchQueue.main.async {
