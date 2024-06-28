@@ -11,7 +11,8 @@ import Speech
 
 class SpeechRecognizer: ObservableObject {
     @Published var transcribedText: String = "Listening..."
-    
+    @Published var audioSamples: [Float] = [] // Array to store audio samples
+
     var audioEngine: AVAudioEngine!
     private var speechRecognizer: SFSpeechRecognizer!
     private var request: SFSpeechAudioBufferRecognitionRequest?
@@ -81,7 +82,8 @@ class SpeechRecognizer: ObservableObject {
         
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, time in
+            self.processAudioBuffer(buffer: buffer)
             self.request?.append(buffer)
         }
         
@@ -91,6 +93,19 @@ class SpeechRecognizer: ObservableObject {
             try audioEngine.start()
         } catch {
             print("Audio engine failed to start: \(error)")
+        }
+    }
+    
+    private func processAudioBuffer(buffer: AVAudioPCMBuffer) {
+        let frameLength = Int(buffer.frameLength)
+        guard let channelData = buffer.floatChannelData?[0] else { return }
+        
+        let samples = Array(UnsafeBufferPointer(start: channelData, count: frameLength))
+        DispatchQueue.main.async {
+            self.audioSamples.append(contentsOf: samples)
+            if self.audioSamples.count > 1000 {
+                self.audioSamples.removeFirst(self.audioSamples.count - 1000)
+            }
         }
     }
     

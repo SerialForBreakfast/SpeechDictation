@@ -14,6 +14,11 @@ struct ContentView: View {
         VStack {
             Text(speechRecognizer.transcribedText)
                 .padding()
+                .font(.largeTitle)
+            
+            WaveformView(samples: speechRecognizer.audioSamples)
+                .frame(height: 100)
+                .padding()
             
             HStack {
                 Button(action: {
