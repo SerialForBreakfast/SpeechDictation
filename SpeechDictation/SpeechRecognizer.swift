@@ -183,7 +183,7 @@ class SpeechRecognizer: ObservableObject {
         }
     }
     
-    func downloadAudioFile(from url: URL, completion: @escaping (URL?) -> Void) {
+    private func downloadAudioFile(from url: URL, completion: @escaping (URL?) -> Void) {
         let task: URLSessionDownloadTask = URLSession.shared.downloadTask(with: url) { localURL, response, error in
             if let error = error {
                 print("Download error: \(error.localizedDescription)")
@@ -348,6 +348,13 @@ class SpeechRecognizer: ObservableObject {
     
     
     func transcribeAudioFile(from url: URL) {
+        let cacheKey = url.lastPathComponent
+        if let cachedData = CacheManager.shared.retrieveData(forKey: cacheKey) {
+            let cachedURL = CacheManager.shared.save(data: cachedData, forKey: cacheKey)
+            self.playAndTranscribeAudioFile(from: cachedURL!)
+            return
+        }
+        
         downloadAudioFile(from: url) { localURL in
             guard let localURL = localURL else {
                 DispatchQueue.main.async {
@@ -355,6 +362,7 @@ class SpeechRecognizer: ObservableObject {
                 }
                 return
             }
+            CacheManager.shared.save(data: try! Data(contentsOf: localURL), forKey: cacheKey)
             print("Starting conversion from MP3 to M4A")
             self.convertMP3ToM4A(mp3URL: localURL) { m4aURL in
                 guard let m4aURL = m4aURL else {
@@ -363,12 +371,13 @@ class SpeechRecognizer: ObservableObject {
                     }
                     return
                 }
+                let m4aCacheKey = m4aURL.lastPathComponent
+                CacheManager.shared.save(data: try! Data(contentsOf: m4aURL), forKey: m4aCacheKey)
                 print("Starting transcription of M4A file")
                 self.playAndTranscribeAudioFile(from: m4aURL)
             }
         }
     }
-    
     
     private func transcribeLocalAudioFile(from url: URL) {
         let recognizer: SFSpeechRecognizer? = SFSpeechRecognizer()
@@ -431,12 +440,12 @@ class SpeechRecognizer: ObservableObject {
     
     @objc private func updateAudioSamples() {
         guard let player = audioPlayer else { return }
-        let frameCount = player.format.sampleRate / 30 // Assuming 30 fps
-        let buffer = AVAudioPCMBuffer(pcmFormat: player.format, frameCapacity: AVAudioFrameCount(frameCount))!
-        buffer.frameLength = AVAudioFrameCount(frameCount)
+        guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: player.format.sampleRate, channels: 1, interleaved: false) else { return }
+        let frameCount = AVAudioFrameCount(player.format.sampleRate / 30) // Assuming 30 fps
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+        buffer.frameLength = frameCount
         
-        // This simulates reading samples from the audio player's output
-        // Use actual sample data in a real implementation
+        // Simulate reading samples from the audio player's output
         processAudioBuffer(buffer: buffer)
     }
 }
