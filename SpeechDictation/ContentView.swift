@@ -9,8 +9,10 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var speechRecognizer = SpeechRecognizer()
-    //    @State private var fileURL: URL? = URL(string: "https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.mp3")
-    @State private var fileURL: URL? = URL(string: "http://traffic.libsyn.com/shitecom/KATG-2024-06-23.mp3")
+    @State private var fileURL: URL? = URL(string: "https://chrt.fm/track/138C95/prfx.byspotify.com/e/play.podtrac.com/npr-381444908/traffic.megaphone.fm/NPR1393448199.mp3")
+//    @State private var fileURL: URL? = URL(string: "http://traffic.libsyn.com/shitecom/KATG-2024-06-23.mp3")
+    
+    
     
     
     var body: some View {
