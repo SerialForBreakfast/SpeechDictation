@@ -9,7 +9,7 @@ import SwiftUI
 
 struct WaveformView: View {
     var samples: [Float]
-    
+
     var body: some View {
         GeometryReader { geometry in
             Path { path in
@@ -18,7 +18,7 @@ struct WaveformView: View {
                 let midY = height / 2
                 let sampleCount = samples.count
                 let step = width / CGFloat(sampleCount)
-                
+
                 for i in 0..<sampleCount {
                     let x = CGFloat(i) * step
                     let y = midY + CGFloat(samples[i]) * midY

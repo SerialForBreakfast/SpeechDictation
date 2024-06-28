@@ -28,6 +28,8 @@ class SpeechRecognizer: ObservableObject {
     private let audioSamplesQueue: DispatchQueue = DispatchQueue(label: "audioSamplesQueue", qos: .userInitiated)
     private let volumeQueue: DispatchQueue = DispatchQueue(label: "volumeQueue", qos: .userInitiated)
     private var displayLink: CADisplayLink?
+    private var playerNode: AVAudioPlayerNode?
+    private var mixerNode: AVAudioMixerNode?
     
     init() {
         requestAuthorization()
@@ -401,6 +403,15 @@ class SpeechRecognizer: ObservableObject {
     }
     
     private func playAndTranscribeAudioFile(from url: URL) {
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.prepareToPlay()
+            setupTapForAudioPlayer()  // <-- Added this line
+        } catch {
+            print("Error initializing AVAudioPlayer: \(error)")
+            return
+        }
+        
         let recognizer: SFSpeechRecognizer? = SFSpeechRecognizer()
         let request: SFSpeechURLRecognitionRequest = SFSpeechURLRecognitionRequest(url: url)
         
@@ -419,17 +430,6 @@ class SpeechRecognizer: ObservableObject {
                 }
             }
         }
-        
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.prepareToPlay()
-            audioPlayer?.play()
-            print("Audio playback started")
-            startDisplayLink()
-        } catch {
-            print("Error initializing AVAudioPlayer: \(error)")
-            return
-        }
     }
     
     private func startDisplayLink() {
@@ -447,5 +447,36 @@ class SpeechRecognizer: ObservableObject {
         
         // Simulate reading samples from the audio player's output
         processAudioBuffer(buffer: buffer)
+    }
+    
+    private func setupTapForAudioPlayer() {
+        audioEngine = AVAudioEngine()
+        playerNode = AVAudioPlayerNode()
+        mixerNode = AVAudioMixerNode()
+        
+        guard let audioPlayer = audioPlayer,
+              let audioEngine = audioEngine,
+              let playerNode = playerNode,
+              let mixerNode = mixerNode else { return }
+        
+        audioEngine.attach(playerNode)
+        audioEngine.attach(mixerNode)
+        audioEngine.connect(playerNode, to: mixerNode, format: nil)
+        audioEngine.connect(mixerNode, to: audioEngine.mainMixerNode, format: nil)
+        
+        let format = mixerNode.outputFormat(forBus: 0)
+        
+        mixerNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, time in
+            self.processAudioBuffer(buffer: buffer)
+        }
+        
+        audioEngine.prepare()
+        do {
+            try audioEngine.start()
+            playerNode.scheduleFile(try AVAudioFile(forReading: audioPlayer.url!), at: nil, completionHandler: nil)
+            playerNode.play()
+        } catch {
+            print("Audio engine failed to start: \(error)")
+        }
     }
 }
