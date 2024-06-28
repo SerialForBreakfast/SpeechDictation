@@ -12,9 +12,9 @@ import AudioToolbox
 
 
 class SpeechRecognizer: ObservableObject {
-    @Published var transcribedText: String = "Listening..."
+    @Published var transcribedText: String = "Tap a button to begin"
     @Published private(set) var audioSamples: [Float] = []
-    @Published var volume: Float = 10.0 { // Start at 10
+    @Published var volume: Float = 10.0 {
         didSet {
             adjustVolume()
         }
@@ -27,6 +27,7 @@ class SpeechRecognizer: ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     private let audioSamplesQueue: DispatchQueue = DispatchQueue(label: "audioSamplesQueue", qos: .userInitiated)
     private let volumeQueue: DispatchQueue = DispatchQueue(label: "volumeQueue", qos: .userInitiated)
+    private var displayLink: CADisplayLink?
     
     init() {
         requestAuthorization()
@@ -117,13 +118,13 @@ class SpeechRecognizer: ObservableObject {
             print("Audio engine failed to start: \(error)")
         }
         
-        adjustVolume() // Apply initial volume
+        adjustVolume()
     }
-    
     
     private func processAudioBuffer(buffer: AVAudioPCMBuffer) {
         let frameLength = Int(buffer.frameLength)
         guard let channelData = buffer.floatChannelData?[0] else { return }
+        
         let samples = Array(UnsafeBufferPointer(start: channelData, count: frameLength))
         audioSamplesQueue.async {
             var newSamples = self.audioSamples
@@ -136,7 +137,6 @@ class SpeechRecognizer: ObservableObject {
             }
         }
     }
-
     
     private func adjustVolume() {
         volumeQueue.async {
@@ -258,7 +258,7 @@ class SpeechRecognizer: ObservableObject {
         // Create the output file
         status = ExtAudioFileCreateWithURL(outputURL as CFURL, kAudioFileM4AType, &outputDesc, nil, AudioFileFlags.eraseFile.rawValue, &outputFile)
         if status != noErr {
-            print("Error creating output file: \(status)")
+            print("Error creating output file: (status)")
             ExtAudioFileDispose(inputFile!)
             completion(nil)
             return
@@ -297,8 +297,8 @@ class SpeechRecognizer: ObservableObject {
         
         // Create a buffer and read the data
         let bufferByteSize: UInt32 = 32768
-        var buffer: [UInt8] = Array(repeating: 0, count: Int(bufferByteSize))
-        var convertedData: AudioBufferList = AudioBufferList(
+        var buffer = [UInt8](repeating: 0, count: Int(bufferByteSize))
+        var convertedData = AudioBufferList(
             mNumberBuffers: 1,
             mBuffers: AudioBuffer(
                 mNumberChannels: clientFormat.mChannelsPerFrame,
@@ -306,6 +306,9 @@ class SpeechRecognizer: ObservableObject {
                 mData: &buffer
             )
         )
+        
+        var totalFrames: UInt64 = 0
+        var completedFrames: UInt64 = 0
         
         while true {
             var frameCount: UInt32 = bufferByteSize / clientFormat.mBytesPerFrame
@@ -321,6 +324,14 @@ class SpeechRecognizer: ObservableObject {
                 completion(nil)
                 return
             }
+            completedFrames += UInt64(frameCount)
+            totalFrames = UInt64(inputDesc.mSampleRate) * UInt64(inputDesc.mFramesPerPacket)
+            if totalFrames > 0 {
+                let progress = Double(completedFrames) / Double(totalFrames)
+                if Int(progress * 100) % 10 == 0 {
+                    print("Conversion progress: \(Int(progress * 100))%")
+                }
+            }
         }
         
         ExtAudioFileDispose(inputFile!)
@@ -334,6 +345,7 @@ class SpeechRecognizer: ObservableObject {
             completion(nil)
         }
     }
+    
     
     func transcribeAudioFile(from url: URL) {
         downloadAudioFile(from: url) { localURL in
@@ -357,6 +369,7 @@ class SpeechRecognizer: ObservableObject {
         }
     }
     
+    
     private func transcribeLocalAudioFile(from url: URL) {
         let recognizer: SFSpeechRecognizer? = SFSpeechRecognizer()
         let request: SFSpeechURLRecognitionRequest = SFSpeechURLRecognitionRequest(url: url)
@@ -379,19 +392,9 @@ class SpeechRecognizer: ObservableObject {
     }
     
     private func playAndTranscribeAudioFile(from url: URL) {
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.prepareToPlay()
-            audioPlayer?.play()
-            print("Audio playback started")
-        } catch {
-            print("Error initializing AVAudioPlayer: \(error)")
-            return
-        }
-
         let recognizer: SFSpeechRecognizer? = SFSpeechRecognizer()
         let request: SFSpeechURLRecognitionRequest = SFSpeechURLRecognitionRequest(url: url)
-
+        
         recognizer?.recognitionTask(with: request) { result, error in
             if let result = result {
                 DispatchQueue.main.async {
@@ -399,7 +402,7 @@ class SpeechRecognizer: ObservableObject {
                     print("Transcription result: \(result.bestTranscription.formattedString)")
                 }
             }
-
+            
             if let error = error {
                 print("Recognition error: \(error)")
                 DispatchQueue.main.async {
@@ -407,5 +410,33 @@ class SpeechRecognizer: ObservableObject {
                 }
             }
         }
+        
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.prepareToPlay()
+            audioPlayer?.play()
+            print("Audio playback started")
+            startDisplayLink()
+        } catch {
+            print("Error initializing AVAudioPlayer: \(error)")
+            return
+        }
+    }
+    
+    private func startDisplayLink() {
+        displayLink = CADisplayLink(target: self, selector: #selector(updateAudioSamples))
+        displayLink?.preferredFramesPerSecond = 30
+        displayLink?.add(to: .current, forMode: .default)
+    }
+    
+    @objc private func updateAudioSamples() {
+        guard let player = audioPlayer else { return }
+        let frameCount = player.format.sampleRate / 30 // Assuming 30 fps
+        let buffer = AVAudioPCMBuffer(pcmFormat: player.format, frameCapacity: AVAudioFrameCount(frameCount))!
+        buffer.frameLength = AVAudioFrameCount(frameCount)
+        
+        // This simulates reading samples from the audio player's output
+        // Use actual sample data in a real implementation
+        processAudioBuffer(buffer: buffer)
     }
 }
