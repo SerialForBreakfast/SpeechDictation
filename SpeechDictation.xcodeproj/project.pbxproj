@@ -12,6 +12,7 @@
 		44CE0E822C3096880060C2FF /* SpeechRecognizer+Authorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CE0E812C30967D0060C2FF /* SpeechRecognizer+Authorization.swift */; };
 		44CE0E842C30977B0060C2FF /* SpeechRecognizer+config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CE0E832C30977B0060C2FF /* SpeechRecognizer+config.swift */; };
 		44CE0E862C30986E0060C2FF /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CE0E852C30986E0060C2FF /* DownloadManager.swift */; };
+		44CE0E882C309ABA0060C2FF /* SpeechRecognizer+Convert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CE0E872C309ABA0060C2FF /* SpeechRecognizer+Convert.swift */; };
 		44E6EBD52C2B99D300BBF2F3 /* SpeechDictationApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBD42C2B99D300BBF2F3 /* SpeechDictationApp.swift */; };
 		44E6EBD72C2B99D300BBF2F3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBD62C2B99D300BBF2F3 /* ContentView.swift */; };
 		44E6EBD92C2B99D500BBF2F3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 44E6EBD82C2B99D500BBF2F3 /* Assets.xcassets */; };
@@ -45,6 +46,7 @@
 		44CE0E812C30967D0060C2FF /* SpeechRecognizer+Authorization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpeechRecognizer+Authorization.swift"; sourceTree = "<group>"; };
 		44CE0E832C30977B0060C2FF /* SpeechRecognizer+config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpeechRecognizer+config.swift"; sourceTree = "<group>"; };
 		44CE0E852C30986E0060C2FF /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
+		44CE0E872C309ABA0060C2FF /* SpeechRecognizer+Convert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpeechRecognizer+Convert.swift"; sourceTree = "<group>"; };
 		44E6EBD12C2B99D300BBF2F3 /* SpeechDictation.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpeechDictation.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		44E6EBD42C2B99D300BBF2F3 /* SpeechDictationApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechDictationApp.swift; sourceTree = "<group>"; };
 		44E6EBD62C2B99D300BBF2F3 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -110,12 +112,13 @@
 				44E6EBFE2C2B9A2100BBF2F3 /* Info.plist */,
 				44E6EBD42C2B99D300BBF2F3 /* SpeechDictationApp.swift */,
 				44E6EBD62C2B99D300BBF2F3 /* ContentView.swift */,
+				4420D05E2C2E4E2500263CF6 /* WaveformView.swift */,
 				44E6EBFF2C2B9A6F00BBF2F3 /* SpeechRecognizer.swift */,
-				44CE0E852C30986E0060C2FF /* DownloadManager.swift */,
+				44CE0E872C309ABA0060C2FF /* SpeechRecognizer+Convert.swift */,
 				44CE0E832C30977B0060C2FF /* SpeechRecognizer+config.swift */,
 				44CE0E812C30967D0060C2FF /* SpeechRecognizer+Authorization.swift */,
 				4420D0602C2F6A8C00263CF6 /* CacheManager.swift */,
-				4420D05E2C2E4E2500263CF6 /* WaveformView.swift */,
+				44CE0E852C30986E0060C2FF /* DownloadManager.swift */,
 				44E6EBD82C2B99D500BBF2F3 /* Assets.xcassets */,
 				44E6EBDA2C2B99D500BBF2F3 /* Preview Content */,
 			);
@@ -284,6 +287,7 @@
 				44E6EC002C2B9A7000BBF2F3 /* SpeechRecognizer.swift in Sources */,
 				4420D05F2C2E4E2500263CF6 /* WaveformView.swift in Sources */,
 				44CE0E822C3096880060C2FF /* SpeechRecognizer+Authorization.swift in Sources */,
+				44CE0E882C309ABA0060C2FF /* SpeechRecognizer+Convert.swift in Sources */,
 				44CE0E842C30977B0060C2FF /* SpeechRecognizer+config.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
