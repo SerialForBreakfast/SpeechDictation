@@ -86,6 +86,35 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		44CE0E892C309B060060C2FF /* Speech */ = {
+			isa = PBXGroup;
+			children = (
+				44E6EBFF2C2B9A6F00BBF2F3 /* SpeechRecognizer.swift */,
+				44CE0E872C309ABA0060C2FF /* SpeechRecognizer+Convert.swift */,
+				44CE0E832C30977B0060C2FF /* SpeechRecognizer+config.swift */,
+				44CE0E812C30967D0060C2FF /* SpeechRecognizer+Authorization.swift */,
+			);
+			path = Speech;
+			sourceTree = "<group>";
+		};
+		44CE0E8A2C309B580060C2FF /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				44E6EBD62C2B99D300BBF2F3 /* ContentView.swift */,
+				4420D05E2C2E4E2500263CF6 /* WaveformView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		44CE0E8B2C309B600060C2FF /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				4420D0602C2F6A8C00263CF6 /* CacheManager.swift */,
+				44CE0E852C30986E0060C2FF /* DownloadManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		44E6EBC82C2B99D300BBF2F3 = {
 			isa = PBXGroup;
 			children = (
@@ -111,14 +140,9 @@
 			children = (
 				44E6EBFE2C2B9A2100BBF2F3 /* Info.plist */,
 				44E6EBD42C2B99D300BBF2F3 /* SpeechDictationApp.swift */,
-				44E6EBD62C2B99D300BBF2F3 /* ContentView.swift */,
-				4420D05E2C2E4E2500263CF6 /* WaveformView.swift */,
-				44E6EBFF2C2B9A6F00BBF2F3 /* SpeechRecognizer.swift */,
-				44CE0E872C309ABA0060C2FF /* SpeechRecognizer+Convert.swift */,
-				44CE0E832C30977B0060C2FF /* SpeechRecognizer+config.swift */,
-				44CE0E812C30967D0060C2FF /* SpeechRecognizer+Authorization.swift */,
-				4420D0602C2F6A8C00263CF6 /* CacheManager.swift */,
-				44CE0E852C30986E0060C2FF /* DownloadManager.swift */,
+				44CE0E8A2C309B580060C2FF /* UI */,
+				44CE0E892C309B060060C2FF /* Speech */,
+				44CE0E8B2C309B600060C2FF /* Services */,
 				44E6EBD82C2B99D500BBF2F3 /* Assets.xcassets */,
 				44E6EBDA2C2B99D500BBF2F3 /* Preview Content */,
 			);
