@@ -20,10 +20,10 @@ class SpeechRecognizer: ObservableObject {
         }
     }
     
-    private var audioEngine: AVAudioEngine?
-    private var speechRecognizer: SFSpeechRecognizer?
-    private var request: SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionTask: SFSpeechRecognitionTask?
+    var audioEngine: AVAudioEngine?
+    var speechRecognizer: SFSpeechRecognizer?
+    var request: SFSpeechAudioBufferRecognitionRequest?
+    var recognitionTask: SFSpeechRecognitionTask?
     private var audioPlayer: AVAudioPlayer?
     private let audioSamplesQueue: DispatchQueue = DispatchQueue(label: "audioSamplesQueue", qos: .userInitiated)
     private let volumeQueue: DispatchQueue = DispatchQueue(label: "volumeQueue", qos: .userInitiated)
@@ -65,7 +65,7 @@ class SpeechRecognizer: ObservableObject {
         }
     }
     
-    private func configureAudioSession() {
+    func configureAudioSession() {
         let audioSession = AVAudioSession.sharedInstance()
         do {
             try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
@@ -123,7 +123,7 @@ class SpeechRecognizer: ObservableObject {
         adjustVolume()
     }
     
-    private func processAudioBuffer(buffer: AVAudioPCMBuffer) {
+    func processAudioBuffer(buffer: AVAudioPCMBuffer) {
         let frameLength = Int(buffer.frameLength)
         guard let channelData = buffer.floatChannelData?[0] else { return }
         
