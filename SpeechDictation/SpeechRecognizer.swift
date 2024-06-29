@@ -24,56 +24,16 @@ class SpeechRecognizer: ObservableObject {
     var speechRecognizer: SFSpeechRecognizer?
     var request: SFSpeechAudioBufferRecognitionRequest?
     var recognitionTask: SFSpeechRecognitionTask?
-    private var audioPlayer: AVAudioPlayer?
+    var audioPlayer: AVAudioPlayer?
     private let audioSamplesQueue: DispatchQueue = DispatchQueue(label: "audioSamplesQueue", qos: .userInitiated)
     private let volumeQueue: DispatchQueue = DispatchQueue(label: "volumeQueue", qos: .userInitiated)
-    private var displayLink: CADisplayLink?
-    private var playerNode: AVAudioPlayerNode?
-    private var mixerNode: AVAudioMixerNode?
+    var displayLink: CADisplayLink?
+    var playerNode: AVAudioPlayerNode?
+    var mixerNode: AVAudioMixerNode?
     
     init() {
         requestAuthorization()
         configureAudioSession()
-    }
-    
-    private func requestAuthorization() {
-        SFSpeechRecognizer.requestAuthorization { authStatus in
-            DispatchQueue.main.async {
-                switch authStatus {
-                case .authorized:
-                    print("Speech recognition authorized")
-                case .denied:
-                    self.transcribedText = "Speech recognition authorization denied"
-                case .restricted:
-                    self.transcribedText = "Speech recognition restricted on this device"
-                case .notDetermined:
-                    self.transcribedText = "Speech recognition not authorized"
-                @unknown default:
-                    fatalError("Unknown authorization status")
-                }
-            }
-        }
-        
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
-            DispatchQueue.main.async {
-                if granted {
-                    print("Microphone access granted")
-                } else {
-                    self.transcribedText = "Microphone access denied"
-                }
-            }
-        }
-    }
-    
-    func configureAudioSession() {
-        let audioSession = AVAudioSession.sharedInstance()
-        do {
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
-            try audioSession.setActive(true)
-            print("Audio session configured")
-        } catch {
-            print("Failed to configure audio session: \(error)")
-        }
     }
     
     func startTranscribing() {
@@ -140,7 +100,7 @@ class SpeechRecognizer: ObservableObject {
         }
     }
     
-    private func adjustVolume() {
+    func adjustVolume() {
         volumeQueue.async {
             if let inputNode: AVAudioInputNode = self.audioEngine?.inputNode {
                 inputNode.volume = self.volume / 100.0
@@ -158,66 +118,6 @@ class SpeechRecognizer: ObservableObject {
         request = nil
         recognitionTask = nil
         audioEngine = nil
-    }
-    
-    func convertMP3ToWAV(mp3URL: URL, completion: @escaping (URL?) -> Void) {
-        let asset = AVAsset(url: mp3URL)
-        guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else {
-            print("Cannot create export session.")
-            completion(nil)
-            return
-        }
-        
-        let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("wav")
-        exportSession.outputFileType = .wav
-        exportSession.outputURL = outputURL
-        
-        exportSession.exportAsynchronously {
-            switch exportSession.status {
-            case .completed:
-                completion(outputURL)
-            case .failed, .cancelled:
-                print("Export failed: \(String(describing: exportSession.error))")
-                completion(nil)
-            default:
-                break
-            }
-        }
-    }
-    
-    private func downloadAudioFile(from url: URL, completion: @escaping (URL?) -> Void) {
-        let task: URLSessionDownloadTask = URLSession.shared.downloadTask(with: url) { localURL, response, error in
-            if let error = error {
-                print("Download error: \(error.localizedDescription)")
-                completion(nil)
-                return
-            }
-            guard let localURL = localURL else {
-                print("No local URL after download.")
-                completion(nil)
-                return
-            }
-            print("Downloaded file to: \(localURL)")
-            completion(localURL)
-        }
-        task.resume()
-    }
-    
-    func verifyAudioFile(url: URL, completion: @escaping (Bool) -> Void) {
-        let asset: AVAsset = AVAsset(url: url)
-        asset.loadValuesAsynchronously(forKeys: ["playable"]) {
-            var error: NSError? = nil
-            let status: AVKeyValueStatus = asset.statusOfValue(forKey: "playable", error: &error)
-            DispatchQueue.main.async {
-                if status == .loaded {
-                    print("Audio file is playable.")
-                    completion(true)
-                } else {
-                    print("Error verifying audio file: \(String(describing: error))")
-                    completion(false)
-                }
-            }
-        }
     }
     
     func convertMP3ToM4A(mp3URL: URL, completion: @escaping (URL?) -> Void) {
@@ -357,7 +257,7 @@ class SpeechRecognizer: ObservableObject {
             return
         }
         
-        downloadAudioFile(from: url) { localURL in
+        DownloadManager.shared.downloadAudioFile(from: url) { localURL in
             guard let localURL = localURL else {
                 DispatchQueue.main.async {
                     self.transcribedText = "Failed to download audio file"
@@ -402,11 +302,11 @@ class SpeechRecognizer: ObservableObject {
         }
     }
     
-    private func playAndTranscribeAudioFile(from url: URL) {
+    func playAndTranscribeAudioFile(from url: URL) {
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer?.prepareToPlay()
-            setupTapForAudioPlayer()  // <-- Added this line
+            setupTapForAudioPlayer()
         } catch {
             print("Error initializing AVAudioPlayer: \(error)")
             return
@@ -431,14 +331,9 @@ class SpeechRecognizer: ObservableObject {
             }
         }
     }
+
     
-    private func startDisplayLink() {
-        displayLink = CADisplayLink(target: self, selector: #selector(updateAudioSamples))
-        displayLink?.preferredFramesPerSecond = 30
-        displayLink?.add(to: .current, forMode: .default)
-    }
-    
-    @objc private func updateAudioSamples() {
+    @objc func updateAudioSamples() {
         guard let player = audioPlayer else { return }
         guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: player.format.sampleRate, channels: 1, interleaved: false) else { return }
         let frameCount = AVAudioFrameCount(player.format.sampleRate / 30) // Assuming 30 fps
@@ -449,34 +344,4 @@ class SpeechRecognizer: ObservableObject {
         processAudioBuffer(buffer: buffer)
     }
     
-    private func setupTapForAudioPlayer() {
-        audioEngine = AVAudioEngine()
-        playerNode = AVAudioPlayerNode()
-        mixerNode = AVAudioMixerNode()
-        
-        guard let audioPlayer = audioPlayer,
-              let audioEngine = audioEngine,
-              let playerNode = playerNode,
-              let mixerNode = mixerNode else { return }
-        
-        audioEngine.attach(playerNode)
-        audioEngine.attach(mixerNode)
-        audioEngine.connect(playerNode, to: mixerNode, format: nil)
-        audioEngine.connect(mixerNode, to: audioEngine.mainMixerNode, format: nil)
-        
-        let format = mixerNode.outputFormat(forBus: 0)
-        
-        mixerNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, time in
-            self.processAudioBuffer(buffer: buffer)
-        }
-        
-        audioEngine.prepare()
-        do {
-            try audioEngine.start()
-            playerNode.scheduleFile(try AVAudioFile(forReading: audioPlayer.url!), at: nil, completionHandler: nil)
-            playerNode.play()
-        } catch {
-            print("Audio engine failed to start: \(error)")
-        }
-    }
 }
