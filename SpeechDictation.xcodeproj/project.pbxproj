@@ -22,6 +22,7 @@
 		44E6EBF02C2B99D500BBF2F3 /* SpeechDictationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBEF2C2B99D500BBF2F3 /* SpeechDictationUITests.swift */; };
 		44E6EBF22C2B99D500BBF2F3 /* SpeechDictationUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBF12C2B99D500BBF2F3 /* SpeechDictationUITestsLaunchTests.swift */; };
 		44E6EC002C2B9A7000BBF2F3 /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBFF2C2B9A6F00BBF2F3 /* SpeechRecognizer.swift */; };
+		44EA2BFD2C486C3700F76CFC /* SpeechRecognitionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44EA2BFC2C486C3700F76CFC /* SpeechRecognitionViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +62,7 @@
 		44E6EBF12C2B99D500BBF2F3 /* SpeechDictationUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechDictationUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		44E6EBFE2C2B9A2100BBF2F3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		44E6EBFF2C2B9A6F00BBF2F3 /* SpeechRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
+		44EA2BFC2C486C3700F76CFC /* SpeechRecognitionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -143,6 +145,7 @@
 			children = (
 				44E6EBFE2C2B9A2100BBF2F3 /* Info.plist */,
 				44E6EBD42C2B99D300BBF2F3 /* SpeechDictationApp.swift */,
+				44EA2BFC2C486C3700F76CFC /* SpeechRecognitionViewModel.swift */,
 				44CE0E8A2C309B580060C2FF /* UI */,
 				44CE0E892C309B060060C2FF /* Speech */,
 				44CE0E8B2C309B600060C2FF /* Services */,
@@ -310,6 +313,7 @@
 				44E6EBD72C2B99D300BBF2F3 /* ContentView.swift in Sources */,
 				4420D0612C2F6A8C00263CF6 /* CacheManager.swift in Sources */,
 				44CE0E8D2C30A1D80060C2FF /* AlertManager.swift in Sources */,
+				44EA2BFD2C486C3700F76CFC /* SpeechRecognitionViewModel.swift in Sources */,
 				44E6EBD52C2B99D300BBF2F3 /* SpeechDictationApp.swift in Sources */,
 				44CE0E862C30986E0060C2FF /* DownloadManager.swift in Sources */,
 				44E6EC002C2B9A7000BBF2F3 /* SpeechRecognizer.swift in Sources */,

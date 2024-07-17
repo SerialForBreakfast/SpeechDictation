@@ -191,5 +191,4 @@ class SpeechRecognizer: ObservableObject {
         // Simulate reading samples from the audio player's output
         processAudioBuffer(buffer: buffer)
     }
-    
 }
