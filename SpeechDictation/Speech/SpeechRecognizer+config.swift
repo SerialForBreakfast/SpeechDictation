@@ -56,4 +56,15 @@ extension SpeechRecognizer {
             print("Audio engine failed to start: \(error)")
         }
     }
+    
+    @objc func updateAudioSamples() {
+        guard let player = audioPlayer else { return }
+        guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: player.format.sampleRate, channels: 1, interleaved: false) else { return }
+        let frameCount = AVAudioFrameCount(player.format.sampleRate / 30) // Assuming 30 fps
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+        buffer.frameLength = frameCount
+        
+        // Simulate reading samples from the audio player's output
+        processAudioBuffer(buffer: buffer)
+    }
 }

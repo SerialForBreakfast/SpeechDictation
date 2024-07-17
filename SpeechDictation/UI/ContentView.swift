@@ -18,7 +18,7 @@ struct ContentView: View {
                     .padding()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.white)
+            .background(backgroundColor)
             .cornerRadius(10)
             .shadow(radius: 5)
 
@@ -56,53 +56,34 @@ struct ContentView: View {
             .padding()
         }
         .padding()
-    }
-}
-
-struct SettingsView: View {
-    @ObservedObject var viewModel: SpeechRecognizerViewModel
-
-    var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Text Settings")) {
-                    Slider(value: $viewModel.fontSize, in: 12...36, step: 1) {
-                        Text("Font Size")
-                    }
-                    .padding()
-                }
-
-                Section(header: Text("Theme Settings")) {
-                    Picker("Theme", selection: $viewModel.theme) {
-                        Text("Light").tag(Theme.light)
-                        Text("Dark").tag(Theme.dark)
-                        Text("High Contrast").tag(Theme.highContrast)
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .padding()
-                }
-            }
-            .navigationTitle("Settings")
+        .onAppear {
+            applyTheme()
+        }
+        .onChange(of: viewModel.theme) { _ in
+            applyTheme()
         }
     }
-}
 
-enum Theme: String, CaseIterable, Identifiable {
-    case light, dark, highContrast
-
-    var id: String { self.rawValue }
-}
-
-struct ShareSheet: UIViewControllerRepresentable {
-    var items: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    private var backgroundColor: Color {
+        switch viewModel.theme {
+        case .light:
+            return Color.white
+        case .dark:
+            return Color.black
+        case .highContrast:
+            return Color.yellow
+        }
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}
-
-#Preview {
-    ContentView()
+    private func applyTheme() {
+        switch viewModel.theme {
+        case .light:
+            UIApplication.shared.windows.first?.overrideUserInterfaceStyle = .light
+        case .dark:
+            UIApplication.shared.windows.first?.overrideUserInterfaceStyle = .dark
+        case .highContrast:
+            // For high contrast, you might want to set a specific override, if necessary.
+            break
+        }
+    }
 }
