@@ -11,36 +11,66 @@ struct SettingsView: View {
     @ObservedObject var viewModel: SpeechRecognizerViewModel
 
     var body: some View {
-        VStack {
+        VStack(spacing: 20) {
             // Title
             Text("Settings")
                 .font(.title)
-                .padding(.top, 10) // Adjust the top padding to reduce space
+                .padding()
+                .background(Color(UIColor.systemGray6))
+                .cornerRadius(10)
 
             // Text Settings
-            VStack {
-                Text("Text Settings")
-                Slider(value: $viewModel.fontSize, in: 12...36) // Example slider, replace with your binding
-                    .padding()
+            VStack(spacing: 10) {
+                Text("Transcription Text Size")
+                    .font(.headline)
+                Slider(value: $viewModel.fontSize, in: 12...36)
+                    .padding(.horizontal)
             }
             .padding()
+            .background(Color(UIColor.systemGray6))
+            .cornerRadius(10)
 
             // Theme Settings
-            VStack {
-                Text("Theme Settings")
+            VStack(spacing: 10) {
+                Text("Theme")
+                    .font(.headline)
                 HStack {
-                    Button("Light") { viewModel.theme = .light }
-                    Button("Dark") { viewModel.theme = .dark }
-                    Button("High Contrast") { viewModel.theme = .highContrast }
+                    ForEach(Theme.allCases) { theme in
+                        Button(action: {
+                            viewModel.theme = theme
+                        }) {
+                            Text(theme.rawValue.capitalized)
+                                .padding()
+                                .background(viewModel.theme == theme ? Color.blue : Color.gray)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                        }
+                    }
                 }
-                .padding()
             }
             .padding()
+            .background(Color(UIColor.systemGray6))
+            .cornerRadius(10)
+
+            // Input Volume Settings
+//            VStack(spacing: 10) {
+//                Text("Input Volume")
+//                    .font(.headline)
+//                Slider(value: $viewModel.volume, in: 0...100, step: 1, onEditingChanged: { _ in
+//                    viewModel.adjustVolume()
+//                })
+//                .padding(.horizontal)
+//            }
+//            .padding()
+//            .background(Color(UIColor.systemGray6))
+//            .cornerRadius(10)
         }
-        .background(Color(UIColor.systemBackground)) // Ensure the background matches the theme
+        .padding()
+        .background(Color(UIColor.systemBackground))
         .cornerRadius(10)
         .shadow(radius: 10)
         .padding()
+        .fixedSize(horizontal: true, vertical: false) // Ensures the width fits the content
     }
 }
 
