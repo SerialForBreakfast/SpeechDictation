@@ -116,6 +116,4 @@ class SpeechRecognizer: ObservableObject {
         recognitionTask = nil
         audioEngine = nil
     }
-    
-    // Other methods remain unchanged
 }

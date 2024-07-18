@@ -11,27 +11,36 @@ struct SettingsView: View {
     @ObservedObject var viewModel: SpeechRecognizerViewModel
 
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Text Settings")) {
-                    Slider(value: $viewModel.fontSize, in: 12...36, step: 1) {
-                        Text("Font Size")
-                    }
-                    .padding()
-                }
+        VStack {
+            // Title
+            Text("Settings")
+                .font(.title)
+                .padding(.top, 10) // Adjust the top padding to reduce space
 
-                Section(header: Text("Theme Settings")) {
-                    Picker("Theme", selection: $viewModel.theme) {
-                        Text("Light").tag(Theme.light)
-                        Text("Dark").tag(Theme.dark)
-                        Text("High Contrast").tag(Theme.highContrast)
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
+            // Text Settings
+            VStack {
+                Text("Text Settings")
+                Slider(value: $viewModel.fontSize, in: 12...36) // Example slider, replace with your binding
                     .padding()
-                }
             }
-            .navigationTitle("Settings")
+            .padding()
+
+            // Theme Settings
+            VStack {
+                Text("Theme Settings")
+                HStack {
+                    Button("Light") { viewModel.theme = .light }
+                    Button("Dark") { viewModel.theme = .dark }
+                    Button("High Contrast") { viewModel.theme = .highContrast }
+                }
+                .padding()
+            }
+            .padding()
         }
+        .background(Color(UIColor.systemBackground)) // Ensure the background matches the theme
+        .cornerRadius(10)
+        .shadow(radius: 10)
+        .padding()
     }
 }
 

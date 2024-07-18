@@ -11,51 +11,66 @@ struct ContentView: View {
     @ObservedObject var viewModel = SpeechRecognizerViewModel()
 
     var body: some View {
-        VStack {
-            ScrollView {
-                Text(viewModel.transcribedText)
-                    .font(.system(size: viewModel.fontSize))
-                    .padding()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(backgroundColor)
-            .cornerRadius(10)
-            .shadow(radius: 5)
+        ZStack {
+            VStack {
+                ScrollView {
+                    Text(viewModel.transcribedText)
+                        .font(.system(size: viewModel.fontSize))
+                        .padding()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(backgroundColor)
+                .cornerRadius(10)
+                .shadow(radius: 5)
 
-            HStack {
-                Button(action: {
-                    if self.viewModel.isRecording {
-                        self.viewModel.stopTranscribing()
-                    } else {
-                        self.viewModel.startTranscribing()
+                HStack {
+                    Button(action: {
+                        if self.viewModel.isRecording {
+                            self.viewModel.stopTranscribing()
+                        } else {
+                            self.viewModel.startTranscribing()
+                        }
+                    }) {
+                        Text(viewModel.isRecording ? "Stop Listening" : "Start Listening")
+                            .font(.title2)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
                     }
-                }) {
-                    Text(viewModel.isRecording ? "Stop Recording" : "Start Recording")
-                        .font(.title2)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
 
-                Spacer()
+                    Spacer()
 
-                Button(action: {
-                    self.viewModel.showSettings.toggle()
-                }) {
-                    Image(systemName: "gear")
-                        .font(.title2)
-                        .padding()
-                        .background(Color.gray.opacity(0.2))
-                        .clipShape(Circle())
+                    Button(action: {
+                        self.viewModel.showSettings.toggle()
+                    }) {
+                        Image(systemName: "gear")
+                            .font(.title2)
+                            .padding()
+                            .background(Color.gray.opacity(0.2))
+                            .clipShape(Circle())
+                    }
                 }
-                .sheet(isPresented: $viewModel.showSettings) {
-                    SettingsView(viewModel: viewModel)
-                }
+                .padding()
             }
             .padding()
+
+            if viewModel.showSettings {
+                Color.black.opacity(0.5)
+                    .edgesIgnoringSafeArea(.all)
+                    .onTapGesture {
+                        self.viewModel.showSettings.toggle()
+                    }
+
+                SettingsView(viewModel: viewModel)
+                    .background(Color(UIColor.systemBackground))
+                    .cornerRadius(10)
+                    .shadow(radius: 10)
+                    .padding()
+                    .transition(.move(edge: .bottom))
+                    .animation(.easeInOut)
+            }
         }
-        .padding()
         .onAppear {
             applyTheme()
         }
@@ -85,5 +100,12 @@ struct ContentView: View {
             // For high contrast, you might want to set a specific override, if necessary.
             break
         }
+    }
+}
+
+
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
     }
 }
