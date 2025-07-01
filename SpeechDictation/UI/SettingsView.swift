@@ -23,7 +23,7 @@ struct SettingsView: View {
             VStack(spacing: 10) {
                 Text("Transcription Text Size")
                     .font(.headline)
-                Slider(value: $viewModel.fontSize, in: 12...36)
+                Slider(value: $viewModel.fontSize, in: 12...60)
                     .padding(.horizontal)
             }
             .padding()

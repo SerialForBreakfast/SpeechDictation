@@ -1,5 +1,6 @@
 import Foundation
 import Speech
+import AVFoundation
 
 class SpeechRecognizer: ObservableObject {
     @Published var transcribedText: String = "Tap a button to begin"
