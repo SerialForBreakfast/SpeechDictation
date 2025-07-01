@@ -77,16 +77,16 @@ class ExportManager {
         #endif
     }
     
-    /// Present system share sheet
+    /// Present system share sheet (iOS-only)
     /// - Parameters:
     ///   - text: Text to share
     ///   - format: Export format
-    ///   - sourceView: Source view for iPad presentation
+    ///   - sourceView: Source view for iPad presentation (optional)
+    #if os(iOS)
     func presentShareSheet(text: String, format: ExportFormat, from sourceView: UIView?) {
         let fileName = "transcription_\(formattedTimestamp()).\(format.fileExtension)"
         let tempURL = createTemporaryFile(text: text, fileName: fileName, format: format)
         
-        #if os(iOS)
         DispatchQueue.main.async {
             let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
             activityVC.excludedActivityTypes = [
@@ -109,8 +109,13 @@ class ExportManager {
                 window.rootViewController?.present(activityVC, animated: true)
             }
         }
-        #endif
     }
+    #else
+    // Stub for non-iOS platforms to maintain cross-platform build.
+    func presentShareSheet(text: String, format: ExportFormat, from sourceView: Any?) {
+        // Share sheet unavailable on this platform.
+    }
+    #endif
     
     // MARK: - Private Methods
     
@@ -147,9 +152,9 @@ class ExportManager {
     }
 }
 
-// MARK: - Document Picker Coordinator
-
-/// Coordinator class to handle UIDocumentPickerViewController delegate methods
+// MARK: - Document Picker Delegate (iOS-only)
+#if os(iOS)
+/// Coordinator class to handle `UIDocumentPickerViewController` delegate callbacks.
 private class DocumentPickerCoordinator: NSObject, UIDocumentPickerDelegate {
     private let completion: (Bool) -> Void
     
@@ -165,4 +170,5 @@ private class DocumentPickerCoordinator: NSObject, UIDocumentPickerDelegate {
     func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
         completion(false)
     }
-} 
+}
+#endif 

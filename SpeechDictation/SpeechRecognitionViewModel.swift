@@ -15,6 +15,7 @@ class SpeechRecognizerViewModel: ObservableObject {
     @Published var theme: Theme = .light
     @Published var isRecording: Bool = false
     @Published var volume: Float = 10.0
+    @Published var currentLevel: Float = 0.0
     @Published var showSettings: Bool = false
 
     private var speechRecognizer: SpeechRecognizer
@@ -29,6 +30,10 @@ class SpeechRecognizerViewModel: ObservableObject {
 
         self.speechRecognizer.$volume
             .assign(to: \.volume, on: self)
+            .store(in: &cancellables)
+
+        self.speechRecognizer.$currentLevel
+            .assign(to: \.currentLevel, on: self)
             .store(in: &cancellables)
     }
 

@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct SettingsView: View {
     @ObservedObject var viewModel: SpeechRecognizerViewModel
@@ -16,7 +19,7 @@ struct SettingsView: View {
             Text("Settings")
                 .font(.title)
                 .padding()
-                .background(Color(UIColor.systemGray6))
+                .background(Color.gray.opacity(0.15))
                 .cornerRadius(10)
 
             // Text Settings
@@ -27,7 +30,7 @@ struct SettingsView: View {
                     .padding(.horizontal)
             }
             .padding()
-            .background(Color(UIColor.systemGray6))
+            .background(Color.gray.opacity(0.15))
             .cornerRadius(10)
 
             // Theme Settings
@@ -49,24 +52,40 @@ struct SettingsView: View {
                 }
             }
             .padding()
-            .background(Color(UIColor.systemGray6))
+            .background(Color.gray.opacity(0.15))
             .cornerRadius(10)
 
-            // Input Volume Settings
-//            VStack(spacing: 10) {
-//                Text("Input Volume")
-//                    .font(.headline)
-//                Slider(value: $viewModel.volume, in: 0...100, step: 1, onEditingChanged: { _ in
-//                    viewModel.adjustVolume()
-//                })
-//                .padding(.horizontal)
-//            }
-//            .padding()
-//            .background(Color(UIColor.systemGray6))
-//            .cornerRadius(10)
+            // Mic Sensitivity
+            VStack(spacing: 10) {
+                Text("Mic Sensitivity")
+                    .font(.headline)
+                HStack {
+                    Slider(value: $viewModel.volume, in: 0...100, step: 1, onEditingChanged: { _ in
+                        viewModel.adjustVolume()
+                    })
+                    VUMeterView(level: viewModel.currentLevel)
+                        .frame(height: 100) // Fixed height for consistent appearance
+                        .padding(.leading, 8)
+                }
+                .padding(.horizontal)
+                HStack {
+                    Text("Low")
+                    Spacer()
+                    Text("High")
+                }
+                .font(.caption)
+                .padding(.horizontal)
+            }
+            .padding()
+            .background(Color.gray.opacity(0.15))
+            .cornerRadius(10)
         }
         .padding()
+        #if canImport(UIKit)
         .background(Color(UIColor.systemBackground))
+        #else
+        .background(Color(NSColor.windowBackgroundColor))
+        #endif
         .cornerRadius(10)
         .shadow(radius: 10)
         .padding()

@@ -12,7 +12,13 @@ extension SpeechRecognizer {
     func configureAudioSession() {
         let audioSession = AVAudioSession.sharedInstance()
         do {
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
+            // Use `.measurement` mode which turns off system-level voice processing (AGC, NR) and gives
+            // us the raw mic signal – better for speech recognizer + manual gain control.
+            try audioSession.setCategory(.playAndRecord,
+                                         mode: .measurement,
+                                         options: [.allowBluetoothA2DP,
+                                                   .allowBluetooth,
+                                                   .defaultToSpeaker])
             try audioSession.setActive(true)
             print("Audio session configured")
         } catch {

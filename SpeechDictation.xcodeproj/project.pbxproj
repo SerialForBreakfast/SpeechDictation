@@ -27,6 +27,7 @@
 		44E6EC002C2B9A7000BBF2F3 /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBFF2C2B9A6F00BBF2F3 /* SpeechRecognizer.swift */; };
 		44EA2BFD2C486C3700F76CFC /* SpeechRecognitionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44EA2BFC2C486C3700F76CFC /* SpeechRecognitionViewModel.swift */; };
 		44EA2BFF2C4884B500F76CFC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44EA2BFE2C4884B500F76CFC /* SettingsView.swift */; };
+		4500001B2C60000000AAA112 /* VUMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500001A2C60000000AAA111 /* VUMeterView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,6 +72,7 @@
 		44E6EBFF2C2B9A6F00BBF2F3 /* SpeechRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
 		44EA2BFC2C486C3700F76CFC /* SpeechRecognitionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionViewModel.swift; sourceTree = "<group>"; };
 		44EA2BFE2C4884B500F76CFC /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		4500001A2C60000000AAA111 /* VUMeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VUMeterView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,6 +119,7 @@
 				44F6EBCB2C31BB2200BBF2F3 /* NativeStyleShareView.swift */,
 				44EA2BFE2C4884B500F76CFC /* SettingsView.swift */,
 				4420D05E2C2E4E2500263CF6 /* WaveformView.swift */,
+				4500001A2C60000000AAA111 /* VUMeterView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -333,6 +336,7 @@
 				44CE0E862C30986E0060C2FF /* DownloadManager.swift in Sources */,
 				44E6EC002C2B9A7000BBF2F3 /* SpeechRecognizer.swift in Sources */,
 				4420D05F2C2E4E2500263CF6 /* WaveformView.swift in Sources */,
+				4500001B2C60000000AAA112 /* VUMeterView.swift in Sources */,
 				44CE0E822C3096880060C2FF /* SpeechRecognizer+Authorization.swift in Sources */,
 				44EA2BFF2C4884B500F76CFC /* SettingsView.swift in Sources */,
 				44CE0E882C309ABA0060C2FF /* SpeechRecognizer+Convert.swift in Sources */,

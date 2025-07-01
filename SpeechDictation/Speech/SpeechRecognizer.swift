@@ -5,6 +5,8 @@ import AVFoundation
 class SpeechRecognizer: ObservableObject {
     @Published var transcribedText: String = "Tap a button to begin"
     @Published private(set) var audioSamples: [Float] = []
+    /// Live peak audio level (0.0 – 1.0) updated for each incoming buffer. Used for VU meter.
+    @Published private(set) var currentLevel: Float = 0.0
     @Published var volume: Float = 10.0 {
         didSet {
             adjustVolume()
@@ -25,10 +27,18 @@ class SpeechRecognizer: ObservableObject {
     init() {
         requestAuthorization()
         configureAudioSession()
+        startLevelMonitoring()
     }
     
     func startTranscribing() {
         print("Starting transcription...")
+        // If a monitoring engine is already running, stop and reset it before starting a
+        // fresh engine configured for speech recognition.
+        if let engine = audioEngine {
+            engine.stop()
+            engine.inputNode.removeTap(onBus: 0)
+        }
+
         audioEngine = AVAudioEngine()
         
         speechRecognizer = SFSpeechRecognizer()
@@ -79,11 +89,36 @@ class SpeechRecognizer: ObservableObject {
         adjustVolume()
     }
     
+    /// Processes a PCM buffer to store samples for waveform visualisation **and** update `currentLevel`.
+    /// - Parameter buffer: Incoming audio buffer from the input node.
+    ///
+    /// Concurrency: Called on the audio engine's render thread. We avoid heavy work; calculating the
+    /// *peak* amplitude is O(n) but cheap. We dispatch UI updates back to the main queue.
     func processAudioBuffer(buffer: AVAudioPCMBuffer) {
         let frameLength = Int(buffer.frameLength)
         guard let channelData = buffer.floatChannelData?[0] else { return }
         
         let samples = Array(UnsafeBufferPointer(start: channelData, count: frameLength))
+
+        // ---------------------------------------------------------------
+        // 🔈  CALCULATE NORMALISED INPUT LEVEL FOR VU-METER
+        // ---------------------------------------------------------------
+        // Use **root-mean-square** (RMS) → dBFS mapping which is similar to
+        // how human ears perceive loudness.  Then convert a –60 dB … 0 dB
+        // window into the 0…1 range expected by `VUMeterView`.
+        let rms: Float = {
+            let meanSquare = samples.reduce(into: Float(0)) { $0 += $1 * $1 } / Float(samples.count)
+            return sqrtf(meanSquare)
+        }()
+
+        // Guard against log(0)
+        let rmsDB = rms == 0 ? -100 : 20.0 * log10f(rms)
+        let normalisedLevel = max(0, min(1, (rmsDB + 60) / 60)) // –60 dB → 0, 0 dB → 1
+
+        DispatchQueue.main.async {
+            self.currentLevel = normalisedLevel
+        }
+
         audioSamplesQueue.async {
             var newSamples = self.audioSamples
             newSamples.append(contentsOf: samples)
@@ -96,11 +131,39 @@ class SpeechRecognizer: ObservableObject {
         }
     }
     
-    func adjustVolume() {
+    /// Adjusts microphone sensitivity.
+    ///
+    /// The method first tries to set hardware input-gain via `AVAudioSession.setInputGain(_:)` (only
+    /// available on devices that expose a software-controllable pre-amp).
+    /// If the hardware gain is *not* settable it falls back to a software gain by scaling the
+    /// `AVAudioInputNode.volume` (0.0 – 1.0).
+    ///
+    /// Concurrency: Runs on a dedicated `volumeQueue` to avoid blocking the main/UI thread while the
+    /// audio engine is active. All AVAudioSession calls are *non-blocking* but may throw, so they are
+    /// wrapped in a `do/try` inside the async block.
+    private func adjustVolume() {
+        let gain = max(0, min(volume / 100.0, 1.0)) // Normalise 0 → 1
+
         volumeQueue.async {
-            if let inputNode: AVAudioInputNode = self.audioEngine?.inputNode {
-                inputNode.volume = self.volume / 100.0
-                print("Volume adjusted to \(self.volume)")
+            #if canImport(AVFoundation) && !os(macOS)
+            let session = AVAudioSession.sharedInstance()
+
+            // 1️⃣ Try hardware input-gain if the device supports it.
+            if session.isInputGainSettable {
+                do {
+                    try session.setInputGain(gain)
+                    print("Hardware mic gain set to \(gain)")
+                    return
+                } catch {
+                    print("⚠️ Failed to set hardware mic gain: \(error). Falling back to software gain.")
+                }
+            }
+            #endif
+
+            // 2️⃣ Software gain fallback via inputNode.volume
+            if let inputNode = self.audioEngine?.inputNode {
+                inputNode.volume = gain
+                print("Software mic gain set to \(gain)")
             }
         }
     }
@@ -116,5 +179,40 @@ class SpeechRecognizer: ObservableObject {
         request = nil
         recognitionTask = nil
         audioEngine = nil
+    }
+    
+    // MARK: - Input-level monitoring (always-on)
+
+    /// Starts an `AVAudioEngine` solely for measuring input levels so the VU meter
+    /// is responsive even when speech recognition is **not** running.
+    ///
+    /// If the engine is already active (e.g. due to transcription) this method is
+    /// a no-op.
+    func startLevelMonitoring() {
+        guard audioEngine == nil else { return }
+
+        audioEngine = AVAudioEngine()
+
+        guard let inputNode = audioEngine?.inputNode else {
+            print("Audio engine has no input node (level monitoring)")
+            return
+        }
+
+        let format = inputNode.outputFormat(forBus: 0)
+        inputNode.removeTap(onBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+            self.processAudioBuffer(buffer: buffer)
+        }
+
+        audioEngine?.prepare()
+
+        do {
+            try audioEngine?.start()
+            print("Audio engine started (level monitoring)")
+        } catch {
+            print("Audio engine failed to start (level monitoring): \(error)")
+        }
+
+        adjustVolume()
     }
 }
