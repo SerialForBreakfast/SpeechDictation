@@ -28,6 +28,10 @@
 		44EA2BFD2C486C3700F76CFC /* SpeechRecognitionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44EA2BFC2C486C3700F76CFC /* SpeechRecognitionViewModel.swift */; };
 		44EA2BFF2C4884B500F76CFC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44EA2BFE2C4884B500F76CFC /* SettingsView.swift */; };
 		4500001B2C60000000AAA112 /* VUMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500001A2C60000000AAA111 /* VUMeterView.swift */; };
+		4500003B2C60005000AAA114 /* TextSizeSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500003A2C60005000AAA113 /* TextSizeSettingView.swift */; };
+		4500003D2C60005000AAA115 /* ThemeSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500003C2C60005000AAA114 /* ThemeSettingView.swift */; };
+		4500003F2C60005000AAA116 /* MicSensitivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500003E2C60005000AAA115 /* MicSensitivityView.swift */; };
+		4500002B2C60001000AAA113 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500002A2C60001000AAA112 /* Theme.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,6 +77,10 @@
 		44EA2BFC2C486C3700F76CFC /* SpeechRecognitionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionViewModel.swift; sourceTree = "<group>"; };
 		44EA2BFE2C4884B500F76CFC /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		4500001A2C60000000AAA111 /* VUMeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VUMeterView.swift; sourceTree = "<group>"; };
+		4500003A2C60005000AAA113 /* TextSizeSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSizeSettingView.swift; sourceTree = "<group>"; };
+		4500003C2C60005000AAA114 /* ThemeSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeSettingView.swift; sourceTree = "<group>"; };
+		4500003E2C60005000AAA115 /* MicSensitivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicSensitivityView.swift; sourceTree = "<group>"; };
+		4500002A2C60001000AAA112 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/Theme.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,6 +128,9 @@
 				44EA2BFE2C4884B500F76CFC /* SettingsView.swift */,
 				4420D05E2C2E4E2500263CF6 /* WaveformView.swift */,
 				4500001A2C60000000AAA111 /* VUMeterView.swift */,
+				4500003A2C60005000AAA113 /* TextSizeSettingView.swift */,
+				4500003C2C60005000AAA114 /* ThemeSettingView.swift */,
+				4500003E2C60005000AAA115 /* MicSensitivityView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -166,6 +177,7 @@
 				44CE0E8B2C309B600060C2FF /* Services */,
 				44E6EBD82C2B99D500BBF2F3 /* Assets.xcassets */,
 				44E6EBDA2C2B99D500BBF2F3 /* Preview Content */,
+				4500002A2C60001000AAA112 /* Theme.swift */,
 			);
 			path = SpeechDictation;
 			sourceTree = "<group>";
@@ -337,10 +349,14 @@
 				44E6EC002C2B9A7000BBF2F3 /* SpeechRecognizer.swift in Sources */,
 				4420D05F2C2E4E2500263CF6 /* WaveformView.swift in Sources */,
 				4500001B2C60000000AAA112 /* VUMeterView.swift in Sources */,
+				4500003B2C60005000AAA114 /* TextSizeSettingView.swift in Sources */,
+				4500003D2C60005000AAA115 /* ThemeSettingView.swift in Sources */,
+				4500003F2C60005000AAA116 /* MicSensitivityView.swift in Sources */,
 				44CE0E822C3096880060C2FF /* SpeechRecognizer+Authorization.swift in Sources */,
 				44EA2BFF2C4884B500F76CFC /* SettingsView.swift in Sources */,
 				44CE0E882C309ABA0060C2FF /* SpeechRecognizer+Convert.swift in Sources */,
 				44CE0E842C30977B0060C2FF /* SpeechRecognizer+config.swift in Sources */,
+				4500002B2C60001000AAA113 /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
