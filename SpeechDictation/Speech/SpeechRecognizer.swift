@@ -141,7 +141,7 @@ class SpeechRecognizer: ObservableObject {
     /// Concurrency: Runs on a dedicated `volumeQueue` to avoid blocking the main/UI thread while the
     /// audio engine is active. All AVAudioSession calls are *non-blocking* but may throw, so they are
     /// wrapped in a `do/try` inside the async block.
-    private func adjustVolume() {
+    internal func adjustVolume() {
         let gain = max(0, min(volume / 100.0, 1.0)) // Normalise 0 → 1
 
         volumeQueue.async {
