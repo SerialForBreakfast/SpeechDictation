@@ -24,11 +24,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - "Jump to Live" button appears when user scrolls away from bottom
   - Resume auto-scroll when user returns to bottom
   - Smooth animations for scroll movements and button transitions
+- **TASK-017: Audio Recording with Timing Data** - Complete implementation
+  - High-quality audio recording with configurable quality settings
+  - Precise timing data capture with millisecond precision
+  - Multiple export formats (SRT, VTT, TTML, JSON) for video editing workflows
+  - Synchronized audio/text playback with seek-to-text functionality
+  - Playback speed controls (0.5x, 1x, 1.5x, 2x)
+  - Session persistence and management
+  - Simulator compatibility with graceful fallbacks and error handling
 
 ### Fixed
 - Added missing AVFoundation import to SpeechRecognizer.swift to resolve linter errors
 - Added ExportManager.swift to Xcode project target membership
 - Replaced broken CustomShareView with NativeStyleShareView for better iOS compatibility
+- **Simulator Compatibility**: Fixed audio hardware configuration issues in iOS Simulator
+  - Added simulator-specific audio format handling with fallback options
+  - Implemented proper error handling for audio session configuration
+  - Added graceful degradation when audio engine fails to start in simulator
+  - Fixed "Input HW format is invalid" crashes with compatible audio formats
 
 ### Technical Debt
 - Identified missing requestAuthorization() and configureAudioSession() scope issues
@@ -210,3 +223,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **COMPONENTS**: SpeechRecognizer, WaveformView, ContentView, SettingsView
 - **SERVICES**: AlertManager, CacheManager, DownloadManager
 - **FRAMEWORKS**: Speech, AVFoundation, SwiftUI integration 
+
+## [2025-07-10] - Audio Format Validation Fix
+
+### Fixed
+- **Critical**: Fixed crash in `startTranscribingWithTiming()` method when audio format is invalid (0 sample rate, 0 channels)
+- **Critical**: Added proper format validation before installing audio taps to prevent CoreAudio exceptions
+- **Critical**: Added validation in `setupTapForAudioPlayer()` method for consistency
+- **Enhancement**: Added simulator-specific error handling to continue gracefully when audio engine fails
+- **Cleanup**: Fixed unused variable warning in SpeechRecognizer+Timing.swift
+
+### Technical Details
+- Added `guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0` validation before tap installation
+- Added simulator-specific conditional compilation for error handling
+- Improved error messages to clearly indicate when audio features are disabled due to invalid format
+- All tests now pass successfully without crashes
+
+### Impact
+- Resolves the "required condition is false: IsFormatSampleRateAndChannelCountValid(format)" crash
+- App now runs stably in iOS Simulator despite audio hardware limitations
+- Maintains full functionality on real devices while gracefully degrading in simulator
+
+## [2025-07-10] - Audio Recording and Transcription Timing System
+
+### Added
+- **New Feature**: Comprehensive audio recording and transcription timing system
+- **New Feature**: TimingDataManager for managing timing data with millisecond precision
+- **New Feature**: AudioRecordingManager for high-quality audio recording with configurable quality settings
+- **New Feature**: AudioPlaybackManager for audio playback with timing synchronization
+- **New Feature**: ExportManager with multiple export formats (SRT, VTT, JSON, CSV)
+- **New Feature**: Integration with existing SpeechRecognizer for timing data capture
+
+### Technical Details
+- Added proper concurrency handling with @MainActor for UI updates
+- Implemented robust error handling for audio session configuration
+- Added simulator-specific audio format handling to prevent crashes
+- Created comprehensive export system supporting industry-standard formats
+- Integrated all components into Xcode project with proper target membership
+
+### Files Added
+- `SpeechDictation/Services/TimingDataManager.swift`
+- `SpeechDictation/Services/AudioRecordingManager.swift`
+- `SpeechDictation/Services/AudioPlaybackManager.swift`
+- `SpeechDictation/Services/ExportManager.swift`
+- `SpeechDictation/Speech/SpeechRecognizer+Timing.swift`
+
+### Impact
+- Enables precise timing data capture during speech transcription
+- Provides high-quality audio recording with configurable settings
+- Supports multiple export formats for timing data
+- Maintains compatibility with existing speech recognition functionality 

@@ -115,11 +115,28 @@ class AudioRecordingManager: ObservableObject {
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
+            
+            #if targetEnvironment(simulator)
+            // Use simpler configuration for simulator
+            try session.setCategory(.playAndRecord, mode: .default, options: [])
+            #else
+            // Use full configuration for real device
             try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            #endif
+            
             try session.setActive(true)
             print("Audio session configured for recording")
         } catch {
             print("Error setting up audio session: \(error)")
+            // Try a simpler configuration as fallback
+            do {
+                let session = AVAudioSession.sharedInstance()
+                try session.setCategory(.playAndRecord, mode: .default, options: [])
+                try session.setActive(true)
+                print("Audio session configured with fallback settings")
+            } catch {
+                print("Failed to configure audio session even with fallback: \(error)")
+            }
         }
     }
     
@@ -130,32 +147,71 @@ class AudioRecordingManager: ObservableObject {
             throw AudioRecordingError.noInputNode
         }
         
-        // Configure recording format based on quality settings
+        // Get the input node's native format first
+        let nativeFormat = inputNode.inputFormat(forBus: 0)
+        print("Native input format: \(nativeFormat)")
+        
+        // Defensive: If format is invalid, skip audio setup in simulator
+        #if targetEnvironment(simulator)
+        if nativeFormat.sampleRate <= 0 || nativeFormat.channelCount <= 0 {
+            print("[Simulator] Invalid input format: sampleRate=\(nativeFormat.sampleRate), channels=\(nativeFormat.channelCount). Audio recording is disabled in simulator.")
+            return
+        }
+        let recordingFormat = nativeFormat
+        #else
+        // Configure recording format based on quality settings for real device
         let recordingFormat = AVAudioFormat(
             standardFormatWithSampleRate: qualitySettings.sampleRate,
             channels: AVAudioChannelCount(qualitySettings.channels)
         )
+        #endif
         
-        guard let format = recordingFormat else {
+       
+        
+        // Validate the format is supported
+        guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else {
+            print("Invalid format detected: sampleRate=\(recordingFormat.sampleRate), channels=\(recordingFormat.channelCount)")
             throw AudioRecordingError.invalidFormat
         }
+        
+        print("Using recording format: \(recordingFormat)")
+        
+        // Defensive: In simulator, skip file/tap if format is invalid
+        #if targetEnvironment(simulator)
+        if recordingFormat.sampleRate <= 0 || recordingFormat.channelCount <= 0 {
+            print("[Simulator] Skipping tap and file creation due to invalid format.")
+            return
+        }
+        #endif
         
         // Create audio file for recording
         let fileName = "recording_\(formattedTimestamp()).m4a"
         let audioFileURL = documentsDirectory.appendingPathComponent(fileName)
         
-        audioFile = try AVAudioFile(
-            forWriting: audioFileURL,
-            settings: format.settings,
-            commonFormat: .pcmFormatFloat32,
-            interleaved: false
-        )
+        do {
+            audioFile = try AVAudioFile(
+                forWriting: audioFileURL,
+                settings: recordingFormat.settings,
+                commonFormat: .pcmFormatFloat32,
+                interleaved: false
+            )
+        } catch {
+            print("Failed to create audio file with format: \(recordingFormat.settings)")
+            // Fallback to a simpler format
+            let fallbackFormat = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
+            audioFile = try AVAudioFile(
+                forWriting: audioFileURL,
+                settings: fallbackFormat.settings,
+                commonFormat: .pcmFormatFloat32,
+                interleaved: false
+            )
+        }
         
         currentAudioFileURL = audioFileURL
         
-        // Install tap on input node
+        // Install tap on input node with error handling
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
             self?.processAudioBuffer(buffer)
         }
         
@@ -163,7 +219,23 @@ class AudioRecordingManager: ObservableObject {
     }
     
     private func startAudioCapture() throws {
-        try audioEngine?.start()
+        #if targetEnvironment(simulator)
+        // In simulator, we might not be able to actually record audio
+        // but we can still set up the engine for testing purposes
+        print("Starting audio capture in simulator (may not record actual audio)")
+        #endif
+        
+        do {
+            try audioEngine?.start()
+        } catch {
+            print("Failed to start audio engine: \(error)")
+            #if targetEnvironment(simulator)
+            // In simulator, we'll continue anyway for testing
+            print("Continuing in simulator despite audio engine failure")
+            #else
+            throw error
+            #endif
+        }
     }
     
     private func stopAudioCapture() throws {

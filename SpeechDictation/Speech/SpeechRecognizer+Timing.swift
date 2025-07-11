@@ -20,7 +20,7 @@ extension SpeechRecognizer {
         
         // Start timing data session on main queue since TimingDataManager is @MainActor
         DispatchQueue.main.async {
-            let actualSessionId = TimingDataManager.shared.startSession(sessionId: sessionId)
+            _ = TimingDataManager.shared.startSession(sessionId: sessionId)
         }
         
         // If a monitoring engine is already running, stop and reset it before starting a
@@ -66,6 +66,14 @@ extension SpeechRecognizer {
         }
         
         let recordingFormat = inputNode.outputFormat(forBus: 0)
+        
+        // Validate the format is supported before installing tap
+        guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else {
+            print("Invalid recording format detected: sampleRate=\(recordingFormat.sampleRate), channels=\(recordingFormat.channelCount)")
+            print("Skipping audio tap installation due to invalid format")
+            return
+        }
+        
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, time in
             self.processAudioBuffer(buffer: buffer)
@@ -79,6 +87,13 @@ extension SpeechRecognizer {
             print("Audio engine started with timing data capture")
         } catch {
             print("Audio engine failed to start: \(error)")
+            #if targetEnvironment(simulator)
+            // In simulator, we'll continue anyway for testing even if audio engine fails
+            print("Continuing in simulator despite audio engine failure")
+            #else
+            // On real device, this is a critical error
+            print("Audio engine failure on real device")
+            #endif
         }
         
         adjustVolume()

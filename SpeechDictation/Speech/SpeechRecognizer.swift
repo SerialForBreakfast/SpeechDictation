@@ -70,7 +70,17 @@ class SpeechRecognizer: ObservableObject {
             }
         }
         
+        // Use the native format from the input node for better compatibility
         let recordingFormat = inputNode.outputFormat(forBus: 0)
+        print("Using native input format for transcription: \(recordingFormat)")
+        
+        #if targetEnvironment(simulator)
+        if recordingFormat.sampleRate <= 0 || recordingFormat.channelCount <= 0 {
+            print("[Simulator] Invalid input format for transcription: sampleRate=\(recordingFormat.sampleRate), channels=\(recordingFormat.channelCount). Skipping audio tap.")
+            return
+        }
+        #endif
+        
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, time in
             self.processAudioBuffer(buffer: buffer)
@@ -84,6 +94,9 @@ class SpeechRecognizer: ObservableObject {
             print("Audio engine started")
         } catch {
             print("Audio engine failed to start: \(error)")
+            #if targetEnvironment(simulator)
+            print("Audio engine failure in simulator is expected - continuing for testing")
+            #endif
         }
         
         adjustVolume()
@@ -198,7 +211,17 @@ class SpeechRecognizer: ObservableObject {
             return
         }
 
+        // Use the native format from the input node for better compatibility
         let format = inputNode.outputFormat(forBus: 0)
+        print("Using native input format for level monitoring: \(format)")
+        
+        #if targetEnvironment(simulator)
+        if format.sampleRate <= 0 || format.channelCount <= 0 {
+            print("[Simulator] Invalid input format for level monitoring: sampleRate=\(format.sampleRate), channels=\(format.channelCount). Skipping audio tap.")
+            return
+        }
+        #endif
+        
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
             self.processAudioBuffer(buffer: buffer)
@@ -211,6 +234,9 @@ class SpeechRecognizer: ObservableObject {
             print("Audio engine started (level monitoring)")
         } catch {
             print("Audio engine failed to start (level monitoring): \(error)")
+            #if targetEnvironment(simulator)
+            print("Audio engine failure in simulator is expected for level monitoring")
+            #endif
         }
 
         adjustVolume()
