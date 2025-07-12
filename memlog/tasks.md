@@ -1,7 +1,7 @@
-# SpeechDictation - Missing Features & Task List
+# SpeechDictation - Feature Tasks & Development Roadmap
 
 ## Current Status
-The app successfully performs real-time speech recognition with export/sharing functionality and intelligent autoscroll. Several key features are still missing for a complete user experience.
+The app successfully performs real-time speech recognition with export/sharing functionality, intelligent autoscroll, and comprehensive audio recording with timing data. The project is now expanding to include **live camera feed input with audio descriptions** for enhanced accessibility and content creation.
 
 ---
 
@@ -56,10 +56,11 @@ As a user, I want the transcript to automatically scroll with new content when I
 - [x] Animation system with proper timing and easing
 - [x] "Jump to Live" floating button with show/hide logic
 
----
-
 ### TASK-017: Audio Recording with Timing Data - COMPLETED ✓
-**Description:** Store audio recordings with precise transcription timing data for replay and export in various formats.
+**Status**: COMPLETED
+**Priority**: HIGH
+**Estimated Effort**: 8-12 hours
+**Actual Effort**: 8 hours
 
 **User Story:**
 As a user, I want my audio recordings to be stored with precise timing data so that I can replay the audio with synchronized transcriptions and export in professional formats like SRT for video editing.
@@ -92,11 +93,6 @@ As a user, I want my audio recordings to be stored with precise timing data so t
 - [x] Add simulator compatibility with fallback audio formats
 - [x] Implement proper error handling for audio hardware issues
 
-**Status**: COMPLETED ✓
-**Priority**: HIGH
-**Estimated Effort**: 8-12 hours
-**Actual Effort**: 8 hours
-
 **Completed Components:**
 - ✅ TimingData.swift - Data models for timing information
 - ✅ TimingDataManager.swift - Service for timing data management
@@ -108,49 +104,92 @@ As a user, I want my audio recordings to be stored with precise timing data so t
 - ✅ Simulator compatibility fixes - Added fallback audio formats and error handling
 - ✅ Xcode project integration - All files properly added to project targets
 
-**Key Features Implemented:**
-- High-quality audio recording with configurable quality settings
-- Precise timing data capture with millisecond precision
-- Multiple export formats (SRT, VTT, TTML, JSON)
-- Synchronized audio/text playback with seek functionality
-- Simulator compatibility with graceful fallbacks
-- Proper error handling and recovery mechanisms
+---
+
+### TASK-018: Live Camera Feed with Audio Descriptions - NEW PRIORITY
+**Status**: PLANNING
+**Priority**: HIGH
+**Estimated Effort**: 12-16 hours
+**Target Completion**: January 2025
+
+**User Story:**
+As a user, I want to capture live camera feed with real-time audio descriptions so that I can create accessible content and provide visual context for users with visual impairments.
+
+**Acceptance Criteria:**
+- [ ] Implement live camera feed capture using AVFoundation
+- [ ] Generate real-time audio descriptions of visual content
+- [ ] Integrate camera feed with existing speech recognition
+- [ ] Add accessibility features for users with visual impairments
+- [ ] Support both front and back camera selection
+- [ ] Implement camera permission handling and user guidance
+- [ ] Add camera quality settings (resolution, frame rate)
+- [ ] Create audio description generation for common visual elements
+- [ ] Support recording video with synchronized audio descriptions
+- [ ] Add camera focus and exposure controls
+- [ ] Implement camera flash and lighting controls
+- [ ] Add camera zoom functionality
+- [ ] Support camera filters and effects
+- [ ] Create camera preview with accessibility overlays
+- [ ] Implement camera session management and error handling
+
+**Technical Implementation:**
+- [ ] Create CameraManager service for camera feed capture
+- [ ] Implement AudioDescriptionGenerator for visual content analysis
+- [ ] Add VisualAccessibilityProcessor for accessibility features
+- [ ] Create CameraPreviewView for live camera display
+- [ ] Implement camera session configuration and management
+- [ ] Add camera permission handling and user guidance
+- [ ] Create audio description synthesis and playback
+- [ ] Implement camera controls (focus, exposure, zoom, flash)
+- [ ] Add camera quality settings and optimization
+- [ ] Create accessibility overlays and audio cues
+- [ ] Implement camera error handling and recovery
+- [ ] Add camera session persistence and state management
+
+**New Components Required:**
+- CameraManager.swift - Camera feed capture and management
+- AudioDescriptionGenerator.swift - Visual content analysis and description generation
+- VisualAccessibilityProcessor.swift - Accessibility features for visual content
+- CameraPreviewView.swift - Live camera display with accessibility overlays
+- CameraControlsView.swift - Camera controls (focus, exposure, zoom, flash)
+- CameraSettingsView.swift - Camera quality and accessibility settings
 
 ---
 
-### TASK-018: Video Input with Closed Captions
-**Description:** Support video recording with real-time closed caption generation and audio descriptors.
+### TASK-019: Enhanced Audio Descriptions & Accessibility
+**Status**: PLANNING
+**Priority**: HIGH
+**Estimated Effort**: 8-12 hours
+**Target Completion**: January 2025
 
 **User Story:**
-As a user, I want to record video with real-time closed captions and audio descriptors so that I can create accessible video content with professional captions.
+As a user with visual impairments, I want detailed and contextual audio descriptions of visual content so that I can fully understand and interact with the environment around me.
 
 **Acceptance Criteria:**
-- [ ] Record video with synchronized audio during transcription
-- [ ] Generate real-time closed captions during video recording
-- [ ] Add audio descriptors for accessibility (e.g., "[music playing]", "[applause]")
-- [ ] Embed closed captions directly in video file
-- [ ] Export video with burned-in captions
-- [ ] Export video with separate caption files (SRT, VTT, TTML)
-- [ ] Support multiple caption tracks (primary, secondary languages)
-- [ ] Implement caption styling and positioning options
-- [ ] Add caption timing adjustment tools
-- [ ] Support video playback with caption controls
-- [ ] Implement video quality settings (resolution, frame rate, bitrate)
-- [ ] Add video compression and storage optimization
-- [ ] Support video editing with caption preservation
-- [ ] Implement video export with various caption formats
+- [ ] Implement detailed audio descriptions for visual elements
+- [ ] Add contextual information (location, movement, relationships)
+- [ ] Support multiple description detail levels (basic, detailed, comprehensive)
+- [ ] Add audio cues for important visual events
+- [ ] Implement spatial audio descriptions for location awareness
+- [ ] Add voice customization for audio descriptions
+- [ ] Support multiple languages for audio descriptions
+- [ ] Create accessibility shortcuts and gestures
+- [ ] Add haptic feedback for visual events
+- [ ] Implement audio description timing and synchronization
+- [ ] Add audio description preferences and customization
+- [ ] Create accessibility training and onboarding
 
 **Technical Implementation:**
-- [ ] Create VideoRecordingManager service for video capture
-- [ ] Extend SpeechRecognizer for real-time caption generation
-- [ ] Implement CaptionManager for closed caption processing
-- [ ] Add AudioDescriptorManager for accessibility features
-- [ ] Create VideoExportManager for video processing and export
-- [ ] Implement AVFoundation video session configuration
-- [ ] Add video compression and encoding services
-- [ ] Create caption styling and positioning system
-- [ ] Implement video playback with caption synchronization
-- [ ] Add video editing capabilities with caption preservation
+- [ ] Enhance AudioDescriptionGenerator with detailed analysis
+- [ ] Implement contextual information extraction
+- [ ] Add spatial audio processing and positioning
+- [ ] Create voice synthesis customization
+- [ ] Implement accessibility gesture recognition
+- [ ] Add haptic feedback integration
+- [ ] Create accessibility settings and preferences
+- [ ] Implement audio description timing and sync
+- [ ] Add multi-language support for descriptions
+- [ ] Create accessibility onboarding flow
 
 ---
 
@@ -427,8 +466,9 @@ As a user, I want to see analytics about my transcription usage so that I can un
 **Critical (Week 1-2):**
 - ~~TASK-001: Export & Share Functionality~~ **COMPLETED**
 - ~~TASK-001A: Intelligent Autoscroll System~~ **COMPLETED**
-- TASK-017: Audio Recording with Timing Data
-- TASK-018: Video Input with Closed Captions
+- ~~TASK-017: Audio Recording with Timing Data~~ **COMPLETED**
+- **TASK-018: Live Camera Feed with Audio Descriptions** - NEW PRIORITY
+- **TASK-019: Enhanced Audio Descriptions & Accessibility** - NEW PRIORITY
 - TASK-002: Text Editing & Correction
 - TASK-011: Error Handling & Recovery
 
@@ -452,22 +492,46 @@ As a user, I want to see analytics about my transcription usage so that I can un
 ## Current Project Status
 
 ### Completed Features ✓
-- Real-time speech recognition
+- Real-time speech recognition with millisecond precision
 - Export and sharing functionality (TASK-001)
 - Intelligent autoscroll system (TASK-001A)
+- Audio recording with timing data (TASK-017)
+- High-quality audio recording with native format detection
+- Multiple export formats (SRT, VTT, TTML, JSON)
+- Synchronized audio/text playback with seek functionality
 - Basic audio waveform visualization
 - Settings panel with theme and font size options
 - Custom sharing interface to avoid unwanted extensions
+- Simulator compatibility with graceful fallbacks
 
 ### In Progress
-- TASK-017: Audio Recording with Timing Data - COMPLETED ✓
+- **TASK-018: Live Camera Feed with Audio Descriptions** - PLANNING PHASE
+- **TASK-019: Enhanced Audio Descriptions & Accessibility** - PLANNING PHASE
 
 ### Next Priority
-- TASK-018: Video Input with Closed Captions
 - TASK-002: Text Editing & Correction
 - TASK-011: Error Handling & Recovery
+- TASK-003: Recording Session Management
+
+---
+
+## Project Evolution: From Speech Dictation to Accessibility Platform
+
+The project has evolved from a simple speech dictation app to a comprehensive **accessibility and content creation platform** that combines:
+
+1. **Real-time Speech Recognition** - High-quality transcription with timing data
+2. **Live Camera Feed Processing** - Visual content capture and analysis
+3. **Audio Descriptions** - Accessibility features for users with visual impairments
+4. **Integrated Audio-Visual Processing** - Combined camera and audio functionality
+5. **Professional Export Capabilities** - Multiple formats for content creation workflows
+
+This expansion positions SpeechDictation as a powerful tool for:
+- **Content Creators** - Professional transcription and video editing workflows
+- **Accessibility Users** - Audio descriptions and visual content accessibility
+- **Educators** - Lecture capture with synchronized transcriptions
+- **Professionals** - Meeting recording with precise timing data
 
 ---
 
 *Last Updated: December 19, 2024*
-*Next Review: December 26, 2024* 
+*Next Review: January 2, 2025* 
