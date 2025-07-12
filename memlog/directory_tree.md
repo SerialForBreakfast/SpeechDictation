@@ -23,19 +23,27 @@ SpeechDictation-iOS/
 │   ├── Info.plist                 # App configuration and permissions
 │   ├── Preview Content/           # SwiftUI preview assets
 │   │   └── Preview Assets.xcassets/
+│   ├── Models/                    # Data models and types
+│   │   └── Theme.swift            # Theme configuration model
 │   ├── Services/                  # Business logic services
 │   │   ├── AlertManager.swift     # Share sheet and alert handling
 │   │   ├── CacheManager.swift     # File caching and storage
-│   │   └── DownloadManager.swift  # Remote file downloading
+│   │   ├── DownloadManager.swift  # Remote file downloading
+│   │   └── ExportManager.swift    # Export and sharing functionality
 │   ├── Speech/                    # Speech recognition core
 │   │   ├── SpeechRecognizer.swift              # Main recognizer class
 │   │   ├── SpeechRecognizer+Authorization.swift # Permission handling
 │   │   ├── SpeechRecognizer+config.swift       # Audio session setup
 │   │   └── SpeechRecognizer+Convert.swift      # Audio format conversion
 │   ├── UI/                        # User interface components
-│   │   ├── ContentView.swift      # Main app interface
+│   │   ├── ContentView.swift      # Main app interface with autoscroll
 │   │   ├── SettingsView.swift     # Settings panel
-│   │   └── WaveformView.swift     # Audio visualization
+│   │   ├── TextSizeSettingView.swift # Text size configuration
+│   │   ├── ThemeSettingView.swift # Theme selection interface
+│   │   ├── MicSensitivityView.swift # Microphone sensitivity controls
+│   │   ├── VUMeterView.swift      # Volume unit meter visualization
+│   │   ├── WaveformView.swift     # Audio waveform visualization
+│   │   └── NativeStyleShareView.swift # Custom sharing interface
 │   ├── SpeechDictationApp.swift   # App entry point
 │   └── SpeechRecognitionViewModel.swift # MVVM coordinator
 ├── SpeechDictation.xcodeproj/     # Main Xcode project
@@ -54,7 +62,7 @@ SpeechDictation-iOS/
 ### Core Architecture
 - **MVVM Pattern**: Clear separation between View (SwiftUI), ViewModel, and Model layers
 - **Extension-based Organization**: SpeechRecognizer functionality split into focused extensions
-- **Service Layer**: Dedicated services for caching, downloading, and alerts
+- **Service Layer**: Dedicated services for caching, downloading, alerts, and export functionality
 - **Protocol-ready**: Structure prepared for dependency injection and testability
 
 ### Technology Stack
@@ -79,7 +87,13 @@ SpeechDictation-iOS/
 - **No external dependencies**: Uses only Apple's native frameworks
 - **SPM Ready**: Prepared for Swift Package Manager integration if needed
 
+### Recent Additions
+- **Models Directory**: Added for data model organization
+- **ExportManager**: New service for export and sharing functionality
+- **NativeStyleShareView**: Custom sharing interface to replace system share sheet
+- **Enhanced UI Components**: Added specialized views for settings, VU meter, and microphone sensitivity
+
 ---
 
-*Last Updated: June 30, 2024*
-*Next Review: July 7, 2024* 
+*Last Updated: December 19, 2024*
+*Next Review: December 26, 2024* 
