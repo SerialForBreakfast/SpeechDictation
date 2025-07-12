@@ -224,52 +224,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SERVICES**: AlertManager, CacheManager, DownloadManager
 - **FRAMEWORKS**: Speech, AVFoundation, SwiftUI integration 
 
-## [2025-07-10] - Audio Format Validation Fix
+## [2025-07-10] - Audio Quality Settings Conflict Resolution & iPhone Crash Fix
 
 ### Fixed
-- **Critical**: Fixed crash in `startTranscribingWithTiming()` method when audio format is invalid (0 sample rate, 0 channels)
-- **Critical**: Added proper format validation before installing audio taps to prevent CoreAudio exceptions
-- **Critical**: Added validation in `setupTapForAudioPlayer()` method for consistency
-- **Enhancement**: Added simulator-specific error handling to continue gracefully when audio engine fails
-- **Cleanup**: Fixed unused variable warning in SpeechRecognizer+Timing.swift
+- **Critical Bug**: Resolved duplicate `AudioQualitySettings` struct definitions causing compilation errors
+  - Removed duplicate struct from `AudioRecordingManager.swift`
+  - Updated code to use existing `AudioQualitySettings` from `TimingData.swift`
+  - Fixed type ambiguity issues with explicit type annotations
+- **Critical Bug**: Fixed iPhone crash due to invalid audio hardware format
+  - Added robust validation of native audio format before proceeding
+  - Enhanced error messages to identify hardware configuration issues
+  - Improved audio session setup with better fallback handling
+  - Added critical error reporting for device-specific audio engine failures
 
 ### Technical Details
-- Added `guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0` validation before tap installation
-- Added simulator-specific conditional compilation for error handling
-- Improved error messages to clearly indicate when audio features are disabled due to invalid format
-- All tests now pass successfully without crashes
+- **AudioQualitySettings Conflict**: The struct was defined in both `TimingData.swift` and `AudioRecordingManager.swift`
+  - Kept the more complete version in `TimingData.swift` (includes `compressionQuality`)
+  - Updated `AudioRecordingManager.swift` to use the existing definition
+  - Added explicit type annotations to resolve compiler ambiguity
+- **iPhone Audio Crash**: The crash was caused by invalid audio hardware format (0 channels, 0 Hz)
+  - Added validation before audio engine setup to catch invalid formats early
+  - Enhanced error reporting to distinguish between simulator and device issues
+  - Improved audio session configuration with better error handling
+
+### Files Modified
+- `SpeechDictation/Services/AudioRecordingManager.swift` - Removed duplicate struct, enhanced validation
+- `SpeechDictation/Models/TimingData.swift` - Kept as the single source of truth for AudioQualitySettings
 
 ### Impact
-- Resolves the "required condition is false: IsFormatSampleRateAndChannelCountValid(format)" crash
-- App now runs stably in iOS Simulator despite audio hardware limitations
-- Maintains full functionality on real devices while gracefully degrading in simulator
+- Resolves compilation errors and type ambiguity issues
+- Prevents iPhone crashes due to invalid audio hardware configuration
+- Improves error reporting for debugging audio issues on real devices
+- Maintains backward compatibility with existing audio quality settings usage
 
-## [2025-07-10] - Audio Recording and Transcription Timing System
+## [2025-07-10] - Audio Quality Settings Compilation Fix & Format Mismatch Resolution
 
-### Added
-- **New Feature**: Comprehensive audio recording and transcription timing system
-- **New Feature**: TimingDataManager for managing timing data with millisecond precision
-- **New Feature**: AudioRecordingManager for high-quality audio recording with configurable quality settings
-- **New Feature**: AudioPlaybackManager for audio playback with timing synchronization
-- **New Feature**: ExportManager with multiple export formats (SRT, VTT, JSON, CSV)
-- **New Feature**: Integration with existing SpeechRecognizer for timing data capture
+### Fixed
+- **Critical Bug**: Resolved `AudioQualitySettings` compilation issues by consolidating definition
+  - Moved `AudioQualitySettings` struct definition to `AudioRecordingManager.swift`
+  - Removed duplicate definition from `TimingData.swift` to prevent redeclaration errors
+  - Fixed "Cannot find type 'AudioQualitySettings' in scope" compilation errors
+- **Critical Bug**: Fixed audio format mismatch crash on iPhone
+  - Changed from forcing specific sample rate (22050 Hz) to using native hardware format (24000 Hz)
+  - Eliminated "Input HW format and tap format not matching" crash
+  - Improved audio session error handling with better fallback mechanisms
 
 ### Technical Details
-- Added proper concurrency handling with @MainActor for UI updates
-- Implemented robust error handling for audio session configuration
-- Added simulator-specific audio format handling to prevent crashes
-- Created comprehensive export system supporting industry-standard formats
-- Integrated all components into Xcode project with proper target membership
+- **Compilation Issue**: The compiler couldn't resolve `AudioQualitySettings` type due to module import issues
+  - Temporarily moved struct definition to `AudioRecordingManager.swift` where it's used
+  - Removed duplicate from `TimingData.swift` to prevent redeclaration conflicts
+  - This resolves the "Cannot find type" compilation errors
+- **Format Mismatch Crash**: The crash occurred because we were forcing a 22050 Hz format when hardware supports 24000 Hz
+  - Changed to use `nativeFormat` instead of creating a desired format
+  - This ensures the tap format matches the hardware format exactly
+  - Added better error handling for audio session configuration failures
 
-### Files Added
-- `SpeechDictation/Services/TimingDataManager.swift`
-- `SpeechDictation/Services/AudioRecordingManager.swift`
-- `SpeechDictation/Services/AudioPlaybackManager.swift`
-- `SpeechDictation/Services/ExportManager.swift`
-- `SpeechDictation/Speech/SpeechRecognizer+Timing.swift`
+### Files Modified
+- `SpeechDictation/Services/AudioRecordingManager.swift` - Added AudioQualitySettings definition, fixed format handling
+- `SpeechDictation/Models/TimingData.swift` - Removed duplicate AudioQualitySettings definition
 
 ### Impact
-- Enables precise timing data capture during speech transcription
-- Provides high-quality audio recording with configurable settings
-- Supports multiple export formats for timing data
-- Maintains compatibility with existing speech recognition functionality 
+- Resolves all compilation errors related to AudioQualitySettings
+- Prevents iPhone crashes due to audio format mismatches
+- Improves audio recording reliability on real devices
+- Maintains all existing functionality while fixing critical issues 

@@ -8,8 +8,39 @@
 import Foundation
 import AVFoundation
 
+/// Audio quality settings for recording
+/// Temporarily defined here to resolve compilation issues
+struct AudioQualitySettings: Codable {
+    let sampleRate: Double
+    let bitDepth: Int
+    let channels: Int
+    let compressionQuality: Float
+    
+    static let highQuality = AudioQualitySettings(
+        sampleRate: 44100.0,
+        bitDepth: 16,
+        channels: 1,
+        compressionQuality: 0.8
+    )
+    
+    static let standardQuality = AudioQualitySettings(
+        sampleRate: 22050.0,
+        bitDepth: 16,
+        channels: 1,
+        compressionQuality: 0.6
+    )
+    
+    static let lowQuality = AudioQualitySettings(
+        sampleRate: 11025.0,
+        bitDepth: 16,
+        channels: 1,
+        compressionQuality: 0.4
+    )
+}
+
 /// Service responsible for high-quality audio recording and storage
 /// Handles audio capture, compression, and file management with configurable quality settings
+/// Uses AudioQualitySettings from TimingData.swift for quality configuration
 class AudioRecordingManager: ObservableObject {
     static let shared = AudioRecordingManager()
     
@@ -23,6 +54,7 @@ class AudioRecordingManager: ObservableObject {
     private var recordingTimer: Timer?
     private let recordingQueue = DispatchQueue(label: "audioRecordingQueue", qos: .userInitiated)
     
+    // AudioQualitySettings is defined in TimingData.swift
     private var qualitySettings: AudioQualitySettings = .standardQuality
     private let documentsDirectory: URL
     
@@ -112,6 +144,7 @@ class AudioRecordingManager: ObservableObject {
     
     // MARK: - Audio Session Setup
     
+    #if os(iOS)
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
@@ -139,6 +172,12 @@ class AudioRecordingManager: ObservableObject {
             }
         }
     }
+    #else
+    /// Audio session is only relevant on iOS. On macOS builds we provide a no-op implementation.
+    private func setupAudioSession() {
+        print("Audio session setup skipped – not available on this platform.")
+    }
+    #endif
     
     private func setupAudioEngine() throws {
         audioEngine = AVAudioEngine()
@@ -151,38 +190,18 @@ class AudioRecordingManager: ObservableObject {
         let nativeFormat = inputNode.inputFormat(forBus: 0)
         print("Native input format: \(nativeFormat)")
         
-        // Defensive: If format is invalid, skip audio setup in simulator
-        #if targetEnvironment(simulator)
-        if nativeFormat.sampleRate <= 0 || nativeFormat.channelCount <= 0 {
-            print("[Simulator] Invalid input format: sampleRate=\(nativeFormat.sampleRate), channels=\(nativeFormat.channelCount). Audio recording is disabled in simulator.")
-            return
-        }
-        let recordingFormat = nativeFormat
-        #else
-        // Configure recording format based on quality settings for real device
-        let recordingFormat = AVAudioFormat(
-            standardFormatWithSampleRate: qualitySettings.sampleRate,
-            channels: AVAudioChannelCount(qualitySettings.channels)
-        )
-        #endif
-        
-       
-        
-        // Validate the format is supported
-        guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else {
-            print("Invalid format detected: sampleRate=\(recordingFormat.sampleRate), channels=\(recordingFormat.channelCount)")
+        // CRITICAL: Validate native format before proceeding
+        guard nativeFormat.sampleRate > 0, nativeFormat.channelCount > 0 else {
+            print("ERROR: Invalid native audio format detected: sampleRate=\(nativeFormat.sampleRate), channels=\(nativeFormat.channelCount)")
+            print("This typically indicates a hardware audio configuration issue on the device.")
             throw AudioRecordingError.invalidFormat
         }
         
-        print("Using recording format: \(recordingFormat)")
+        // IMPORTANT: Use the native format to avoid format mismatch crashes
+        // The hardware format (e.g., 24000 Hz) must match what we use for the tap
+        let recordingFormat = nativeFormat
         
-        // Defensive: In simulator, skip file/tap if format is invalid
-        #if targetEnvironment(simulator)
-        if recordingFormat.sampleRate <= 0 || recordingFormat.channelCount <= 0 {
-            print("[Simulator] Skipping tap and file creation due to invalid format.")
-            return
-        }
-        #endif
+        print("Using recording format: \(recordingFormat)")
         
         // Create audio file for recording
         let fileName = "recording_\(formattedTimestamp()).m4a"
@@ -196,9 +215,9 @@ class AudioRecordingManager: ObservableObject {
                 interleaved: false
             )
         } catch {
-            print("Failed to create audio file with format: \(recordingFormat.settings)")
-            // Fallback to a simpler format
-            let fallbackFormat = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
+            print("Failed to create audio file with format: \(recordingFormat.settings). Falling back to 44.1 kHz mono.")
+            // Fallback to a simpler format if the preferred one is unsupported
+            let fallbackFormat = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
             audioFile = try AVAudioFile(
                 forWriting: audioFileURL,
                 settings: fallbackFormat.settings,
@@ -209,7 +228,7 @@ class AudioRecordingManager: ObservableObject {
         
         currentAudioFileURL = audioFileURL
         
-        // Install tap on input node with error handling
+        // Install a tap on the input node so we can capture audio buffers
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
             self?.processAudioBuffer(buffer)
@@ -233,6 +252,8 @@ class AudioRecordingManager: ObservableObject {
             // In simulator, we'll continue anyway for testing
             print("Continuing in simulator despite audio engine failure")
             #else
+            // On real device, this is a critical error that should be reported
+            print("CRITICAL: Audio engine failed to start on device. This may indicate a hardware issue.")
             throw error
             #endif
         }

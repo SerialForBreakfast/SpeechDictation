@@ -43,7 +43,7 @@ struct TranscriptionSegment: Codable, Identifiable {
         let milliseconds = Int((timeInterval.truncatingRemainder(dividingBy: 1)) * 1000)
         
         if hours > 0 {
-            return String(format: "%02d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds)
+            return String(format: "%02d:%02d:%03d", hours, minutes, seconds, milliseconds)
         } else {
             return String(format: "%02d:%02d.%03d", minutes, seconds, milliseconds)
         }
@@ -92,35 +92,6 @@ struct AudioRecordingSession: Codable, Identifiable {
             return String(format: "%02d:%02d", minutes, seconds)
         }
     }
-}
-
-/// Audio quality settings for recording
-struct AudioQualitySettings: Codable {
-    let sampleRate: Double
-    let bitDepth: Int
-    let channels: Int
-    let compressionQuality: Float
-    
-    static let highQuality = AudioQualitySettings(
-        sampleRate: 44100.0,
-        bitDepth: 16,
-        channels: 1,
-        compressionQuality: 0.8
-    )
-    
-    static let standardQuality = AudioQualitySettings(
-        sampleRate: 22050.0,
-        bitDepth: 16,
-        channels: 1,
-        compressionQuality: 0.6
-    )
-    
-    static let lowQuality = AudioQualitySettings(
-        sampleRate: 11025.0,
-        bitDepth: 16,
-        channels: 1,
-        compressionQuality: 0.4
-    )
 }
 
 /// Playback state for synchronized audio/text playback
