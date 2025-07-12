@@ -58,63 +58,53 @@ As a user, I want the transcript to automatically scroll with new content when I
 
 ---
 
-### TASK-017: Audio Recording with Timing Data - COMPLETED ✓
-**Description:** Store audio recordings with precise transcription timing data for replay and export in various formats.
+### TASK-017: Audio Recording with Timing Data
+- **Status:** Not Started
+- **Priority:** Critical (Week 1-2)
+- **Estimated Effort:** TBD
 
 **User Story:**
-As a user, I want my audio recordings to be stored with precise timing data so that I can replay the audio with synchronized transcriptions and export in professional formats like SRT for video editing.
+_As a user, I want my audio recordings stored with precise timing data, so I can replay audio with synced transcripts and export it in formats like SRT for professional use._
 
-**Acceptance Criteria:**
-- [x] Record and store high-quality audio during transcription
-- [x] Capture precise timing data for each transcribed segment
-- [x] Store timing metadata with millisecond precision
-- [x] Implement audio playback with synchronized text highlighting
-- [x] Export timing data in SRT (SubRip) format
-- [x] Export timing data in VTT (WebVTT) format
-- [x] Export timing data in TTML (Timed Text Markup Language) format
-- [x] Support audio-only export with embedded timing metadata
-- [x] Implement seek-to-text functionality (tap text to jump to audio position)
-- [x] Add playback speed controls (0.5x, 1x, 1.5x, 2x)
-- [x] Display current audio position and total duration
-- [x] Support audio waveform with playback position indicator
-- [x] Implement audio compression and storage optimization
-- [x] Add audio quality settings (sample rate, bit depth, compression)
+---
 
-**Technical Implementation:**
-- [x] Extend SpeechRecognizer to capture timing data for each recognition result
-- [x] Create AudioRecordingManager service for audio capture and storage
-- [x] Implement TimingDataManager for storing and managing timing metadata
-- [x] Add SRT/VTT/TTML export functionality to ExportManager
-- [x] Create AudioPlaybackManager for synchronized audio/text playback
-- [x] Implement audio buffer management for efficient storage
-- [x] Add audio session configuration for high-quality recording
-- [x] Create timing data models and persistence layer
-- [x] Add simulator compatibility with fallback audio formats
-- [x] Implement proper error handling for audio hardware issues
+**Subtasks Breakdown:**
 
-**Status**: COMPLETED ✓
-**Priority**: HIGH
-**Estimated Effort**: 8-12 hours
-**Actual Effort**: 8 hours
+#### ✅ UI Layer
+- [ ] Playback controls: Play, Pause, Stop
+- [ ] Speed adjustment (0.5x, 1x, 1.5x, 2x)
+- [ ] Seek-to-text functionality (tap to jump)
+- [ ] Real-time waveform display with current position
+- [ ] Display duration and timestamp overlay
 
-**Completed Components:**
-- ✅ TimingData.swift - Data models for timing information
-- ✅ TimingDataManager.swift - Service for timing data management
-- ✅ AudioRecordingManager.swift - High-quality audio recording service
-- ✅ AudioPlaybackManager.swift - Synchronized audio/text playback
-- ✅ SpeechRecognizer+Timing.swift - Extension for timing data capture
-- ✅ ExportManager.swift - Extended with timing export formats
-- ✅ SpeechRecognitionViewModel.swift - Updated with timing integration
-- ✅ Simulator compatibility fixes - Added fallback audio formats and error handling
-- ✅ Xcode project integration - All files properly added to project targets
+#### ✅ Logic / Services
+- [ ] `AudioRecordingManager`
+  - Capture audio with high-quality config (sample rate, bit depth)
+  - Implement efficient storage and compression
+- [ ] `TimingDataManager`
+  - Persist millisecond-level timing metadata
+  - Conform to `Sendable` and isolate state via `actor`
+- [ ] `ExportManager`
+  - Add support for `.srt`, `.vtt`, `.ttml` formats
+  - Use `TimingDataManager` output as input for export
+- [ ] `AudioPlaybackManager`
+  - Load, buffer, and sync audio with transcript
+  - Manage seek logic and handle playback speed
 
-**Key Features Implemented:**
-- High-quality audio recording with configurable quality settings
-- Precise timing data capture with millisecond precision
-- Multiple export formats (SRT, VTT, TTML, JSON)
-- Synchronized audio/text playback with seek functionality
-- Simulator compatibility with graceful fallbacks
-- Proper error handling and recovery mechanisms
+#### 🔁 Integration Points
+- [ ] Extend `SpeechRecognizer`:
+  - Capture timestamps from `SpeechRecognitionResult`
+  - Hand off segment/timing data to `TimingDataManager`
+- [ ] Synchronize playback UI with `AudioPlaybackManager`
+- [ ] Ensure `ExportManager` pulls unified data from all services
+
+#### 🧵 Concurrency Requirements
+- All mutable state (timing, audio) managed within `actors`
+- Export tasks and audio file writing must use `async let` or `Task.detached`
+- Avoid blocking operations; schedule disk I/O on background threads
+- Closure and manager interfaces must be `@Sendable`
+
+---
 
 ---
 
@@ -460,9 +450,10 @@ As a user, I want to see analytics about my transcription usage so that I can un
 - Custom sharing interface to avoid unwanted extensions
 
 ### In Progress
-- TASK-017: Audio Recording with Timing Data - COMPLETED ✓
+- None currently
 
 ### Next Priority
+- TASK-017: Audio Recording with Timing Data
 - TASK-018: Video Input with Closed Captions
 - TASK-002: Text Editing & Correction
 - TASK-011: Error Handling & Recovery
