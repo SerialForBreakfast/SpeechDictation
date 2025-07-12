@@ -3,11 +3,51 @@
 ## Current Status
 The app successfully performs real-time speech recognition with export/sharing functionality, intelligent autoscroll, and comprehensive audio recording with timing data. The project is now expanding to include **live camera feed input with audio descriptions** for enhanced accessibility and content creation.
 
+**NEW: Build & Test Automation System** - Comprehensive utility scripts for iterative development and validation.
+
 ---
 
 ## High Priority Tasks
 
-### TASK-001: Export & Share Functionality - COMPLETED ✓
+### TASK-020: Build & Test Automation System - COMPLETED
+**Status**: COMPLETED
+**Priority**: HIGH
+**Estimated Effort**: 4-6 hours
+**Actual Effort**: 3 hours
+
+**User Story:** 
+As a developer, I want automated build and test validation with comprehensive reporting so I can iterate quickly and ensure code quality.
+
+**Acceptance Criteria:**
+- Comprehensive build and test automation script (`build_and_test.sh`)
+- Quick iteration script for rapid development cycles (`quick_iterate.sh`)
+- Timestamped reports with detailed success/failure analysis
+- Performance metrics tracking (build time, test counts, project size)
+- Error handling with debugging information
+- Support for both simulator and device testing
+- Integration with development workflow
+
+**Implementation:**
+- **`utility/build_and_test.sh`** - Full validation with detailed reporting
+- **`utility/quick_iterate.sh`** - Fast iteration for development cycles
+- **`utility/README.md`** - Comprehensive documentation and usage guide
+- **Report Structure** - `build/reports/` with timestamped logs
+- **Error Handling** - Graceful failure with system information capture
+- **Performance Metrics** - Build time, test counts, disk space monitoring
+
+**Usage:**
+```bash
+# Quick development iteration
+./utility/quick_iterate.sh
+
+# Full validation before commits
+./utility/build_and_test.sh --clean
+
+# Production validation
+./utility/build_and_test.sh --device --verbose
+```
+
+### TASK-001: Export & Share Functionality - COMPLETED
 **Status**: COMPLETED
 **Priority**: HIGH
 **Estimated Effort**: 8-12 hours
@@ -17,22 +57,20 @@ The app successfully performs real-time speech recognition with export/sharing f
 As a user, I want to export and share my transcribed text in multiple formats so I can use the content in other applications and workflows.
 
 **Acceptance Criteria:**
-- [x] Custom sharing interface to avoid unwanted third-party options (Amazon, etc.)
-- [x] Copy to clipboard functionality
-- [x] Save to Files app integration
-- [x] Multiple export formats: Plain text (.txt), Rich text (.rtf), Markdown (.md)
-- [x] Email and Messages app integration
-- [x] Professional, organized sharing UI with clear action descriptions
-- [x] Error handling and user feedback
+- Export to plain text, rich text, and markdown formats
+- Share via native iOS share sheet
+- Copy to clipboard functionality
+- Support for timing data export (SRT, VTT, TTML, JSON)
+- Audio + timing data export for professional workflows
+- User-friendly format selection interface
 
-**Technical Implementation:**
-- [x] NativeStyleShareView.swift - SwiftUI-based sharing interface
-- [x] Integration with existing ExportManager service
-- [x] FileDocument protocol for native file export
-- [x] Environment-based URL opening for system app integration
-- [x] Project file updated with proper target membership
+**Implementation:**
+- **ExportManager.swift** - Comprehensive export functionality
+- **NativeStyleShareView.swift** - Enhanced UI with format selection
+- **Multiple Export Formats** - Text, timing, and audio+timing
+- **Professional Workflows** - SRT, VTT, TTML, JSON support
 
-### TASK-001A: Intelligent Autoscroll System - COMPLETED ✓
+### TASK-001A: Intelligent Autoscroll System - COMPLETED
 **Status**: COMPLETED
 **Priority**: HIGH (User Request)
 **Estimated Effort**: 6-8 hours
@@ -42,21 +80,21 @@ As a user, I want to export and share my transcribed text in multiple formats so
 As a user, I want the transcript to automatically scroll with new content when I'm viewing the latest text, but stop scrolling when I scroll up to read previous content, with an easy way to jump back to the live transcript.
 
 **Acceptance Criteria:**
-- [x] Auto-scroll when user is at bottom and new text arrives
-- [x] Stop auto-scroll when user manually scrolls up
-- [x] "Jump to Live" button appears when user scrolls away from bottom
-- [x] Resume auto-scroll when user returns to bottom
-- [x] Smooth animations for scroll movements and button transitions
-- [x] Proper user interaction detection
+- Auto-scroll when user is at bottom and new text arrives
+- Stop auto-scroll when user manually scrolls up
+- "Jump to Live" button appears when user scrolls away from bottom
+- Resume auto-scroll when user returns to bottom
+- Smooth animations for scroll movements and button transitions
+- Proper user interaction detection
 
 **Technical Implementation:**
-- [x] ScrollViewReader integration for precise scroll control
-- [x] Gesture recognition for user scroll detection
-- [x] State management for scroll position and user behavior
-- [x] Animation system with proper timing and easing
-- [x] "Jump to Live" floating button with show/hide logic
+- ScrollViewReader integration for precise scroll control
+- Gesture recognition for user scroll detection
+- State management for scroll position and user behavior
+- Animation system with proper timing and easing
+- "Jump to Live" floating button with show/hide logic
 
-### TASK-017: Audio Recording with Timing Data - COMPLETED ✓
+### TASK-017: Audio Recording with Timing Data - COMPLETED
 **Status**: COMPLETED
 **Priority**: HIGH
 **Estimated Effort**: 8-12 hours
@@ -66,43 +104,43 @@ As a user, I want the transcript to automatically scroll with new content when I
 As a user, I want my audio recordings to be stored with precise timing data so that I can replay the audio with synchronized transcriptions and export in professional formats like SRT for video editing.
 
 **Acceptance Criteria:**
-- [x] Record and store high-quality audio during transcription
-- [x] Capture precise timing data for each transcribed segment
-- [x] Store timing metadata with millisecond precision
-- [x] Implement audio playback with synchronized text highlighting
-- [x] Export timing data in SRT (SubRip) format
-- [x] Export timing data in VTT (WebVTT) format
-- [x] Export timing data in TTML (Timed Text Markup Language) format
-- [x] Support audio-only export with embedded timing metadata
-- [x] Implement seek-to-text functionality (tap text to jump to audio position)
-- [x] Add playback speed controls (0.5x, 1x, 1.5x, 2x)
-- [x] Display current audio position and total duration
-- [x] Support audio waveform with playback position indicator
-- [x] Implement audio compression and storage optimization
-- [x] Add audio quality settings (sample rate, bit depth, compression)
+- Record and store high-quality audio during transcription
+- Capture precise timing data for each transcribed segment
+- Store timing metadata with millisecond precision
+- Implement audio playback with synchronized text highlighting
+- Export timing data in SRT (SubRip) format
+- Export timing data in VTT (WebVTT) format
+- Export timing data in TTML (Timed Text Markup Language) format
+- Support audio-only export with embedded timing metadata
+- Implement seek-to-text functionality (tap text to jump to audio position)
+- Add playback speed controls (0.5x, 1x, 1.5x, 2x)
+- Display current audio position and total duration
+- Support audio waveform with playback position indicator
+- Implement audio compression and storage optimization
+- Add audio quality settings (sample rate, bit depth, compression)
 
 **Technical Implementation:**
-- [x] Extend SpeechRecognizer to capture timing data for each recognition result
-- [x] Create AudioRecordingManager service for audio capture and storage
-- [x] Implement TimingDataManager for storing and managing timing metadata
-- [x] Add SRT/VTT/TTML export functionality to ExportManager
-- [x] Create AudioPlaybackManager for synchronized audio/text playback
-- [x] Implement audio buffer management for efficient storage
-- [x] Add audio session configuration for high-quality recording
-- [x] Create timing data models and persistence layer
-- [x] Add simulator compatibility with fallback audio formats
-- [x] Implement proper error handling for audio hardware issues
+- Extend SpeechRecognizer to capture timing data for each recognition result
+- Create AudioRecordingManager service for audio capture and storage
+- Implement TimingDataManager for storing and managing timing metadata
+- Add SRT/VTT/TTML export functionality to ExportManager
+- Create AudioPlaybackManager for synchronized audio/text playback
+- Implement audio buffer management for efficient storage
+- Add audio session configuration for high-quality recording
+- Create timing data models and persistence layer
+- Add simulator compatibility with fallback audio formats
+- Implement proper error handling for audio hardware issues
 
 **Completed Components:**
-- ✅ TimingData.swift - Data models for timing information
-- ✅ TimingDataManager.swift - Service for timing data management
-- ✅ AudioRecordingManager.swift - High-quality audio recording service
-- ✅ AudioPlaybackManager.swift - Synchronized audio/text playback
-- ✅ SpeechRecognizer+Timing.swift - Extension for timing data capture
-- ✅ ExportManager.swift - Extended with timing export formats
-- ✅ SpeechRecognitionViewModel.swift - Updated with timing integration
-- ✅ Simulator compatibility fixes - Added fallback audio formats and error handling
-- ✅ Xcode project integration - All files properly added to project targets
+- TimingData.swift - Data models for timing information
+- TimingDataManager.swift - Service for timing data management
+- AudioRecordingManager.swift - High-quality audio recording service
+- AudioPlaybackManager.swift - Synchronized audio/text playback
+- SpeechRecognizer+Timing.swift - Extension for timing data capture
+- ExportManager.swift - Extended with timing export formats
+- SpeechRecognitionViewModel.swift - Updated with timing integration
+- Simulator compatibility fixes - Added fallback audio formats and error handling
+- Xcode project integration - All files properly added to project targets
 
 ---
 
@@ -116,35 +154,35 @@ As a user, I want my audio recordings to be stored with precise timing data so t
 As a user, I want to capture live camera feed with real-time audio descriptions so that I can create accessible content and provide visual context for users with visual impairments.
 
 **Acceptance Criteria:**
-- [ ] Implement live camera feed capture using AVFoundation
-- [ ] Generate real-time audio descriptions of visual content
-- [ ] Integrate camera feed with existing speech recognition
-- [ ] Add accessibility features for users with visual impairments
-- [ ] Support both front and back camera selection
-- [ ] Implement camera permission handling and user guidance
-- [ ] Add camera quality settings (resolution, frame rate)
-- [ ] Create audio description generation for common visual elements
-- [ ] Support recording video with synchronized audio descriptions
-- [ ] Add camera focus and exposure controls
-- [ ] Implement camera flash and lighting controls
-- [ ] Add camera zoom functionality
-- [ ] Support camera filters and effects
-- [ ] Create camera preview with accessibility overlays
-- [ ] Implement camera session management and error handling
+- Implement live camera feed capture using AVFoundation
+- Generate real-time audio descriptions of visual content
+- Integrate camera feed with existing speech recognition
+- Add accessibility features for users with visual impairments
+- Support both front and back camera selection
+- Implement camera permission handling and user guidance
+- Add camera quality settings (resolution, frame rate)
+- Create audio description generation for common visual elements
+- Support recording video with synchronized audio descriptions
+- Add camera focus and exposure controls
+- Implement camera flash and lighting controls
+- Add camera zoom functionality
+- Support camera filters and effects
+- Create camera preview with accessibility overlays
+- Implement camera session management and error handling
 
 **Technical Implementation:**
-- [ ] Create CameraManager service for camera feed capture
-- [ ] Implement AudioDescriptionGenerator for visual content analysis
-- [ ] Add VisualAccessibilityProcessor for accessibility features
-- [ ] Create CameraPreviewView for live camera display
-- [ ] Implement camera session configuration and management
-- [ ] Add camera permission handling and user guidance
-- [ ] Create audio description synthesis and playback
-- [ ] Implement camera controls (focus, exposure, zoom, flash)
-- [ ] Add camera quality settings and optimization
-- [ ] Create accessibility overlays and audio cues
-- [ ] Implement camera error handling and recovery
-- [ ] Add camera session persistence and state management
+- Create CameraManager service for camera feed capture
+- Implement AudioDescriptionGenerator for visual content analysis
+- Add VisualAccessibilityProcessor for accessibility features
+- Create CameraPreviewView for live camera display
+- Implement camera session configuration and management
+- Add camera permission handling and user guidance
+- Create audio description synthesis and playback
+- Implement camera controls (focus, exposure, zoom, flash)
+- Add camera quality settings and optimization
+- Create accessibility overlays and audio cues
+- Implement camera error handling and recovery
+- Add camera session persistence and state management
 
 **New Components Required:**
 - CameraManager.swift - Camera feed capture and management
@@ -166,30 +204,30 @@ As a user, I want to capture live camera feed with real-time audio descriptions 
 As a user with visual impairments, I want detailed and contextual audio descriptions of visual content so that I can fully understand and interact with the environment around me.
 
 **Acceptance Criteria:**
-- [ ] Implement detailed audio descriptions for visual elements
-- [ ] Add contextual information (location, movement, relationships)
-- [ ] Support multiple description detail levels (basic, detailed, comprehensive)
-- [ ] Add audio cues for important visual events
-- [ ] Implement spatial audio descriptions for location awareness
-- [ ] Add voice customization for audio descriptions
-- [ ] Support multiple languages for audio descriptions
-- [ ] Create accessibility shortcuts and gestures
-- [ ] Add haptic feedback for visual events
-- [ ] Implement audio description timing and synchronization
-- [ ] Add audio description preferences and customization
-- [ ] Create accessibility training and onboarding
+- Implement detailed audio descriptions for visual elements
+- Add contextual information (location, movement, relationships)
+- Support multiple description detail levels (basic, detailed, comprehensive)
+- Add audio cues for important visual events
+- Implement spatial audio descriptions for location awareness
+- Add voice customization for audio descriptions
+- Support multiple languages for audio descriptions
+- Create accessibility shortcuts and gestures
+- Add haptic feedback for visual events
+- Implement audio description timing and synchronization
+- Add audio description preferences and customization
+- Create accessibility training and onboarding
 
 **Technical Implementation:**
-- [ ] Enhance AudioDescriptionGenerator with detailed analysis
-- [ ] Implement contextual information extraction
-- [ ] Add spatial audio processing and positioning
-- [ ] Create voice synthesis customization
-- [ ] Implement accessibility gesture recognition
-- [ ] Add haptic feedback integration
-- [ ] Create accessibility settings and preferences
-- [ ] Implement audio description timing and sync
-- [ ] Add multi-language support for descriptions
-- [ ] Create accessibility onboarding flow
+- Enhance AudioDescriptionGenerator with detailed analysis
+- Implement contextual information extraction
+- Add spatial audio processing and positioning
+- Create voice synthesis customization
+- Implement accessibility gesture recognition
+- Add haptic feedback integration
+- Create accessibility settings and preferences
+- Implement audio description timing and sync
+- Add multi-language support for descriptions
+- Create accessibility onboarding flow
 
 ---
 
@@ -200,13 +238,13 @@ As a user with visual impairments, I want detailed and contextual audio descript
 As a user, I want to edit the transcribed text to correct any speech recognition errors so that my final document is accurate.
 
 **Acceptance Criteria:**
-- [ ] Make transcription text view editable
-- [ ] Add text selection capabilities
-- [ ] Implement undo/redo functionality
-- [ ] Add search and replace functionality
-- [ ] Support text formatting options (bold, italic, etc.)
-- [ ] Preserve editing state during app backgrounding
-- [ ] Auto-save edited content
+- Make transcription text view editable
+- Add text selection capabilities
+- Implement undo/redo functionality
+- Add search and replace functionality
+- Support text formatting options (bold, italic, etc.)
+- Preserve editing state during app backgrounding
+- Auto-save edited content
 
 ---
 
@@ -217,13 +255,13 @@ As a user, I want to edit the transcribed text to correct any speech recognition
 As a user, I want to pause and resume my recording session so that I can take breaks without losing my progress or starting over.
 
 **Acceptance Criteria:**
-- [ ] Add pause/resume functionality to recording
-- [ ] Maintain transcription state during pause
-- [ ] Display recording duration timer
-- [ ] Show visual recording state indicators
-- [ ] Support multiple named recording sessions
-- [ ] Auto-save session progress
-- [ ] Recover sessions after app crash/restart
+- Add pause/resume functionality to recording
+- Maintain transcription state during pause
+- Display recording duration timer
+- Show visual recording state indicators
+- Support multiple named recording sessions
+- Auto-save session progress
+- Recover sessions after app crash/restart
 
 ---
 
@@ -234,13 +272,13 @@ As a user, I want to pause and resume my recording session so that I can take br
 As a user, I want to listen to my recorded audio while reading the transcription so that I can verify accuracy and make corrections.
 
 **Acceptance Criteria:**
-- [ ] Record and store audio during transcription
-- [ ] Implement audio playback controls (play, pause, stop, seek)
-- [ ] Sync audio playback with transcription text highlighting
-- [ ] Add playback speed controls (0.5x, 1x, 1.5x, 2x)
-- [ ] Show audio waveform with playback position
-- [ ] Support jumping to specific parts of audio by tapping text
-- [ ] Display audio duration and current position
+- Record and store audio during transcription
+- Implement audio playback controls (play, pause, stop, seek)
+- Sync audio playback with transcription text highlighting
+- Add playback speed controls (0.5x, 1x, 1.5x, 2x)
+- Show audio waveform with playback position
+- Support jumping to specific parts of audio by tapping text
+- Display audio duration and current position
 
 ---
 
@@ -251,13 +289,13 @@ As a user, I want to listen to my recorded audio while reading the transcription
 As a user, I want to see a detailed waveform of my audio so that I can visually identify speaking patterns and silence periods.
 
 **Acceptance Criteria:**
-- [ ] Display real-time animated waveform during recording
-- [ ] Show different colors for volume levels (quiet, normal, loud)
-- [ ] Add silence detection visualization
-- [ ] Implement zoom controls for detailed waveform view
-- [ ] Show speaking vs. silence periods clearly
-- [ ] Add volume level indicators
-- [ ] Smooth animation with 60fps performance
+- Display real-time animated waveform during recording
+- Show different colors for volume levels (quiet, normal, loud)
+- Add silence detection visualization
+- Implement zoom controls for detailed waveform view
+- Show speaking vs. silence periods clearly
+- Add volume level indicators
+- Smooth animation with 60fps performance
 
 ---
 
@@ -270,14 +308,14 @@ As a user, I want to see a detailed waveform of my audio so that I can visually 
 As a user, I want comprehensive settings to customize the app's behavior to match my preferences and use cases.
 
 **Acceptance Criteria:**
-- [ ] Add language selection for speech recognition
-- [ ] Implement auto-punctuation toggle
-- [ ] Add profanity filter option
-- [ ] Include audio quality settings (sample rate, bit depth)
-- [ ] Support custom vocabulary/words
-- [ ] Add automatic session saving preferences
-- [ ] Include accessibility options (larger text, high contrast)
-- [ ] Export/import settings capability
+- Add language selection for speech recognition
+- Implement auto-punctuation toggle
+- Add profanity filter option
+- Include audio quality settings (sample rate, bit depth)
+- Support custom vocabulary/words
+- Add automatic session saving preferences
+- Include accessibility options (larger text, high contrast)
+- Export/import settings capability
 
 ---
 
@@ -288,14 +326,14 @@ As a user, I want comprehensive settings to customize the app's behavior to matc
 As a user, I want to organize my transcriptions and recordings into a file system so that I can easily find and manage my content.
 
 **Acceptance Criteria:**
-- [ ] Create file browser interface
-- [ ] Support file/folder organization
-- [ ] Add search functionality across all files
-- [ ] Include file metadata (date, duration, word count)
-- [ ] Support file renaming and deletion
-- [ ] Add tags/categories for organization
-- [ ] Implement sorting options (date, name, size)
-- [ ] Include cloud sync capabilities
+- Create file browser interface
+- Support file/folder organization
+- Add search functionality across all files
+- Include file metadata (date, duration, word count)
+- Support file renaming and deletion
+- Add tags/categories for organization
+- Implement sorting options (date, name, size)
+- Include cloud sync capabilities
 
 ---
 
@@ -306,13 +344,13 @@ As a user, I want to organize my transcriptions and recordings into a file syste
 As a user, I want the app to continue recording when I switch to other apps or when I receive calls so that I don't lose my transcription progress.
 
 **Acceptance Criteria:**
-- [ ] Support background audio recording
-- [ ] Handle phone call interruptions gracefully
-- [ ] Resume recording after interruptions
-- [ ] Show persistent notification during background recording
-- [ ] Implement proper audio session management
-- [ ] Handle low battery scenarios
-- [ ] Respect system audio policy changes
+- Support background audio recording
+- Handle phone call interruptions gracefully
+- Resume recording after interruptions
+- Show persistent notification during background recording
+- Implement proper audio session management
+- Handle low battery scenarios
+- Respect system audio policy changes
 
 ---
 
@@ -325,14 +363,14 @@ As a user, I want the app to continue recording when I switch to other apps or w
 As a user, I want an intuitive and beautiful interface that makes speech transcription enjoyable and efficient.
 
 **Acceptance Criteria:**
-- [ ] Redesign main interface with better visual hierarchy
-- [ ] Add animations and micro-interactions
-- [ ] Implement haptic feedback for key actions
-- [ ] Create onboarding flow for new users
-- [ ] Add contextual help and tips
-- [ ] Support Dynamic Type for accessibility
-- [ ] Implement proper dark mode support
-- [ ] Add keyboard shortcuts for power users
+- Redesign main interface with better visual hierarchy
+- Add animations and micro-interactions
+- Implement haptic feedback for key actions
+- Create onboarding flow for new users
+- Add contextual help and tips
+- Support Dynamic Type for accessibility
+- Implement proper dark mode support
+- Add keyboard shortcuts for power users
 
 ---
 
@@ -343,13 +381,13 @@ As a user, I want an intuitive and beautiful interface that makes speech transcr
 As a user, I want the app to perform smoothly even during long recording sessions without draining my battery excessively.
 
 **Acceptance Criteria:**
-- [ ] Optimize memory usage for long sessions
-- [ ] Implement efficient audio buffer management
-- [ ] Reduce battery drain during extended use
-- [ ] Add performance monitoring and metrics
-- [ ] Optimize app launch time
-- [ ] Implement lazy loading for large transcriptions
-- [ ] Add low-power mode optimizations
+- Optimize memory usage for long sessions
+- Implement efficient audio buffer management
+- Reduce battery drain during extended use
+- Add performance monitoring and metrics
+- Optimize app launch time
+- Implement lazy loading for large transcriptions
+- Add low-power mode optimizations
 
 ---
 
@@ -362,13 +400,13 @@ As a user, I want the app to perform smoothly even during long recording session
 As a user, I want the app to handle errors gracefully and provide clear feedback when something goes wrong.
 
 **Acceptance Criteria:**
-- [ ] Add comprehensive error handling for all speech recognition scenarios
-- [ ] Implement automatic retry mechanisms for transient failures
-- [ ] Show user-friendly error messages with actionable suggestions
-- [ ] Add offline capability detection and handling
-- [ ] Implement crash recovery mechanisms
-- [ ] Log errors for debugging (with privacy protection)
-- [ ] Add network connectivity handling
+- Add comprehensive error handling for all speech recognition scenarios
+- Implement automatic retry mechanisms for transient failures
+- Show user-friendly error messages with actionable suggestions
+- Add offline capability detection and handling
+- Implement crash recovery mechanisms
+- Log errors for debugging (with privacy protection)
+- Add network connectivity handling
 
 ---
 
@@ -379,13 +417,13 @@ As a user, I want the app to handle errors gracefully and provide clear feedback
 As a developer, I want comprehensive tests to ensure the app works reliably across different scenarios and devices.
 
 **Acceptance Criteria:**
-- [ ] Implement unit tests for all business logic
-- [ ] Add integration tests for speech recognition workflows
-- [ ] Create UI tests for critical user paths
-- [ ] Add performance tests for memory and battery usage
-- [ ] Implement accessibility tests
-- [ ] Add regression tests for bug fixes
-- [ ] Create automated testing pipeline
+- Implement unit tests for all business logic
+- Add integration tests for speech recognition workflows
+- Create UI tests for critical user paths
+- Add performance tests for memory and battery usage
+- Implement accessibility tests
+- Add regression tests for bug fixes
+- Create automated testing pipeline
 
 ---
 
@@ -396,13 +434,13 @@ As a developer, I want comprehensive tests to ensure the app works reliably acro
 As a developer, I want clean, maintainable code that follows best practices and is easy to extend.
 
 **Acceptance Criteria:**
-- [ ] Implement proper dependency injection throughout the app
-- [ ] Create protocol abstractions for testability
-- [ ] Refactor SpeechRecognizer extensions into separate concerns
-- [ ] Add proper async/await patterns throughout codebase
-- [ ] Implement actor-based concurrency where appropriate
-- [ ] Add comprehensive documentation and code comments
-- [ ] Follow Swift concurrency best practices
+- Implement proper dependency injection throughout the app
+- Create protocol abstractions for testability
+- Refactor SpeechRecognizer extensions into separate concerns
+- Add proper async/await patterns throughout codebase
+- Implement actor-based concurrency where appropriate
+- Add comprehensive documentation and code comments
+- Follow Swift concurrency best practices
 
 ---
 
@@ -415,13 +453,13 @@ As a developer, I want clean, maintainable code that follows best practices and 
 As a user, I want AI-powered features to automatically improve my transcriptions and provide intelligent insights.
 
 **Acceptance Criteria:**
-- [ ] Implement automatic punctuation and capitalization
-- [ ] Add speaker identification for multi-person conversations
-- [ ] Create automatic summary generation
-- [ ] Add sentiment analysis for transcribed content
-- [ ] Implement smart editing suggestions
-- [ ] Add automatic topic extraction and tagging
-- [ ] Support real-time translation capabilities
+- Implement automatic punctuation and capitalization
+- Add speaker identification for multi-person conversations
+- Create automatic summary generation
+- Add sentiment analysis for transcribed content
+- Implement smart editing suggestions
+- Add automatic topic extraction and tagging
+- Support real-time translation capabilities
 
 ---
 
@@ -432,13 +470,13 @@ As a user, I want AI-powered features to automatically improve my transcriptions
 As a user, I want to collaborate with others on transcriptions so that we can work together on shared content.
 
 **Acceptance Criteria:**
-- [ ] Add real-time collaboration capabilities
-- [ ] Implement user authentication and accounts
-- [ ] Create shared workspace functionality
-- [ ] Add commenting and annotation features
-- [ ] Support version history and conflict resolution
-- [ ] Implement permission management (view, edit, admin)
-- [ ] Add notification system for collaboration events
+- Add real-time collaboration capabilities
+- Implement user authentication and accounts
+- Create shared workspace functionality
+- Add commenting and annotation features
+- Support version history and conflict resolution
+- Implement permission management (view, edit, admin)
+- Add notification system for collaboration events
 
 ---
 
@@ -451,13 +489,13 @@ As a user, I want to collaborate with others on transcriptions so that we can wo
 As a user, I want to see analytics about my transcription usage so that I can understand my speaking patterns and productivity.
 
 **Acceptance Criteria:**
-- [ ] Track and display transcription statistics (words per minute, session duration)
-- [ ] Show usage patterns and trends over time
-- [ ] Provide vocabulary insights and most used words
-- [ ] Add productivity metrics and goals
-- [ ] Create weekly/monthly usage reports
-- [ ] Implement privacy-first analytics (local processing)
-- [ ] Add export functionality for personal data
+- Track and display transcription statistics (words per minute, session duration)
+- Show usage patterns and trends over time
+- Provide vocabulary insights and most used words
+- Add productivity metrics and goals
+- Create weekly/monthly usage reports
+- Implement privacy-first analytics (local processing)
+- Add export functionality for personal data
 
 ---
 

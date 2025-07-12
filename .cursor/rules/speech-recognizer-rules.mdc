@@ -24,7 +24,9 @@ alwaysApply: false
   - When making any updates to a protocol, you must search for all existing implementations, and update those with the new protocol requirements.
   - When adding a file, make sure that target membership is configured in the Xcode projects properly.- Never open or interact with the xcode GUI.  Only use command line interface.  - Always question when are you changing the protocol to match the implementation, or if the implementation should be changed.
  - Use grep and regex heavily to search, understand and change operations on multiple files instead of going one by one.
- - 
+ - Create and maintain a /utility/ folder.  
+ It should have a build_and_test.sh script 1.  Upon each run it outputs a new timestamped .txt document to the build folder summarizing all successes and errors/failures with relevant context 2. attempts to build the project, then runs the tests to ensure they pass. 
+
 ConcurrencyGuidelines.md:
 	1.	Embrace Swift’s Structured Concurrency:
 	•	Always use async/await for asynchronous operations.

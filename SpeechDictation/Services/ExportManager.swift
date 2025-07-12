@@ -13,12 +13,13 @@ import UIKit
 
 /// Service responsible for exporting transcribed text in various formats
 /// Provides clipboard copying, file saving, and share sheet functionality
+/// Supports both basic text formats and timing-based formats for professional workflows
 class ExportManager {
     static let shared = ExportManager()
     
     private init() {}
     
-    /// Export format options
+    /// Export format options for basic text export
     enum ExportFormat {
         case plainText
         case richText
@@ -39,9 +40,25 @@ class ExportManager {
             case .markdown: return "text/markdown"
             }
         }
+        
+        var displayName: String {
+            switch self {
+            case .plainText: return "Plain Text"
+            case .richText: return "Rich Text"
+            case .markdown: return "Markdown"
+            }
+        }
+        
+        var description: String {
+            switch self {
+            case .plainText: return "Simple text file"
+            case .richText: return "Formatted text with styling"
+            case .markdown: return "Markdown formatted text"
+            }
+        }
     }
     
-    /// Timing export format options
+    /// Timing export format options for professional workflows
     enum TimingExportFormat {
         case srt
         case vtt
@@ -65,7 +82,27 @@ class ExportManager {
             case .json: return "application/json"
             }
         }
+        
+        var displayName: String {
+            switch self {
+            case .srt: return "SRT (SubRip)"
+            case .vtt: return "VTT (WebVTT)"
+            case .ttml: return "TTML (Timed Text)"
+            case .json: return "JSON (Timing Data)"
+            }
+        }
+        
+        var description: String {
+            switch self {
+            case .srt: return "Standard subtitle format for video editing"
+            case .vtt: return "Web video subtitle format"
+            case .ttml: return "Professional timed text markup"
+            case .json: return "Structured timing data for developers"
+            }
+        }
     }
+    
+    // MARK: - Basic Text Export Methods
     
     /// Copy text to clipboard
     /// - Parameter text: Text to copy
@@ -103,12 +140,33 @@ class ExportManager {
         #endif
     }
     
+    // MARK: - Timing Data Export Methods
+    
+    /// Generate timing data content for a specific format
+    /// - Parameters:
+    ///   - session: Audio recording session with timing data
+    ///   - format: Timing export format
+    /// - Returns: Formatted timing data string
+    func generateTimingDataContent(from session: AudioRecordingSession, format: TimingExportFormat) -> String {
+        switch format {
+        case .srt:
+            return generateSRTContent(from: session)
+        case .vtt:
+            return generateVTTContent(from: session)
+        case .ttml:
+            return generateTTMLContent(from: session)
+        case .json:
+            return generateJSONContent(from: session)
+        }
+    }
+    
     /// Save timing data to Files app
     /// - Parameters:
-    ///   - timingData: Timing data content
+    ///   - session: Audio recording session with timing data
     ///   - format: Timing export format
     ///   - completion: Success callback
-    func saveTimingDataToFiles(timingData: String, format: TimingExportFormat, completion: @escaping (Bool) -> Void) {
+    func saveTimingDataToFiles(session: AudioRecordingSession, format: TimingExportFormat, completion: @escaping (Bool) -> Void) {
+        let timingData = generateTimingDataContent(from: session, format: format)
         let fileName = "timing_data_\(formattedTimestamp()).\(format.fileExtension)"
         let tempURL = createTemporaryTimingFile(content: timingData, fileName: fileName, format: format)
         
@@ -131,13 +189,18 @@ class ExportManager {
     
     /// Export audio file with timing data
     /// - Parameters:
-    ///   - audioURL: URL to the audio file
-    ///   - timingData: Timing data content
+    ///   - session: Audio recording session with timing data
     ///   - timingFormat: Timing export format
     ///   - completion: Success callback
-    func exportAudioWithTimingData(audioURL: URL, timingData: String, timingFormat: TimingExportFormat, completion: @escaping (Bool) -> Void) {
+    func exportAudioWithTimingData(session: AudioRecordingSession, timingFormat: TimingExportFormat, completion: @escaping (Bool) -> Void) {
+        let timingData = generateTimingDataContent(from: session, format: timingFormat)
         let timingFileName = "timing_data_\(formattedTimestamp()).\(timingFormat.fileExtension)"
         let timingURL = createTemporaryTimingFile(content: timingData, fileName: timingFileName, format: timingFormat)
+        
+        guard let audioURL = session.audioFileURL else {
+            completion(false)
+            return
+        }
         
         #if os(iOS)
         DispatchQueue.main.async {
@@ -156,7 +219,9 @@ class ExportManager {
         #endif
     }
     
-    /// Present system share sheet (iOS-only)
+    // MARK: - Share Sheet Methods
+    
+    /// Present system share sheet for basic text (iOS-only)
     /// - Parameters:
     ///   - text: Text to share
     ///   - format: Export format
@@ -192,10 +257,11 @@ class ExportManager {
     
     /// Present share sheet for timing data (iOS-only)
     /// - Parameters:
-    ///   - timingData: Timing data content
+    ///   - session: Audio recording session with timing data
     ///   - format: Timing export format
     ///   - sourceView: Source view for iPad presentation (optional)
-    func presentTimingDataShareSheet(timingData: String, format: TimingExportFormat, from sourceView: UIView?) {
+    func presentTimingDataShareSheet(session: AudioRecordingSession, format: TimingExportFormat, from sourceView: UIView?) {
+        let timingData = generateTimingDataContent(from: session, format: format)
         let fileName = "timing_data_\(formattedTimestamp()).\(format.fileExtension)"
         let tempURL = createTemporaryTimingFile(content: timingData, fileName: fileName, format: format)
         
@@ -225,13 +291,17 @@ class ExportManager {
     
     /// Present share sheet for audio with timing data (iOS-only)
     /// - Parameters:
-    ///   - audioURL: URL to the audio file
-    ///   - timingData: Timing data content
+    ///   - session: Audio recording session with timing data
     ///   - timingFormat: Timing export format
     ///   - sourceView: Source view for iPad presentation (optional)
-    func presentAudioWithTimingDataShareSheet(audioURL: URL, timingData: String, timingFormat: TimingExportFormat, from sourceView: UIView?) {
+    func presentAudioWithTimingDataShareSheet(session: AudioRecordingSession, timingFormat: TimingExportFormat, from sourceView: UIView?) {
+        let timingData = generateTimingDataContent(from: session, format: timingFormat)
         let timingFileName = "timing_data_\(formattedTimestamp()).\(timingFormat.fileExtension)"
         let timingURL = createTemporaryTimingFile(content: timingData, fileName: timingFileName, format: timingFormat)
+        
+        guard let audioURL = session.audioFileURL else {
+            return
+        }
         
         DispatchQueue.main.async {
             let activityVC = UIActivityViewController(activityItems: [audioURL, timingURL], applicationActivities: nil)
@@ -262,16 +332,67 @@ class ExportManager {
         // Share sheet unavailable on this platform.
     }
     
-    func presentTimingDataShareSheet(timingData: String, format: TimingExportFormat, from sourceView: Any?) {
+    func presentTimingDataShareSheet(session: AudioRecordingSession, format: TimingExportFormat, from sourceView: Any?) {
         // Share sheet unavailable on this platform.
     }
     
-    func presentAudioWithTimingDataShareSheet(audioURL: URL, timingData: String, timingFormat: TimingExportFormat, from sourceView: Any?) {
+    func presentAudioWithTimingDataShareSheet(session: AudioRecordingSession, timingFormat: TimingExportFormat, from sourceView: Any?) {
         // Share sheet unavailable on this platform.
     }
     #endif
     
-    // MARK: - Private Methods
+    // MARK: - Private Format Generation Methods
+    
+    private func generateSRTContent(from session: AudioRecordingSession) -> String {
+        var content = ""
+        for (index, segment) in session.segments.enumerated() {
+            content += "\(index + 1)\n"
+            content += "\(formatSRTTime(segment.startTime)) --> \(formatSRTTime(segment.endTime))\n"
+            content += "\(segment.text)\n\n"
+        }
+        return content
+    }
+    
+    private func generateVTTContent(from session: AudioRecordingSession) -> String {
+        var content = "WEBVTT\n\n"
+        for segment in session.segments {
+            content += "\(formatVTTTime(segment.startTime)) --> \(formatVTTTime(segment.endTime))\n"
+            content += "\(segment.text)\n\n"
+        }
+        return content
+    }
+    
+    private func generateTTMLContent(from session: AudioRecordingSession) -> String {
+        var content = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <tt xmlns="http://www.w3.org/ns/ttml">
+        <body>
+        """
+        
+        for segment in session.segments {
+            content += "<p begin=\"\(formatTTMLTime(segment.startTime))\" end=\"\(formatTTMLTime(segment.endTime))\">\(segment.text)</p>\n"
+        }
+        
+        content += """
+        </body>
+        </tt>
+        """
+        return content
+    }
+    
+    private func generateJSONContent(from session: AudioRecordingSession) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        
+        do {
+            let data = try encoder.encode(session)
+            return String(data: data, encoding: .utf8) ?? ""
+        } catch {
+            return "{\"error\": \"Failed to encode session\"}"
+        }
+    }
+    
+    // MARK: - Private Helper Methods
     
     private func createTemporaryFile(text: String, fileName: String, format: ExportFormat) -> URL {
         let tempDirectory = FileManager.default.temporaryDirectory
@@ -310,6 +431,30 @@ class ExportManager {
         case .markdown:
             return "# Speech Transcription\n\n\(text)\n\n---\n\n*Transcribed on \(Date())*"
         }
+    }
+    
+    private func formatSRTTime(_ time: TimeInterval) -> String {
+        let hours = Int(time) / 3600
+        let minutes = (Int(time) % 3600) / 60
+        let seconds = Int(time) % 60
+        let milliseconds = Int((time.truncatingRemainder(dividingBy: 1)) * 1000)
+        return String(format: "%02d:%02d:%02d,%03d", hours, minutes, seconds, milliseconds)
+    }
+    
+    private func formatVTTTime(_ time: TimeInterval) -> String {
+        let hours = Int(time) / 3600
+        let minutes = (Int(time) % 3600) / 60
+        let seconds = Int(time) % 60
+        let milliseconds = Int((time.truncatingRemainder(dividingBy: 1)) * 1000)
+        return String(format: "%02d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds)
+    }
+    
+    private func formatTTMLTime(_ time: TimeInterval) -> String {
+        let hours = Int(time) / 3600
+        let minutes = (Int(time) % 3600) / 60
+        let seconds = Int(time) % 60
+        let milliseconds = Int((time.truncatingRemainder(dividingBy: 1)) * 1000)
+        return String(format: "%02d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds)
     }
     
     private func formattedTimestamp() -> String {

@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Build & Test Automation System** - Comprehensive development workflow automation
+  - `utility/build_and_test.sh` - Full project validation with detailed reporting
+  - `utility/quick_iterate.sh` - Fast iteration script for rapid development cycles
+  - `utility/README.md` - Comprehensive documentation and usage guide
+  - Timestamped reports in `build/reports/` with performance metrics
+  - Error handling with system information capture for debugging
+  - Support for both simulator and device testing
+  - Integration with development workflow for iterative improvement
+- **Enhanced Export Functionality** - Professional timing format support
+  - Added SRT, VTT, TTML, and JSON export formats for timing data
+  - Enhanced NativeStyleShareView with format selection interface
+  - Audio + timing data export for professional workflows
+  - Improved UI/UX for easy format selection between text and timing formats
 - **Project Expansion: Live Camera Feed with Audio Descriptions** - Major new feature direction
   - Updated README.md with comprehensive camera feed and accessibility goals
   - Added TASK-018: Live Camera Feed with Audio Descriptions (12-16 hours estimated)
@@ -50,6 +63,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Priority Matrix**: Updated to include new camera feed tasks as critical priorities
 - **README.md**: Completely updated with camera feed goals and accessibility features
 - **Task Organization**: Reorganized tasks to reflect expanded project scope and new priorities
+- **ExportManager.swift** - Enhanced with comprehensive timing format support
+  - Added `TimingExportFormat` enum with SRT, VTT, TTML, JSON options
+  - Implemented format-specific generation methods with proper timing handling
+  - Added audio + timing export functionality for professional workflows
+  - Enhanced error handling and validation for export operations
+- **NativeStyleShareView.swift** - Improved UI/UX for format selection
+  - Added support for both basic text formats and professional timing formats
+  - Implemented adaptive interface based on available data (text vs timing)
+  - Enhanced user experience with clear format descriptions and icons
+  - Added audio export option when recording is available
+- **SpeechRecognitionViewModel.swift** - Updated export methods for new API
+  - Modified export functions to use new ExportManager timing format API
+  - Updated ContentView integration to pass timing session data
+  - Enhanced error handling for export operations
 
 ### Fixed
 - Added missing AVFoundation import to SpeechRecognizer.swift to resolve linter errors
@@ -60,6 +87,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented proper error handling for audio session configuration
   - Added graceful degradation when audio engine fails to start in simulator
   - Fixed "Input HW format is invalid" crashes with compatible audio formats
+- **Audio Session Configuration Tests** - Corrected test implementation
+  - Fixed `isOtherAudioPlaying` usage (was checking wrong property)
+  - Updated tests to properly validate audio session activation
+  - Added proper error handling for session configuration
+  - Enhanced interruption handling tests with realistic scenarios
+- **Export Format Generation Tests** - Improved test coverage and compatibility
+  - Replaced iOS 16+ Regex API with NSRegularExpression for iOS 15+ compatibility
+  - Enhanced test validation for SRT, VTT, TTML, and JSON formats
+  - Added comprehensive format metadata testing
+  - Improved error handling for invalid timing data scenarios
 
 ### Technical Debt
 - Identified missing requestAuthorization() and configureAudioSession() scope issues
@@ -245,14 +282,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **UPDATED** SpeechRecognitionViewModel with full timing data integration and audio playback controls
 
 **Technical Achievements:**
-- ✅ Precise timing data capture with millisecond precision
-- ✅ High-quality audio recording with configurable settings (sample rate, bit depth, compression)
-- ✅ Synchronized audio/text playback with real-time segment highlighting
-- ✅ Professional export formats (SRT, VTT, TTML, JSON) for video editing workflows
-- ✅ Seek-to-text functionality for easy navigation
-- ✅ Playback speed controls (0.5x, 1x, 1.5x, 2x)
-- ✅ Session persistence and management
-- ✅ Audio buffer optimization and storage management
+- Precise timing data capture with millisecond precision
+- High-quality audio recording with configurable settings (sample rate, bit depth, compression)
+- Synchronized audio/text playback with real-time segment highlighting
+- Professional export formats (SRT, VTT, TTML, JSON) for video editing workflows
+- Seek-to-text functionality for easy navigation
+- Playback speed controls (0.5x, 1x, 1.5x, 2x)
+- Session persistence and management
+- Audio buffer optimization and storage management
 
 **Status**: Core implementation complete, UI integration pending
 **Next Steps**: UI components for timing display, audio playback controls, session management interface

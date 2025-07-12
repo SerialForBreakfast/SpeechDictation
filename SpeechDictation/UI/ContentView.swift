@@ -148,7 +148,11 @@ struct ContentView: View {
             applyTheme()
         }
         .sheet(isPresented: $showingCustomShare) {
-            NativeStyleShareView(text: viewModel.transcribedText, isPresented: $showingCustomShare)
+            NativeStyleShareView(
+                text: viewModel.transcribedText,
+                timingSession: viewModel.currentSession,
+                isPresented: $showingCustomShare
+            )
         }
     }
 

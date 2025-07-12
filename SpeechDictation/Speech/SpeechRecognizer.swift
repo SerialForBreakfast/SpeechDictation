@@ -168,7 +168,7 @@ class SpeechRecognizer: ObservableObject {
                     print("Hardware mic gain set to \(gain)")
                     return
                 } catch {
-                    print("⚠️ Failed to set hardware mic gain: \(error). Falling back to software gain.")
+                    print("Failed to set hardware mic gain: \(error). Falling back to software gain.")
                 }
             }
             #endif

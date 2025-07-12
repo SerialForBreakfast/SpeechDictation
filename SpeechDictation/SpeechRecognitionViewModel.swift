@@ -254,30 +254,19 @@ class SpeechRecognizerViewModel: ObservableObject {
     // MARK: - Export Functions
     
     func exportTimingDataToFiles(session: AudioRecordingSession, format: ExportManager.TimingExportFormat, completion: @escaping (Bool) -> Void) {
-        let timingData = exportTimingData(session: session, format: format)
-        ExportManager.shared.saveTimingDataToFiles(timingData: timingData, format: format, completion: completion)
+        ExportManager.shared.saveTimingDataToFiles(session: session, format: format, completion: completion)
     }
     
     func exportAudioWithTimingData(session: AudioRecordingSession, format: ExportManager.TimingExportFormat, completion: @escaping (Bool) -> Void) {
-        guard let audioURL = session.audioFileURL else {
-            completion(false)
-            return
-        }
-        
-        let timingData = exportTimingData(session: session, format: format)
-        ExportManager.shared.exportAudioWithTimingData(audioURL: audioURL, timingData: timingData, timingFormat: format, completion: completion)
+        ExportManager.shared.exportAudioWithTimingData(session: session, timingFormat: format, completion: completion)
     }
     
     func presentTimingDataShareSheet(session: AudioRecordingSession, format: ExportManager.TimingExportFormat, from sourceView: UIView?) {
-        let timingData = exportTimingData(session: session, format: format)
-        ExportManager.shared.presentTimingDataShareSheet(timingData: timingData, format: format, from: sourceView)
+        ExportManager.shared.presentTimingDataShareSheet(session: session, format: format, from: sourceView)
     }
     
     func presentAudioWithTimingDataShareSheet(session: AudioRecordingSession, format: ExportManager.TimingExportFormat, from sourceView: UIView?) {
-        guard let audioURL = session.audioFileURL else { return }
-        
-        let timingData = exportTimingData(session: session, format: format)
-        ExportManager.shared.presentAudioWithTimingDataShareSheet(audioURL: audioURL, timingData: timingData, timingFormat: format, from: sourceView)
+        ExportManager.shared.presentAudioWithTimingDataShareSheet(session: session, timingFormat: format, from: sourceView)
     }
     
     // MARK: - Utility Functions
