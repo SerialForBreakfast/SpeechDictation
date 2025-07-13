@@ -3,11 +3,12 @@ import AVFoundation
 import Vision
 
 /// View that displays a live camera feed with object detection and scene description overlays.
-/// Features two separate text overlays and navigation controls
+/// Features two separate text overlays and navigation controls with full dark/light mode support
 struct CameraSceneDescriptionView: View {
     @StateObject private var viewModel: CameraSceneDescriptionViewModel
     @State private var showingSettings = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     private let cameraManager = LiveCameraView()
 
     init(objectDetector: ObjectDetectionModel, sceneDescriber: SceneDescribingModel) {
@@ -47,7 +48,7 @@ struct CameraSceneDescriptionView: View {
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.white)
                             .padding(12)
-                            .background(Color.black.opacity(0.6))
+                            .background(Color.black.opacity(0.7))
                             .clipShape(Circle())
                     }
                     .accessibilityLabel("Back")
@@ -61,7 +62,7 @@ struct CameraSceneDescriptionView: View {
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.white)
                             .padding(12)
-                            .background(Color.black.opacity(0.6))
+                            .background(Color.black.opacity(0.7))
                             .clipShape(Circle())
                     }
                     .accessibilityLabel("Settings")
@@ -80,18 +81,18 @@ struct CameraSceneDescriptionView: View {
                             Text("Scene Environment")
                                 .font(.caption)
                                 .fontWeight(.medium)
-                                .foregroundColor(.white.opacity(0.8))
+                                .foregroundColor(sceneOverlayTextColor)
                             
                             Text(scene)
                                 .font(.subheadline)
                                 .fontWeight(.medium)
-                                .foregroundColor(.white)
+                                .foregroundColor(sceneOverlayTextColor)
                                 .lineLimit(2)
                                 .multilineTextAlignment(.leading)
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
-                        .background(Color.blue.opacity(0.8))
+                        .background(sceneOverlayBackgroundColor)
                         .cornerRadius(12)
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("Scene: \(scene)")
@@ -104,18 +105,18 @@ struct CameraSceneDescriptionView: View {
                             Text("Detected Objects")
                                 .font(.caption)
                                 .fontWeight(.medium)
-                                .foregroundColor(.white.opacity(0.8))
+                                .foregroundColor(objectOverlayTextColor)
                             
                             Text(formatDetectedObjects())
                                 .font(.subheadline)
                                 .fontWeight(.medium)
-                                .foregroundColor(.white)
+                                .foregroundColor(objectOverlayTextColor)
                                 .lineLimit(3)
                                 .multilineTextAlignment(.leading)
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
-                        .background(Color.green.opacity(0.8))
+                        .background(objectOverlayBackgroundColor)
                         .cornerRadius(12)
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("Objects: \(formatDetectedObjects())")
@@ -134,7 +135,7 @@ struct CameraSceneDescriptionView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
-                        .background(Color.red.opacity(0.8))
+                        .background(errorOverlayBackgroundColor)
                         .cornerRadius(12)
                         .accessibilityLabel("Error: \(error)")
                     Spacer()
@@ -164,13 +165,63 @@ struct CameraSceneDescriptionView: View {
         let topObjects = Array(objectStrings.prefix(3))
         return topObjects.joined(separator: ", ")
     }
+    
+    // MARK: - Dark/Light Mode Color Helpers
+    
+    /// Scene overlay background color that adapts to dark/light mode
+    private var sceneOverlayBackgroundColor: Color {
+        switch colorScheme {
+        case .dark:
+            return Color.blue.opacity(0.9)
+        case .light:
+            return Color.blue.opacity(0.8)
+        @unknown default:
+            return Color.blue.opacity(0.8)
+        }
+    }
+    
+    /// Scene overlay text color that adapts to dark/light mode
+    private var sceneOverlayTextColor: Color {
+        return .white // White text works well on both dark and light blue backgrounds
+    }
+    
+    /// Object overlay background color that adapts to dark/light mode
+    private var objectOverlayBackgroundColor: Color {
+        switch colorScheme {
+        case .dark:
+            return Color.green.opacity(0.9)
+        case .light:
+            return Color.green.opacity(0.8)
+        @unknown default:
+            return Color.green.opacity(0.8)
+        }
+    }
+    
+    /// Object overlay text color that adapts to dark/light mode
+    private var objectOverlayTextColor: Color {
+        return .white // White text works well on both dark and light green backgrounds
+    }
+    
+    /// Error overlay background color that adapts to dark/light mode
+    private var errorOverlayBackgroundColor: Color {
+        switch colorScheme {
+        case .dark:
+            return Color.red.opacity(0.9)
+        case .light:
+            return Color.red.opacity(0.8)
+        @unknown default:
+            return Color.red.opacity(0.8)
+        }
+    }
 }
 
-/// View that displays bounding boxes for detected objects
+/// View that displays bounding boxes for detected objects with dark/light mode support
 struct ObjectBoundingBoxView: View {
     let boundingBox: CGRect
     let label: String
     let confidence: VNConfidence
+    
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         GeometryReader { geometry in
@@ -179,7 +230,7 @@ struct ObjectBoundingBoxView: View {
             ZStack(alignment: .topLeading) {
                 // Bounding box rectangle
                 Rectangle()
-                    .stroke(Color.green, lineWidth: 2)
+                    .stroke(boundingBoxStrokeColor, lineWidth: 2)
                     .frame(width: transformedRect.width, height: transformedRect.height)
                     .position(x: transformedRect.midX, y: transformedRect.midY)
 
@@ -189,8 +240,8 @@ struct ObjectBoundingBoxView: View {
                     .fontWeight(.medium)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(Color.green.opacity(0.9))
-                    .foregroundColor(.white)
+                    .background(boundingBoxLabelBackgroundColor)
+                    .foregroundColor(boundingBoxLabelTextColor)
                     .cornerRadius(4)
                     .position(x: transformedRect.minX + 4, y: transformedRect.minY - 8)
             }
@@ -222,6 +273,37 @@ struct ObjectBoundingBoxView: View {
         let height = rotatedHeight * viewSize.height
         
         return CGRect(x: x, y: y, width: width, height: height)
+    }
+    
+    // MARK: - Dark/Light Mode Color Helpers
+    
+    /// Bounding box stroke color that adapts to dark/light mode
+    private var boundingBoxStrokeColor: Color {
+        switch colorScheme {
+        case .dark:
+            return Color.green.opacity(0.9)
+        case .light:
+            return Color.green.opacity(0.8)
+        @unknown default:
+            return Color.green.opacity(0.8)
+        }
+    }
+    
+    /// Bounding box label background color that adapts to dark/light mode
+    private var boundingBoxLabelBackgroundColor: Color {
+        switch colorScheme {
+        case .dark:
+            return Color.green.opacity(0.95)
+        case .light:
+            return Color.green.opacity(0.9)
+        @unknown default:
+            return Color.green.opacity(0.9)
+        }
+    }
+    
+    /// Bounding box label text color that adapts to dark/light mode
+    private var boundingBoxLabelTextColor: Color {
+        return .white // White text works well on green backgrounds in both modes
     }
 }
 

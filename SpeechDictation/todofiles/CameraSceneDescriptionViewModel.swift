@@ -3,6 +3,7 @@ import AVFoundation
 import Vision
 import CoreML
 import Combine
+import Foundation
 
 // Import the settings manager
 // Note: This may need to be moved to Services/ directory if build fails
@@ -26,6 +27,10 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
     private let sampleBufferProcessor = SampleBufferProcessor()
     private let settings = CameraSettingsManager.shared
     private var lastSceneUpdateTime: Date = .distantPast
+    
+    // MARK: - Bounding Box Persistence Properties
+    private var lastObjectDetectionTime: Date = .distantPast
+    private let objectDetectionTimeout: TimeInterval = 3.0 // Clear stale detections after 3 seconds
     
     // MARK: - Initialization
     
@@ -106,9 +111,29 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
             lastSceneUpdateTime = currentTime
         }
         
-        // Update UI on main thread
+        // Update UI on main thread with persistence logic
         await MainActor.run {
-            self.detectedObjects = detectedObjects
+            // Only update detected objects if we have new detections or if old detections are stale
+            if !detectedObjects.isEmpty {
+                // We have new detections - update immediately
+                self.detectedObjects = detectedObjects
+                self.lastObjectDetectionTime = currentTime
+                print("📦 Updated bounding boxes with \(detectedObjects.count) new detections")
+            } else {
+                // No new detections - check if we should clear stale detections
+                let timeSinceLastDetection = currentTime.timeIntervalSince(self.lastObjectDetectionTime)
+                if timeSinceLastDetection > self.objectDetectionTimeout {
+                    // Clear stale detections after timeout
+                    if !self.detectedObjects.isEmpty {
+                        self.detectedObjects = []
+                        print("🕐 Cleared stale bounding boxes after \(self.objectDetectionTimeout)s timeout")
+                    }
+                } else {
+                    // Keep existing detections visible
+                    print("🔄 Keeping \(self.detectedObjects.count) existing bounding boxes visible")
+                }
+            }
+            
             // Only update scene label if we processed a new scene description
             if let newSceneDescription = sceneDescription {
                 self.sceneLabel = newSceneDescription

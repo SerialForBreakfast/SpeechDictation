@@ -19,6 +19,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Privacy-First Design** - All ML processing happens on-device only
   - **Professional Permission Flow** - iOS best practices with feature explanations
   - **Complete Accessibility Support** - VoiceOver, Dynamic Type, and assistive technology compatibility
+  - **Camera Orientation Support** - Dynamic device orientation handling for proper ML coordinate transformation
+  - **Bounding Box Persistence** - Intelligent persistence system to prevent glitchy flickering
+    - Only updates bounding boxes when new detections are available
+    - Keeps previous detections visible when processing fails or returns empty results
+    - Automatic timeout (3 seconds) to clear stale detections
+    - Prevents UI flicker during ML model processing gaps
+    - Maintains smooth visual experience during camera feed processing
+  - **Dark/Light Mode Support** - Complete theme adaptation for camera interface
+    - All camera views properly adapt to system light/dark mode
+    - Semantic color system for overlays and UI elements
+    - Enhanced contrast and readability in both modes
+    - Consistent visual experience across all camera components
+    - UIKit and SwiftUI color adaptation for optimal accessibility
 - **Entry UI with Dual Experience Selection** - New app entry point with comprehensive accessibility
   - Created EntryView.swift with modern SwiftUI navigation
   - Audio Transcription experience (recommended) - routes to existing ContentView
