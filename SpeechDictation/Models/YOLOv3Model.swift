@@ -2,8 +2,12 @@ import Foundation
 import Vision
 import CoreML
 
+// Import CameraSettingsManager for configurable detection sensitivity
+import Combine
+
 /// A concrete implementation of `ObjectDetectionModel` using the YOLOv3Tiny CoreML model.
 /// This class handles object detection using the YOLOv3Tiny model with proper concurrency management.
+/// Uses configurable confidence threshold from CameraSettingsManager for high-confidence detection.
 @available(iOS 15.0, *)
 final class YOLOv3Model: ObjectDetectionModel {
     private let model: VNCoreMLModel
@@ -27,6 +31,7 @@ final class YOLOv3Model: ObjectDetectionModel {
     ///   - pixelBuffer: The pixel buffer containing the image data
     ///   - orientation: The image orientation for proper coordinate transformation
     /// - Returns: Array of detected objects with their bounding boxes and confidence scores
+    /// - Note: Uses configurable confidence threshold from CameraSettingsManager for high-confidence detection
     func detectObjects(from pixelBuffer: CVPixelBuffer, orientation: CGImagePropertyOrientation = .right) async throws -> [VNRecognizedObjectObservation] {
         return try await withCheckedThrowingContinuation { continuation in
             let request = VNCoreMLRequest(model: model) { request, error in
@@ -41,12 +46,15 @@ final class YOLOv3Model: ObjectDetectionModel {
                     result as? VNRecognizedObjectObservation
                 } ?? []
                 
-                // Filter by confidence threshold (30% minimum)
-                let filteredObjects = detectedObjects.filter { $0.confidence > 0.3 }
+                // Get configurable confidence threshold from settings
+                let confidenceThreshold = Float(CameraSettingsManager.shared.detectionSensitivity)
                 
-                print("📊 YOLOv3 detected \(filteredObjects.count) objects with >30% confidence")
+                // Filter by configurable confidence threshold for high-confidence detection
+                let filteredObjects = detectedObjects.filter { $0.confidence > confidenceThreshold }
                 
-                // Debug: Log detected objects
+                print("📊 YOLOv3 detected \(filteredObjects.count) objects with >\(Int(confidenceThreshold * 100))% confidence")
+                
+                // Debug: Log detected objects (show all high-confidence objects, not limited to 3)
                 for (index, object) in filteredObjects.enumerated() {
                     let topLabel = object.labels.first
                     print("  \(index + 1). \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")

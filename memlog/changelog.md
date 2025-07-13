@@ -529,3 +529,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevents iPhone crashes due to audio format mismatches
 - Improves audio recording reliability on real devices
 - Maintains all existing functionality while fixing critical issues 
+
+## [Current Session] - 2025-01-13
+
+### Multiple Object Detection for High Confidence Items
+
+**Summary**: Enhanced object detection to support multiple high-confidence objects with improved UI display and configurable sensitivity.
+
+**Changes Made**:
+
+1. **Connected Detection Sensitivity Setting**:
+   - `YOLOv3Model.swift`: Updated to use `CameraSettingsManager.shared.detectionSensitivity` instead of hardcoded 0.3 threshold
+   - Now uses configurable confidence threshold from 0.1 to 0.9 (default 0.5)
+   - Fixed Float/Double type compatibility issue
+
+2. **Removed Artificial Object Limits**:
+   - `ObjectDetectionOverlayView.swift`: Increased from 3 to 6 objects maximum
+   - `CameraSceneDescriptionView.swift`: Increased from 3 to 6 objects maximum
+   - Supports user's request for multiple high-confidence object detection
+
+3. **Improved Object Display**:
+   - **Adaptive Font Sizing**: Uses `.caption` for 4+ objects, `.subheadline` for 1-3 objects
+   - **Adaptive Line Limits**: 6 lines for 4+ objects, 3 lines for 1-3 objects
+   - **Adaptive Padding**: 16pt for 4+ objects, 12pt for 1-3 objects
+   - **Better Formatting**: Line breaks for 4+ objects, comma separation for 1-3 objects
+
+4. **Enhanced UI Layout**:
+   - Dynamic overlay sizing based on number of detected objects
+   - Improved readability for multiple objects with line-break formatting
+   - Maintained green color scheme for object detection consistency
+
+**Technical Details**:
+- **Confidence Threshold**: Now configurable via CameraSettingsManager (0.1-0.9 range)
+- **Object Display**: Up to 6 high-confidence objects shown (previously limited to 3)
+- **UI Adaptation**: Font size, padding, and line limits adjust based on object count
+- **Formatting**: Multi-line display for 4+ objects, comma-separated for fewer objects
+
+**Build Status**: ✅ All changes successfully compiled and tested
+
+**Files Modified**:
+- `SpeechDictation/Models/YOLOv3Model.swift`
+- `SpeechDictation/todofiles/ObjectDetectionOverlayView.swift`
+- `SpeechDictation/todofiles/CameraSceneDescriptionView.swift`
+
+---
+
+## [Previous Session] - 2025-01-12
+
+### Dark/Light Mode & UI Improvements
+
+**Summary**: Comprehensive dark/light mode improvements across all UI views with semantic color support and camera interface enhancements.
+
+**Changes Made**:
+
+1. **Entry View Color Fixes**:
+   - `EntryView.swift`: Fixed hardcoded colors with semantic alternatives
+   - Updated card backgrounds to use `Color(UIColor.systemBackground)` and `secondarySystemBackground`
+   - Enhanced gradient colors with proper dark/light mode opacity (0.15/0.08)
+   - Improved shadow colors with dark/light mode adaptation
+
+2. **Camera Interface Enhancements**:
+   - `CameraSceneDescriptionView.swift`: Made blue (scene) and green (object) overlays always visible
+   - `SceneDetectionOverlayView.swift`: Added "Analyzing scene..." fallback for undetected state
+   - `ObjectDetectionOverlayView.swift`: Added "No objects detected" fallback with proper green styling
+   - `BoundingBoxOverlayView.swift`: Enhanced UIKit overlay with consistent green color scheme
+
+3. **Core UI Components**:
+   - `ContentView.swift`: Updated all button backgrounds with semantic colors and adaptive opacity
+   - `SettingsView.swift`: Replaced hardcoded gray with semantic colors and adaptive shadows
+   - `ThemeSettingView.swift`: Fixed white-on-gray button contrast issues
+   - `TextSizeSettingView.swift`: Updated slider and background colors
+   - `MicSensitivityView.swift`: Added proper text color adaptation
+   - `NativeStyleShareView.swift`: Fixed compilation issues and updated to semantic colors
+
+4. **UIKit Import Justification**:
+   - Comprehensive audit confirmed all UIKit imports are properly justified
+   - **SettingsView**: UIColor for semantic colors
+   - **LiveCameraView**: UIDevice orientation, AVCaptureVideoPreviewLayer for camera
+   - **ExportManager**: UIApplication, UIActivityViewController for sharing
+   - **AlertManager**: UIViewController, UIAlertController for alerts
+   - **BoundingBoxOverlayView**: UIView, CAShapeLayer, CATextLayer for overlays 

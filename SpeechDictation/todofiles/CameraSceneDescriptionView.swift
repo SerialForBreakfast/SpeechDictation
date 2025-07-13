@@ -101,14 +101,14 @@ struct CameraSceneDescriptionView: View {
                             .foregroundColor(objectOverlayTextColor)
                         
                         Text(formatDetectedObjects())
-                            .font(.subheadline)
+                            .font(adaptiveObjectFont)
                             .fontWeight(.medium)
                             .foregroundColor(objectOverlayTextColor)
-                            .lineLimit(3)
+                            .lineLimit(adaptiveObjectLineLimit)
                             .multilineTextAlignment(.leading)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, adaptiveObjectPadding)
                     .background(objectOverlayBackgroundColor)
                     .cornerRadius(12)
                     .accessibilityElement(children: .combine)
@@ -157,12 +157,35 @@ struct CameraSceneDescriptionView: View {
             return "\(topLabel.identifier.capitalized) (\(confidence)%)"
         }
         
-        // Show top 3 objects to prevent overlay from being too long
-        let topObjects = Array(objectStrings.prefix(3))
-        return topObjects.joined(separator: ", ")
+        // Show more objects for high-confidence detection (up to 6 objects)
+        // This supports the user's request for multiple high-confidence object detection
+        let maxObjects = min(objectStrings.count, 6)
+        let displayedObjects = Array(objectStrings.prefix(maxObjects))
+        
+        // Format with line breaks for better readability when showing multiple objects
+        if displayedObjects.count > 3 {
+            return displayedObjects.joined(separator: "\n")
+        } else {
+            return displayedObjects.joined(separator: ", ")
+        }
     }
     
     // MARK: - Dark/Light Mode Color Helpers
+    
+    /// Adaptive font size for object display based on number of objects
+    private var adaptiveObjectFont: Font {
+        return viewModel.detectedObjects.count > 3 ? .caption : .subheadline
+    }
+    
+    /// Adaptive line limit for object display based on number of objects
+    private var adaptiveObjectLineLimit: Int {
+        return viewModel.detectedObjects.count > 3 ? 6 : 3
+    }
+    
+    /// Adaptive padding for object display based on number of objects
+    private var adaptiveObjectPadding: CGFloat {
+        return viewModel.detectedObjects.count > 3 ? 16 : 12
+    }
     
     /// Scene overlay background color that adapts to dark/light mode - Always blue
     private var sceneOverlayBackgroundColor: Color {

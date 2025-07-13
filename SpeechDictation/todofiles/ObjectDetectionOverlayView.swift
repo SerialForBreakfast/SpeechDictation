@@ -19,14 +19,14 @@ struct ObjectDetectionOverlayView: View {
                         .foregroundColor(overlayTextColor)
                     
                     Text(formatDetectedObjects())
-                        .font(.subheadline)
+                        .font(adaptiveFont)
                         .fontWeight(.medium)
                         .foregroundColor(overlayTextColor)
-                        .lineLimit(3)
+                        .lineLimit(adaptiveLineLimit)
                         .multilineTextAlignment(.leading)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.vertical, adaptivePadding)
                 .background(overlayBackgroundColor)
                 .cornerRadius(12)
                 .padding()
@@ -80,12 +80,35 @@ struct ObjectDetectionOverlayView: View {
             return "\(topLabel.identifier.capitalized) (\(confidence)%)"
         }
         
-        // Show top 3 objects to prevent overlay from being too long
-        let topObjects = Array(objectStrings.prefix(3))
-        return topObjects.joined(separator: ", ")
+        // Show more objects for high-confidence detection (up to 6 objects)
+        // This supports the user's request for multiple high-confidence object detection
+        let maxObjects = min(objectStrings.count, 6)
+        let displayedObjects = Array(objectStrings.prefix(maxObjects))
+        
+        // Format with line breaks for better readability when showing multiple objects
+        if displayedObjects.count > 3 {
+            return displayedObjects.joined(separator: "\n")
+        } else {
+            return displayedObjects.joined(separator: ", ")
+        }
     }
     
     // MARK: - Dark/Light Mode Color Helpers
+    
+    /// Adaptive font size based on number of objects
+    private var adaptiveFont: Font {
+        return observations.count > 3 ? .caption : .subheadline
+    }
+    
+    /// Adaptive line limit based on number of objects
+    private var adaptiveLineLimit: Int {
+        return observations.count > 3 ? 6 : 3
+    }
+    
+    /// Adaptive padding based on number of objects
+    private var adaptivePadding: CGFloat {
+        return observations.count > 3 ? 16 : 12
+    }
     
     /// Overlay background color that adapts to dark/light mode - Always green
     private var overlayBackgroundColor: Color {
