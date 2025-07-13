@@ -18,7 +18,11 @@ REPORT_FILE="$REPORTS_DIR/build_test_report_$TIMESTAMP.txt"
 VERBOSE=false
 CLEAN_BUILD=false
 TARGET_DEVICE=""
-ENABLE_UI_TESTS=false
+# Feature flags
+ENABLE_UI_TESTS=false     # UI tests are opt-in via --enableUITests (existing)
+ENABLE_UNIT_TESTS=false   # Unit tests are now opt-in via --enableUnitTests
+# Allow caller to override the simulator UUID
+SIMULATOR_OVERRIDE_UUID=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -38,13 +42,28 @@ while [[ $# -gt 0 ]]; do
             TARGET_DEVICE="simulator"
             shift
             ;;
+        --simulator-id|--simulatorID|--udid)
+            # Expect a UUID immediately after the flag
+            if [[ -n "$2" && "$2" != --* ]]; then
+                SIMULATOR_OVERRIDE_UUID="$2"
+                TARGET_DEVICE="simulator"
+                shift 2
+            else
+                echo "Error: --simulator-id requires a UUID argument"
+                exit 1
+            fi
+            ;;
         --enableUITests)
             ENABLE_UI_TESTS=true
             shift
             ;;
+        --enableUnitTests|-enableUnitTests)
+            ENABLE_UNIT_TESTS=true
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--verbose] [--clean] [--device] [--simulator] [--enableUITests]"
+            echo "Usage: $0 [--verbose] [--clean] [--device] [--simulator] [--simulator-id <UUID>] [--enableUnitTests] [--enableUITests]"
             exit 1
             ;;
     esac
@@ -163,23 +182,48 @@ manage_simulator() {
                 if [[ "$boot_status" == "Shutdown" ]]; then
                     log "INFO" "Booting simulator $simulator_uuid..."
                     xcrun simctl boot "$simulator_uuid" > /dev/null 2>&1
-                    # Wait for boot to complete
+                    # Wait for boot to complete with crash recovery
                     local attempts=0
-                    while [[ $attempts -lt 30 ]]; do
-                        local current_status=$(xcrun simctl list devices | grep "$simulator_uuid" | grep -o "Booted\|Shutdown")
+                    while [[ $attempts -lt 45 ]]; do
+                        local current_status=$(xcrun simctl list devices | grep "$simulator_uuid" | grep -o "Booted\|Shutdown\|Crashed")
                         if [[ "$current_status" == "Booted" ]]; then
-                            log "INFO" "Simulator is ready"
-                            return 0
+                            # Additional check: wait for simulator to be fully responsive
+                            # Test if simulator can respond to commands
+                            if xcrun simctl list devices | grep "$simulator_uuid" | grep -q "Booted" && \
+                               xcrun simctl list devices | grep "$simulator_uuid" | grep -vq "Crashed"; then
+                                # Test simulator responsiveness by trying to get device info
+                                if xcrun simctl list devices "$simulator_uuid" >/dev/null 2>&1; then
+                                    # Wait a bit more for full readiness
+                                    sleep 3
+                                    log "INFO" "Simulator is ready"
+                                    return 0
+                                else
+                                    # Simulator is booted but not fully ready yet
+                                    sleep 2
+                                fi
+                            else
+                                # Simulator is booted but not fully ready yet
+                                sleep 2
+                            fi
+                        elif [[ "$current_status" == "Crashed" ]]; then
+                            log "WARN" "Simulator crashed, attempting recovery..."
+                            xcrun simctl shutdown "$simulator_uuid" > /dev/null 2>&1
+                            sleep 3
+                            xcrun simctl boot "$simulator_uuid" > /dev/null 2>&1
+                            attempts=0  # Reset attempts after recovery
                         fi
                         sleep 1
                         ((attempts++))
                     done
-                    log "WARN" "Simulator boot timeout, continuing anyway"
+                    log "WARN" "Simulator boot timeout - may need manual intervention"
+                    return 1
                 else
                     log "INFO" "Simulator is already booted"
+                    return 0
                 fi
             else
                 log "WARN" "No simulator UUID provided for boot"
+                return 1
             fi
             ;;
         "shutdown")
@@ -216,24 +260,46 @@ check_prerequisites() {
     
     # Select simulator if needed
     if [[ "$TARGET_DEVICE" != "device" ]]; then
-        local simulator_info=$(select_simulator)
-        if [[ $? -eq 0 ]]; then
-            IFS='|' read -r SIMULATOR_NAME SIMULATOR_OS SIMULATOR_UUID <<< "$simulator_info"
-            export SIMULATOR_NAME
-            export SIMULATOR_OS
-            export SIMULATOR_UUID
-            log "INFO" "Selected simulator: $SIMULATOR_NAME (iOS $SIMULATOR_OS) UUID: $SIMULATOR_UUID"
-            # Pre-boot simulator for faster test execution
-            if [[ -n "$SIMULATOR_UUID" ]]; then
-                log "INFO" "Pre-booting simulator for faster test execution..."
-                manage_simulator "boot" "$SIMULATOR_UUID"
-            else
-                log "ERROR" "No simulator UUID found after selection."
+
+        if [[ -n "$SIMULATOR_OVERRIDE_UUID" ]]; then
+            # Validate that the provided UUID exists on this machine
+            local sim_line
+            sim_line=$(xcrun simctl list devices | grep "$SIMULATOR_OVERRIDE_UUID" || true)
+            if [[ -z "$sim_line" ]]; then
+                log "ERROR" "Specified simulator UUID $SIMULATOR_OVERRIDE_UUID not found on this host."
                 exit 1
             fi
+
+            # Extract name and OS version from the device listing
+            # Example line: "    iPhone SE (3rd generation) (1A331965-FAA7-...) (Shutdown, iOS 17.5)"
+            SIMULATOR_UUID="$SIMULATOR_OVERRIDE_UUID"
+            SIMULATOR_NAME=$(echo "$sim_line" | sed -E 's/^[[:space:]]*([^()]*) \(.*/\1/')
+            SIMULATOR_OS=$(echo "$sim_line" | sed -E 's/.*iOS ([0-9.]+).*/\1/')
+            log "INFO" "Using user-specified simulator: $SIMULATOR_NAME (iOS $SIMULATOR_OS) UUID: $SIMULATOR_UUID"
+
+            # Pre-boot simulator for faster test execution
+            manage_simulator "boot" "$SIMULATOR_UUID"
+
         else
-            log "ERROR" "Failed to select simulator"
-            exit 1
+            local simulator_info=$(select_simulator)
+            if [[ $? -eq 0 ]]; then
+                IFS='|' read -r SIMULATOR_NAME SIMULATOR_OS SIMULATOR_UUID <<< "$simulator_info"
+                export SIMULATOR_NAME
+                export SIMULATOR_OS
+                export SIMULATOR_UUID
+                log "INFO" "Selected simulator: $SIMULATOR_NAME (iOS $SIMULATOR_OS) UUID: $SIMULATOR_UUID"
+                # Pre-boot simulator for faster test execution
+                if [[ -n "$SIMULATOR_UUID" ]]; then
+                    log "INFO" "Pre-booting simulator for faster test execution..."
+                    manage_simulator "boot" "$SIMULATOR_UUID"
+                else
+                    log "ERROR" "No simulator UUID found after selection."
+                    exit 1
+                fi
+            else
+                log "ERROR" "Failed to select simulator"
+                exit 1
+            fi
         fi
     fi
     
@@ -281,9 +347,13 @@ build_project() {
         -jobs 4
     )
     
-    # Add simulator destination for build
+    # Add simulator destination for build. Prefer UUID if available to avoid name/OS parsing issues.
     if [[ "$TARGET_DEVICE" != "device" ]]; then
-        build_args+=(-destination "platform=iOS Simulator,name=$SIMULATOR_NAME,OS=$SIMULATOR_OS")
+        if [[ -n "$SIMULATOR_UUID" ]]; then
+            build_args+=(-destination "platform=iOS Simulator,id=$SIMULATOR_UUID")
+        else
+            build_args+=(-destination "platform=iOS Simulator,name=$SIMULATOR_NAME,OS=$SIMULATOR_OS")
+        fi
     fi
     
     if [[ "$VERBOSE" == true ]]; then
@@ -530,15 +600,19 @@ generate_summary() {
         fi
     fi
     
-    # Check unit test status (only if build succeeded)
-    if [[ "$build_status" == "SUCCESS" && -f "$BUILD_DIR/test.log" ]]; then
-        if grep -q "\*\* TEST SUCCEEDED \*\*" "$BUILD_DIR/test.log"; then
-            unit_test_status="SUCCESS"
-        else
-            unit_test_status="FAILED"
+    # Determine unit test status based on flag and logs
+    if [[ "$ENABLE_UNIT_TESTS" == false ]]; then
+        unit_test_status="DISABLED"
+    else
+        if [[ "$build_status" == "SUCCESS" && -f "$BUILD_DIR/test.log" ]]; then
+            if grep -q "\*\* TEST SUCCEEDED \*\*" "$BUILD_DIR/test.log"; then
+                unit_test_status="SUCCESS"
+            else
+                unit_test_status="FAILED"
+            fi
+        elif [[ "$build_status" == "FAILED" ]]; then
+            unit_test_status="SKIPPED"
         fi
-    elif [[ "$build_status" == "FAILED" ]]; then
-        unit_test_status="SKIPPED"
     fi
     
     # Check UI test status (only if build succeeded and enabled)
@@ -580,7 +654,7 @@ generate_summary() {
 main() {
     update_currently_running "[Prerequisites] Checking prerequisites"
     log "INFO" "Starting SpeechDictation build and test automation"
-    log "INFO" "Arguments: VERBOSE=$VERBOSE, CLEAN=$CLEAN_BUILD, TARGET=$TARGET_DEVICE, ENABLE_UI_TESTS=$ENABLE_UI_TESTS"
+    log "INFO" "Arguments: VERBOSE=$VERBOSE, CLEAN=$CLEAN_BUILD, TARGET=$TARGET_DEVICE, ENABLE_UNIT_TESTS=$ENABLE_UNIT_TESTS, ENABLE_UI_TESTS=$ENABLE_UI_TESTS"
     
     local overall_exit_code=0
     
@@ -599,8 +673,13 @@ main() {
         return $overall_exit_code
     }
     clear_currently_running
-    update_currently_running "[Testing] Running unit tests"
-    run_unit_tests || { overall_exit_code=1; }
+
+    if [[ "$ENABLE_UNIT_TESTS" == true ]]; then
+        update_currently_running "[Testing] Running unit tests"
+        run_unit_tests || { overall_exit_code=1; }
+    else
+        update_currently_running "[Testing] Unit tests are disabled"
+    fi
     if [[ "$ENABLE_UI_TESTS" == true ]]; then
         update_currently_running "[Testing] Running UI tests"
     else

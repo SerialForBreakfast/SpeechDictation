@@ -3,7 +3,7 @@ import Speech
 import AVFoundation
 
 class SpeechRecognizer: ObservableObject {
-    @Published var transcribedText: String = "Tap a button to begin"
+    @Published var transcribedText: String = ""
     @Published private(set) var audioSamples: [Float] = []
     /// Live peak audio level (0.0 – 1.0) updated for each incoming buffer. Used for VU meter.
     @Published private(set) var currentLevel: Float = 0.0

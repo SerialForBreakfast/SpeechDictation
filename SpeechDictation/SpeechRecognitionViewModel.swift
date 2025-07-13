@@ -17,7 +17,7 @@ private enum SettingsKey {
 }
 
 class SpeechRecognizerViewModel: ObservableObject {
-    @Published var transcribedText: String = "Tap a button to begin"
+    @Published var transcribedText: String = ""
     @Published var fontSize: CGFloat = 24
     @Published var theme: Theme = .light
     @Published var isRecording: Bool = false
@@ -185,6 +185,17 @@ class SpeechRecognizerViewModel: ObservableObject {
 
     func adjustVolume() {
         speechRecognizer.volume = volume
+    }
+    
+    /// Resets the transcribed text to an empty string without stopping recording
+    /// This allows users to clear the current text while maintaining the recording session
+    func resetTranscribedText() {
+        transcribedText = ""
+        // Clear timing data for current session
+        segments.removeAll()
+        currentSession = nil
+        recordingDuration = 0
+        currentAudioFileURL = nil
     }
     
     // MARK: - Timing Data Management

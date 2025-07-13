@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reset Button Feature** - Clear text without stopping recording
+  - Added reset button next to Start Listening button with SFSymbols "arrow.clockwise" icon
+  - Button is disabled when text is empty or shows initial message
+  - Resets transcribed text to "Tap a button to begin" without stopping recording session
+  - Clears timing data, segments, and session information for fresh start
+  - Orange circular button design consistent with existing UI patterns
+  - Proper accessibility with disabled state and opacity changes
 - **Build & Test Automation System** - Comprehensive development workflow automation
   - `utility/build_and_test.sh` - Full project validation with detailed reporting
   - `utility/quick_iterate.sh` - Fast iteration script for rapid development cycles

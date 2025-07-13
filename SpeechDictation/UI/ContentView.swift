@@ -93,6 +93,19 @@ struct ContentView: View {
                             .cornerRadius(10)
                     }
 
+                    // Reset button - clears text without stopping recording
+                    Button(action: {
+                        self.viewModel.resetTranscribedText()
+                    }) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.title2)
+                            .padding()
+                            .background(Color.orange.opacity(0.2))
+                            .clipShape(Circle())
+                    }
+                    .disabled(viewModel.transcribedText.isEmpty)
+                    .opacity(viewModel.transcribedText.isEmpty ? 0.5 : 1.0)
+
                     Spacer()
 
                     Button(action: {
@@ -183,7 +196,7 @@ struct ContentView: View {
     
     /// Checks if export functionality is available (text is not empty)
     private var canExport: Bool {
-        !viewModel.transcribedText.isEmpty && viewModel.transcribedText != "Tap a button to begin"
+        !viewModel.transcribedText.isEmpty
     }
     
     // MARK: - Intelligent Autoscroll Functionality

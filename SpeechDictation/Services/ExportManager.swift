@@ -18,6 +18,24 @@ class ExportManager {
     static let shared = ExportManager()
     
     private init() {}
+
+    // Retain active document-picker coordinators until the picker completes to
+    // avoid premature deallocation which can cause UI hangs and missing
+    // delegate callbacks.
+#if os(iOS)
+    @MainActor
+    private var activeCoordinators: [DocumentPickerCoordinator] = []
+
+    @MainActor
+    private func addCoordinator(_ coordinator: DocumentPickerCoordinator) {
+        activeCoordinators.append(coordinator)
+    }
+
+    @MainActor
+    private func removeCoordinator(_ coordinator: DocumentPickerCoordinator) {
+        activeCoordinators.removeAll { $0 === coordinator }
+    }
+#endif
     
     /// Export format options for basic text export
     enum ExportFormat {
@@ -121,23 +139,38 @@ class ExportManager {
     ///   - completion: Success callback
     func saveToFiles(text: String, format: ExportFormat, completion: @escaping (Bool) -> Void) {
         let fileName = "transcription_\(formattedTimestamp()).\(format.fileExtension)"
-        let tempURL = createTemporaryFile(text: text, fileName: fileName, format: format)
-        
-        #if os(iOS)
-        DispatchQueue.main.async {
-            let picker = UIDocumentPickerViewController(forExporting: [tempURL])
-            
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let window = windowScene.windows.first {
-                window.rootViewController?.present(picker, animated: true)
-                completion(true)
-            } else {
-                completion(false)
+
+        // Off-load heavy file generation to a background queue to prevent UI hangs.
+        DispatchQueue.global(qos: .userInitiated).async {
+            let tempURL = self.createTemporaryFile(text: text, fileName: fileName, format: format)
+
+            #if os(iOS)
+            Task { @MainActor in
+                var coordinatorRef: DocumentPickerCoordinator?
+                let wrapper: (Bool) -> Void = { [weak self] success in
+                    if let coord = coordinatorRef {
+                        self?.removeCoordinator(coord)
+                    }
+                    completion(success)
+                }
+                let coordinator = DocumentPickerCoordinator(completion: wrapper)
+                coordinatorRef = coordinator
+
+                let picker = UIDocumentPickerViewController(forExporting: [tempURL])
+                picker.delegate = coordinator
+
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let window = windowScene.windows.first {
+                    self.addCoordinator(coordinator)
+                    window.rootViewController?.present(picker, animated: true)
+                } else {
+                    completion(false)
+                }
             }
+            #else
+            completion(false)
+            #endif
         }
-        #else
-        completion(false)
-        #endif
     }
     
     // MARK: - Timing Data Export Methods
@@ -166,25 +199,38 @@ class ExportManager {
     ///   - format: Timing export format
     ///   - completion: Success callback
     func saveTimingDataToFiles(session: AudioRecordingSession, format: TimingExportFormat, completion: @escaping (Bool) -> Void) {
-        let timingData = generateTimingDataContent(from: session, format: format)
-        let fileName = "timing_data_\(formattedTimestamp()).\(format.fileExtension)"
-        let tempURL = createTemporaryTimingFile(content: timingData, fileName: fileName, format: format)
-        
-        #if os(iOS)
-        DispatchQueue.main.async {
-            let picker = UIDocumentPickerViewController(forExporting: [tempURL])
-            
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let window = windowScene.windows.first {
-                window.rootViewController?.present(picker, animated: true)
-                completion(true)
-            } else {
-                completion(false)
+        DispatchQueue.global(qos: .userInitiated).async {
+            let timingData = self.generateTimingDataContent(from: session, format: format)
+            let fileName = "timing_data_\(self.formattedTimestamp()).\(format.fileExtension)"
+            let tempURL = self.createTemporaryTimingFile(content: timingData, fileName: fileName, format: format)
+
+            #if os(iOS)
+            Task { @MainActor in
+                var coordinatorRef: DocumentPickerCoordinator?
+                let wrapper: (Bool) -> Void = { [weak self] success in
+                    if let coord = coordinatorRef {
+                        self?.removeCoordinator(coord)
+                    }
+                    completion(success)
+                }
+                let coordinator = DocumentPickerCoordinator(completion: wrapper)
+                coordinatorRef = coordinator
+
+                let picker = UIDocumentPickerViewController(forExporting: [tempURL])
+                picker.delegate = coordinator
+
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let window = windowScene.windows.first {
+                    self.addCoordinator(coordinator)
+                    window.rootViewController?.present(picker, animated: true)
+                } else {
+                    completion(false)
+                }
             }
+            #else
+            completion(false)
+            #endif
         }
-        #else
-        completion(false)
-        #endif
     }
     
     /// Export audio file with timing data
@@ -193,30 +239,43 @@ class ExportManager {
     ///   - timingFormat: Timing export format
     ///   - completion: Success callback
     func exportAudioWithTimingData(session: AudioRecordingSession, timingFormat: TimingExportFormat, completion: @escaping (Bool) -> Void) {
-        let timingData = generateTimingDataContent(from: session, format: timingFormat)
-        let timingFileName = "timing_data_\(formattedTimestamp()).\(timingFormat.fileExtension)"
-        let timingURL = createTemporaryTimingFile(content: timingData, fileName: timingFileName, format: timingFormat)
-        
-        guard let audioURL = session.audioFileURL else {
-            completion(false)
-            return
-        }
-        
-        #if os(iOS)
-        DispatchQueue.main.async {
-            let picker = UIDocumentPickerViewController(forExporting: [audioURL, timingURL])
-            
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let window = windowScene.windows.first {
-                window.rootViewController?.present(picker, animated: true)
-                completion(true)
-            } else {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let timingData = self.generateTimingDataContent(from: session, format: timingFormat)
+            let timingFileName = "timing_data_\(self.formattedTimestamp()).\(timingFormat.fileExtension)"
+            let timingURL = self.createTemporaryTimingFile(content: timingData, fileName: timingFileName, format: timingFormat)
+
+            guard let audioURL = session.audioFileURL else {
                 completion(false)
+                return
             }
+
+            #if os(iOS)
+            Task { @MainActor in
+                var coordinatorRef: DocumentPickerCoordinator?
+                let wrapper: (Bool) -> Void = { [weak self] success in
+                    if let coord = coordinatorRef {
+                        self?.removeCoordinator(coord)
+                    }
+                    completion(success)
+                }
+                let coordinator = DocumentPickerCoordinator(completion: wrapper)
+                coordinatorRef = coordinator
+
+                let picker = UIDocumentPickerViewController(forExporting: [audioURL, timingURL])
+                picker.delegate = coordinator
+
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let window = windowScene.windows.first {
+                    self.addCoordinator(coordinator)
+                    window.rootViewController?.present(picker, animated: true)
+                } else {
+                    completion(false)
+                }
+            }
+            #else
+            completion(false)
+            #endif
         }
-        #else
-        completion(false)
-        #endif
     }
     
     // MARK: - Share Sheet Methods
@@ -469,18 +528,22 @@ class ExportManager {
 /// Coordinator class to handle `UIDocumentPickerViewController` delegate callbacks.
 private class DocumentPickerCoordinator: NSObject, UIDocumentPickerDelegate {
     private let completion: (Bool) -> Void
-    
+
     init(completion: @escaping (Bool) -> Void) {
         self.completion = completion
         super.init()
     }
-    
+
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        completion(true)
+        controller.dismiss(animated: true) {
+            self.completion(true)
+        }
     }
-    
+
     func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-        completion(false)
+        controller.dismiss(animated: true) {
+            self.completion(false)
+        }
     }
 }
 #endif 
