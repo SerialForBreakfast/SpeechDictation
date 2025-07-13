@@ -1,101 +1,31 @@
-# SpeechDictation
+# SpeechDictation iOS
 
-SpeechDictation is an iOS application that provides real-time speech recognition and audio processing capabilities. The app transcribes speech from the microphone or audio files into text, visualizes audio waveforms, and now includes **live camera feed input with audio descriptions** for enhanced accessibility and content creation.
+A professional iOS application for real-time speech recognition with advanced audio processing, timing data capture, and comprehensive export capabilities. Built with Swift and SwiftUI, this app provides high-quality transcription services with professional-grade timing formats suitable for video editing and accessibility workflows.
 
 ## Features
 
 ### Core Speech Recognition
-- **Real-time Speech Recognition**: Transcribe speech from the microphone with millisecond precision
-- **Audio File Transcription**: Transcribe speech from audio files (MP3 to M4A conversion included)
-- **High-Quality Audio Recording**: Configurable audio quality settings with native hardware format detection
-- **Timing Data Capture**: Precise timing information for transcription segments with export capabilities
-
-### Audio Visualization & Playback
-- **Waveform Visualization**: Display the audio waveform in real-time during recording
-- **Volume Unit (VU) Meter**: Real-time audio level monitoring with visual feedback
-- **Synchronized Audio Playback**: Play recorded audio with text highlighting and seek-to-text functionality
-- **Multiple Export Formats**: Export timing data in SRT, VTT, JSON, and CSV formats
-
-### Live Camera Feed with Audio Descriptions
-- **Real-time Camera Input**: Capture live video feed from device camera
-- **Audio Descriptions**: Generate spoken descriptions of visual content for accessibility
-- **Integrated Audio-Visual Processing**: Combine camera feed with audio transcription for comprehensive content capture
-- **Accessibility Features**: Provide audio descriptions for users with visual impairments
-
-### Advanced Features
-- **Caching System**: Efficiently cache and retrieve audio files and recordings
+- **Real-time Speech Recognition**: High-quality transcription using Apple's Speech framework with millisecond precision
+- **Audio Recording**: Configurable audio quality settings with native hardware format detection
+- **Timing Data Capture**: Precise timing information for each transcription segment
 - **Session Management**: Save and manage multiple recording sessions with metadata
-- **Customizable Settings**: Adjust font size, themes, microphone sensitivity, and audio quality
-- **Background Processing**: Continue recording during app backgrounding (where supported)
 
-## Components
+### Export & Sharing
+- **Multiple Text Formats**: Export as Plain Text, RTF, or Markdown
+- **Professional Timing Formats**: Export timing data in SRT, VTT, TTML, and JSON formats
+- **Audio + Timing Export**: Combined audio and timing data export for professional workflows
+- **Native Sharing**: iOS share sheet integration and Files app support
 
-### Audio Processing
-- **AudioRecordingManager**: High-quality audio recording with configurable settings and native format detection
-- **AudioPlaybackManager**: Synchronized audio playback with timing data and text highlighting
-- **TimingDataManager**: Precise timing data capture and session management
-- **ExportManager**: Multiple export formats for timing data and transcriptions
+### User Experience
+- **Intelligent Autoscroll**: Automatically follows new text with manual override capability
+- **Customizable Interface**: Adjustable themes (Light, Dark, High Contrast) and text sizes
+- **Audio Visualization**: Real-time waveform display and VU meter
+- **Accessibility**: VoiceOver support and accessibility-focused design
 
-### Speech Recognition
-- **SpeechRecognizer**: Core speech recognition using Apple's Speech framework
-- **SpeechRecognitionViewModel**: MVVM architecture for speech recognition and UI coordination
-- **Audio Session Management**: Proper audio session configuration for all iOS devices
-
-### Camera & Visual Processing
-- **CameraManager**: Live camera feed capture and processing
-- **AudioDescriptionGenerator**: Generate spoken descriptions of visual content
-- **VisualAccessibilityProcessor**: Process visual content for accessibility features
-
-### UI & Visualization
-- **WaveformView**: Real-time audio waveform visualization
-- **VUMeterView**: Volume unit meter for audio level monitoring
-- **SettingsView**: Comprehensive settings for audio quality, themes, and accessibility
-- **NativeStyleShareView**: Custom sharing interface for transcriptions and recordings
-
-## Getting Started
-
-### Prerequisites
-
-- Xcode 15.0 or later
-- iOS 15.0 or later (supports 99%+ of active iOS devices)
-- iPhone 6s or newer / iPad Air 2 or newer
-
-### Installation
-
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/SerialForBreakfast/SpeechDictation.git
-    ```
-2. Open the project in Xcode:
-    ```bash
-    open SpeechDictation.xcodeproj
-    ```
-
-### Running the App
-
-1. Select your target device or simulator
-2. Build and run the project
-3. Grant microphone and camera permissions when prompted
-
-## Usage
-
-### Speech Dictation
-- **Start Transcription**: Tap the "Start" button to begin real-time speech transcription
-- **Stop Transcription**: Tap the "Stop" button to end transcription and save the session
-- **Pause/Resume**: Use pause and resume controls for session management
-- **Export Data**: Export timing data in multiple formats for further processing
-
-### Camera Feed with Audio Descriptions
-- **Enable Camera**: Grant camera permissions to access live video feed
-- **Audio Descriptions**: The app will automatically generate spoken descriptions of visual content
-- **Accessibility Mode**: Enhanced audio descriptions for users with visual impairments
-- **Content Capture**: Record both audio and visual content simultaneously
-
-### Settings & Customization
-- **Audio Quality**: Choose between low, standard, and high quality recording settings
-- **Theme Selection**: Light, dark, and high contrast themes for accessibility
-- **Font Size**: Adjustable text size for better readability
-- **Microphone Sensitivity**: Fine-tune microphone gain for optimal recording
+### Build & Development
+- **Automated Build System**: Comprehensive build and test automation scripts
+- **Quality Assurance**: Unit tests and UI tests with detailed reporting
+- **Development Tools**: Quick iteration scripts for rapid development cycles
 
 ## Technical Architecture
 
@@ -104,64 +34,145 @@ SpeechDictation is an iOS application that provides real-time speech recognition
 Microphone Input → Native Format Detection → Audio Recording → Speech Recognition → Timing Data Capture
 ```
 
-### Camera Processing Pipeline
-```
-Camera Feed → Visual Processing → Audio Description Generation → Accessibility Output
-```
+### Core Components
+- **SpeechRecognizer**: Core speech recognition with Apple's Speech framework
+- **AudioRecordingManager**: High-quality audio recording with configurable settings
+- **TimingDataManager**: Precise timing data capture and session management
+- **ExportManager**: Multiple export formats with background processing
+- **AudioPlaybackManager**: Synchronized audio playback with text highlighting
 
 ### Data Management
 - **Session Storage**: Local storage of recording sessions with timing metadata
-- **Export System**: Multiple format support for timing data and transcriptions
+- **Export System**: Professional format support for video editing workflows
 - **Cache Management**: Efficient caching of audio files and processed data
+
+## Getting Started
+
+### Prerequisites
+- Xcode 15.0 or later
+- iOS 15.0 or later (supports 99%+ of active iOS devices)
+- iPhone 6s or newer / iPad Air 2 or newer
+
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/SerialForBreakfast/SpeechDictation.git
+   ```
+2. Open the project in Xcode:
+   ```bash
+   open SpeechDictation.xcodeproj
+   ```
+
+### Build & Test
+Use the included automation scripts for development:
+
+```bash
+# Build only (default)
+./utility/build_and_test.sh
+
+# Build with unit tests
+./utility/build_and_test.sh --enableUnitTests
+
+# Target specific simulator
+./utility/build_and_test.sh --simulator-id <UUID>
+
+# Quick iteration for development
+./utility/quick_iterate.sh
+```
+
+### Running the App
+1. Select your target device or simulator
+2. Build and run the project
+3. Grant microphone and speech recognition permissions when prompted
+
+## Usage
+
+### Basic Operation
+1. **Start Recording**: Tap "Start Listening" to begin real-time transcription
+2. **View Transcript**: Watch as speech is converted to text in real-time
+3. **Export Results**: Use the export button to save in various formats
+4. **Manage Sessions**: Access previous recordings and timing data
+
+### Export Options
+- **Text Export**: Plain text, RTF, or Markdown formats
+- **Timing Export**: SRT subtitles, VTT captions, TTML, or JSON data
+- **Audio Export**: Combined audio and timing data for video editing
+
+### Settings & Customization
+- **Themes**: Light, Dark, and High Contrast modes
+- **Text Size**: Adjustable for better readability
+- **Audio Quality**: Configure recording quality settings
+
+## Project Structure
+
+```
+SpeechDictation-iOS/
+├── SpeechDictation/           # Main application
+│   ├── Services/             # Audio recording, playback, timing management
+│   ├── Speech/               # Speech recognition and audio processing
+│   ├── UI/                   # SwiftUI views and components
+│   ├── Models/               # Data models and structures
+│   └── SpeechDictationApp.swift # App entry point
+├── SpeechDictationTests/     # Unit tests
+├── SpeechDictationUITests/   # UI automation tests
+├── utility/                  # Build and development automation
+│   ├── build_and_test.sh     # Comprehensive build automation
+│   ├── quick_iterate.sh      # Fast development iteration
+│   └── README.md             # Utility documentation
+└── memlog/                   # Project documentation
+    ├── tasks.md              # Comprehensive task management
+    ├── changelog.md          # Project change history
+    └── directory_tree.md     # Project structure documentation
+```
 
 ## Device Compatibility
 
 ### iOS Version Support
 - **Minimum**: iOS 15.0 (covers 99%+ of active devices)
-- **Maximum**: Latest iOS 18.0+ (future-proof)
+- **Current**: Tested through iOS 18.x
 
 ### Device Coverage
-- **iPhone**: iPhone 6s and newer (iOS 15+ support)
+- **iPhone**: iPhone 6s and newer
 - **iPad**: iPad Air 2 and newer
-- **Audio Hardware**: Native format detection ensures compatibility with all audio configurations
-- **Camera Hardware**: Supports all iOS device cameras with proper permission handling
+- **Audio Hardware**: Native format detection ensures compatibility with all configurations
 
-## Project Structure
+## Development
 
-```
-SpeechDictation/
-├── SpeechDictation/           # Main application
-│   ├── Services/             # Audio recording, playback, timing data management
-│   ├── Speech/               # Speech recognition and audio processing
-│   ├── UI/                   # SwiftUI views and components
-│   ├── Models/               # Data models and structures
-│   └── Preview Content/      # SwiftUI preview assets
-├── SpeechDictationTests/     # Unit tests
-├── SpeechDictationUITests/   # UI tests
-└── memlog/                   # Project documentation and changelog
-```
+### Build System
+The project includes comprehensive build automation:
+- **Prerequisite validation**: Checks Xcode, simulators, project structure
+- **Build automation**: Clean builds with error handling
+- **Test execution**: Unit and UI tests with detailed reporting
+- **Performance metrics**: Build time, test counts, project size tracking
 
-## Performance & Optimization
+### Quality Assurance
+- All features must pass unit tests
+- Code follows Swift concurrency best practices
+- UI is accessible and follows iOS design guidelines
+- Performance meets established benchmarks
 
-### Audio Processing
-- **Native Format Detection**: Automatically adapts to device audio capabilities
-- **Efficient Buffering**: Optimized buffer sizes for real-time processing
-- **Memory Management**: Proper cleanup and resource management
+## Roadmap
 
-### Camera Processing
-- **Real-time Processing**: Efficient visual content analysis
-- **Accessibility Optimization**: Optimized audio descriptions for accessibility users
-- **Battery Management**: Efficient power usage for extended recording sessions
+### Completed Features
+- Core speech recognition with timing data
+- Export and sharing system with professional formats
+- Intelligent autoscroll system
+- Build automation and quality assurance tools
+
+### Planned Features
+- Text editing and correction capabilities
+- Recording session management (pause/resume)
+- Enhanced audio playback and review
+- Advanced waveform visualization
+- File management system
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### Development Setup
+We welcome contributions! Please:
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
+3. Make your changes with appropriate tests
+4. Use the build automation scripts to validate
 5. Submit a pull request
 
 ## License
@@ -171,23 +182,10 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Contact
 
 For questions, suggestions, or support:
-- **Email**: [joe.mccraw+github@gmail.com]
+- **Email**: joe.mccraw+github@gmail.com
 - **Issues**: [GitHub Issues](https://github.com/SerialForBreakfast/SpeechDictation/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/SerialForBreakfast/SpeechDictation/discussions)
 
-## Roadmap
-
-### Upcoming Features
-- **Enhanced Audio Descriptions**: More detailed and contextual visual descriptions
-- **Multi-language Support**: Support for additional languages in speech recognition
-- **Cloud Integration**: Optional cloud storage and sharing capabilities
-- **Advanced Accessibility**: Additional accessibility features for users with disabilities
-
-### Performance Improvements
-- **Background Processing**: Enhanced background recording capabilities
-- **Real-time Optimization**: Further optimization of real-time audio and video processing
-- **Battery Optimization**: Improved battery efficiency for extended use
-
 ---
 
-*Built with love for accessibility and content creation*
+*Professional speech recognition for iOS with timing data precision*

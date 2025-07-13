@@ -7,10 +7,11 @@ SpeechDictation-iOS/
 ├── LICENSE                         # MIT License file
 ├── README.md                       # Project documentation (Updated with camera feed goals)
 ├── memlog/                         # Project management and documentation
-│   ├── tasks.md                    # Feature tasks and requirements (Updated with new priorities)
+│   ├── tasks.md                    # Comprehensive task management (consolidated from multiple files)
 │   ├── directory_tree.md           # This file - project structure
-│   └── changelog.md                # Project change history
+│   └── changelog.md                # Project change history (updated with latest improvements)
 ├── build/                          # Build artifacts (temporary)
+│   └── reports/                    # Build and test reports (timestamped)
 ├── AIEars/                         # Legacy/alternate project (unused)
 ├── AIEars.xcodeproj/              # Legacy Xcode project
 ├── AIEarsTests/                   # Legacy test files
@@ -60,6 +61,10 @@ SpeechDictation-iOS/
 └── SpeechDictationUITests/        # UI automation tests
     ├── SpeechDictationUITests.swift           # UI test cases
     └── SpeechDictationUITestsLaunchTests.swift # Launch performance tests
+└── utility/                       # Development automation tools
+    ├── build_and_test.sh          # Comprehensive build and test automation
+    ├── quick_iterate.sh            # Fast development iteration script
+    └── README.md                   # Utility documentation and usage guide
 ```
 
 ## Key Components Overview
@@ -93,14 +98,13 @@ SpeechDictation-iOS/
 - **SPM Ready**: Prepared for Swift Package Manager integration if needed
 
 ### Recent Additions
-- **Models Directory**: Added for data model organization
-- **TimingData.swift**: Comprehensive timing data models for audio synchronization
-- **TimingDataManager.swift**: Service for timing data management and persistence
-- **AudioRecordingManager.swift**: High-quality audio recording with native format detection
-- **AudioPlaybackManager.swift**: Synchronized audio/text playback with seek functionality
-- **SpeechRecognizer+Timing.swift**: Extension for precise timing data capture
-- **ExportManager**: Extended with timing export formats (SRT, VTT, TTML, JSON)
-- **Enhanced UI Components**: Added specialized views for settings, VU meter, and microphone sensitivity
+- **Utility Directory**: Development automation tools for build and test workflows
+- **Build Automation**: Comprehensive build_and_test.sh script with detailed reporting
+- **Quick Iteration**: Fast development cycle script for rapid testing
+- **Memlog Consolidation**: Unified task management system in single tasks.md file
+- **Export System Enhancements**: Improved reliability with background processing and proper delegate management
+- **SRT Format Improvements**: Intelligent segment grouping for better subtitle readability
+- **Build Script Enhancements**: Simulator targeting and optional unit test execution
 
 ### Planned Additions (TASK-018 & TASK-019)
 - **CameraManager.swift**: Camera feed capture and management
@@ -130,5 +134,5 @@ This expansion positions SpeechDictation as a powerful tool for:
 
 ---
 
-*Last Updated: December 19, 2024*
-*Next Review: January 2, 2025* 
+*Last Updated: July 12, 2025*
+*Next Review: August 1, 2025* 

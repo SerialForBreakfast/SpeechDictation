@@ -8,12 +8,12 @@ This folder contains automation scripts for building, testing, and validating th
 **Primary script for full project validation with detailed reporting.**
 
 **Features:**
-- ✅ **Prerequisite Validation** - Checks Xcode, simulators, project structure
-- ✅ **Build Automation** - Clean builds with error handling
-- ✅ **Test Execution** - Unit tests and UI tests with detailed reporting
-- ✅ **Performance Metrics** - Build time, test counts, project size
-- ✅ **Error Handling** - Graceful failure with debugging information
-- ✅ **Timestamped Reports** - Detailed logs in `build/reports/`
+- **Prerequisite Validation** - Checks Xcode, simulators, project structure
+- **Build Automation** - Clean builds with error handling
+- **Test Execution** - Unit tests and UI tests with detailed reporting
+- **Performance Metrics** - Build time, test counts, project size
+- **Error Handling** - Graceful failure with debugging information
+- **Timestamped Reports** - Detailed logs in `build/reports/`
 
 **Usage:**
 ```bash

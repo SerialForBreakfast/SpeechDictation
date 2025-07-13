@@ -1,39 +1,28 @@
-# SpeechDictation - Feature Tasks & Development Roadmap
+# SpeechDictation - Comprehensive Task Management
 
-## Current Status
-The app successfully performs real-time speech recognition with export/sharing functionality, intelligent autoscroll, and comprehensive audio recording with timing data. The project is now expanding to include **live camera feed input with audio descriptions** for enhanced accessibility and content creation.
+## Project Status Overview
+The SpeechDictation app has evolved from a basic speech recognition tool into a comprehensive accessibility platform. Core features are complete, with new priorities focused on camera integration and enhanced accessibility features.
 
-**NEW: Build & Test Automation System** - Comprehensive utility scripts for iterative development and validation.
+**Current Build Status**: All tests passing, build automation system operational
+**Latest Achievement**: Enhanced export functionality with professional timing formats (SRT, VTT, TTML, JSON)
+**Next Priority**: Camera feed integration with audio descriptions for accessibility
 
 ---
 
-## High Priority Tasks
+## COMPLETED TASKS
 
 ### TASK-020: Build & Test Automation System - COMPLETED
 **Status**: COMPLETED
 **Priority**: HIGH
-**Estimated Effort**: 4-6 hours
-**Actual Effort**: 3 hours
-
-**User Story:** 
-As a developer, I want automated build and test validation with comprehensive reporting so I can iterate quickly and ensure code quality.
-
-**Acceptance Criteria:**
-- Comprehensive build and test automation script (`build_and_test.sh`)
-- Quick iteration script for rapid development cycles (`quick_iterate.sh`)
-- Timestamped reports with detailed success/failure analysis
-- Performance metrics tracking (build time, test counts, project size)
-- Error handling with debugging information
-- Support for both simulator and device testing
-- Integration with development workflow
+**Effort**: 3 hours (estimated 4-6 hours)
 
 **Implementation:**
-- **`utility/build_and_test.sh`** - Full validation with detailed reporting
-- **`utility/quick_iterate.sh`** - Fast iteration for development cycles
-- **`utility/README.md`** - Comprehensive documentation and usage guide
-- **Report Structure** - `build/reports/` with timestamped logs
-- **Error Handling** - Graceful failure with system information capture
-- **Performance Metrics** - Build time, test counts, disk space monitoring
+- `utility/build_and_test.sh` - Full validation with detailed reporting
+- `utility/quick_iterate.sh` - Fast iteration for development cycles
+- `utility/README.md` - Comprehensive documentation
+- Timestamped reports in `build/reports/` with performance metrics
+- Error handling with system information capture
+- Support for both simulator and device testing
 
 **Usage:**
 ```bash
@@ -50,526 +39,399 @@ As a developer, I want automated build and test validation with comprehensive re
 ### TASK-001: Export & Share Functionality - COMPLETED
 **Status**: COMPLETED
 **Priority**: HIGH
-**Estimated Effort**: 8-12 hours
-**Actual Effort**: 10 hours
-
-**User Story:** 
-As a user, I want to export and share my transcribed text in multiple formats so I can use the content in other applications and workflows.
-
-**Acceptance Criteria:**
-- Export to plain text, rich text, and markdown formats
-- Share via native iOS share sheet
-- Copy to clipboard functionality
-- Support for timing data export (SRT, VTT, TTML, JSON)
-- Audio + timing data export for professional workflows
-- User-friendly format selection interface
+**Effort**: 10 hours (estimated 8-12 hours)
 
 **Implementation:**
-- **ExportManager.swift** - Comprehensive export functionality
-- **NativeStyleShareView.swift** - Enhanced UI with format selection
-- **Multiple Export Formats** - Text, timing, and audio+timing
-- **Professional Workflows** - SRT, VTT, TTML, JSON support
+- ExportManager.swift - Comprehensive export functionality
+- NativeStyleShareView.swift - Enhanced UI with format selection
+- Multiple export formats: Plain text, RTF, Markdown
+- Professional timing formats: SRT, VTT, TTML, JSON
+- Audio + timing data export for professional workflows
+- iOS share sheet integration and Files app support
 
 ### TASK-001A: Intelligent Autoscroll System - COMPLETED
 **Status**: COMPLETED
-**Priority**: HIGH (User Request)
-**Estimated Effort**: 6-8 hours
-**Actual Effort**: 6 hours
+**Priority**: HIGH
+**Effort**: 6 hours (estimated 6-8 hours)
 
-**User Story:**
-As a user, I want the transcript to automatically scroll with new content when I'm viewing the latest text, but stop scrolling when I scroll up to read previous content, with an easy way to jump back to the live transcript.
-
-**Acceptance Criteria:**
+**Implementation:**
 - Auto-scroll when user is at bottom and new text arrives
 - Stop auto-scroll when user manually scrolls up
 - "Jump to Live" button appears when user scrolls away from bottom
 - Resume auto-scroll when user returns to bottom
 - Smooth animations for scroll movements and button transitions
-- Proper user interaction detection
-
-**Technical Implementation:**
-- ScrollViewReader integration for precise scroll control
-- Gesture recognition for user scroll detection
-- State management for scroll position and user behavior
-- Animation system with proper timing and easing
-- "Jump to Live" floating button with show/hide logic
 
 ### TASK-017: Audio Recording with Timing Data - COMPLETED
 **Status**: COMPLETED
 **Priority**: HIGH
-**Estimated Effort**: 8-12 hours
-**Actual Effort**: 8 hours
+**Effort**: 8 hours (estimated 8-12 hours)
 
-**User Story:**
-As a user, I want my audio recordings to be stored with precise timing data so that I can replay the audio with synchronized transcriptions and export in professional formats like SRT for video editing.
-
-**Acceptance Criteria:**
-- Record and store high-quality audio during transcription
-- Capture precise timing data for each transcribed segment
-- Store timing metadata with millisecond precision
-- Implement audio playback with synchronized text highlighting
-- Export timing data in SRT (SubRip) format
-- Export timing data in VTT (WebVTT) format
-- Export timing data in TTML (Timed Text Markup Language) format
-- Support audio-only export with embedded timing metadata
-- Implement seek-to-text functionality (tap text to jump to audio position)
-- Add playback speed controls (0.5x, 1x, 1.5x, 2x)
-- Display current audio position and total duration
-- Support audio waveform with playback position indicator
-- Implement audio compression and storage optimization
-- Add audio quality settings (sample rate, bit depth, compression)
-
-**Technical Implementation:**
-- Extend SpeechRecognizer to capture timing data for each recognition result
-- Create AudioRecordingManager service for audio capture and storage
-- Implement TimingDataManager for storing and managing timing metadata
-- Add SRT/VTT/TTML export functionality to ExportManager
-- Create AudioPlaybackManager for synchronized audio/text playback
-- Implement audio buffer management for efficient storage
-- Add audio session configuration for high-quality recording
-- Create timing data models and persistence layer
-- Add simulator compatibility with fallback audio formats
-- Implement proper error handling for audio hardware issues
-
-**Completed Components:**
+**Implementation:**
 - TimingData.swift - Data models for timing information
 - TimingDataManager.swift - Service for timing data management
 - AudioRecordingManager.swift - High-quality audio recording service
 - AudioPlaybackManager.swift - Synchronized audio/text playback
 - SpeechRecognizer+Timing.swift - Extension for timing data capture
-- ExportManager.swift - Extended with timing export formats
-- SpeechRecognitionViewModel.swift - Updated with timing integration
-- Simulator compatibility fixes - Added fallback audio formats and error handling
-- Xcode project integration - All files properly added to project targets
+- Enhanced ExportManager with timing export formats
+- Simulator compatibility fixes with fallback audio formats
+
+### Recent Fixes - COMPLETED
+- **Export Manager Hang Fix**: Fixed UI hangs during export by moving heavy file generation to background queues and properly managing UIDocumentPicker delegates
+- **Build Script Improvements**: Added `--simulator-id` flag for specific simulator targeting and made unit tests opt-in via `--enableUnitTests`
+- **SRT Format Enhancement**: Improved SRT export to group segments by duration (2s max), character count (42 max), or sentence boundaries for better readability
 
 ---
 
-### TASK-018: Live Camera Feed with Audio Descriptions - NEW PRIORITY
+## HIGH PRIORITY TASKS (Current Focus)
+
+### TASK-021: Export Performance & Reliability - IN PROGRESS
+**Status**: IN PROGRESS
+**Priority**: HIGH
+**Effort**: 2-4 hours
+
+**User Story:**
+As a user, I want export functionality to be fast and reliable without UI freezes or hangs.
+
+**Recent Progress:**
+- Fixed export hangs by moving file generation to background queues
+- Proper UIDocumentPicker delegate management to prevent crashes
+- Enhanced SRT format with intelligent segment grouping
+- Build script improvements for better development workflow
+
+**Remaining Tasks:**
+- [ ] Test export functionality on physical device
+- [ ] Validate all export formats with large transcription files
+- [ ] Add progress indicators for long export operations
+- [ ] Implement export cancellation capability
+
+### TASK-018: Live Camera Feed with Audio Descriptions - PLANNED
 **Status**: PLANNING
 **Priority**: HIGH
-**Estimated Effort**: 12-16 hours
-**Target Completion**: January 2025
+**Effort**: 12-16 hours
+**Target**: January 2025
 
 **User Story:**
 As a user, I want to capture live camera feed with real-time audio descriptions so that I can create accessible content and provide visual context for users with visual impairments.
 
 **Acceptance Criteria:**
-- Implement live camera feed capture using AVFoundation
-- Generate real-time audio descriptions of visual content
-- Integrate camera feed with existing speech recognition
-- Add accessibility features for users with visual impairments
-- Support both front and back camera selection
-- Implement camera permission handling and user guidance
-- Add camera quality settings (resolution, frame rate)
-- Create audio description generation for common visual elements
-- Support recording video with synchronized audio descriptions
-- Add camera focus and exposure controls
-- Implement camera flash and lighting controls
-- Add camera zoom functionality
-- Support camera filters and effects
-- Create camera preview with accessibility overlays
-- Implement camera session management and error handling
+- [ ] Implement live camera feed capture using AVFoundation
+- [ ] Generate real-time audio descriptions of visual content
+- [ ] Integrate camera feed with existing speech recognition
+- [ ] Add accessibility features for users with visual impairments
+- [ ] Support both front and back camera selection
+- [ ] Implement camera permission handling and user guidance
+- [ ] Add camera quality settings (resolution, frame rate)
+- [ ] Create audio description generation for common visual elements
+- [ ] Support recording video with synchronized audio descriptions
 
 **Technical Implementation:**
-- Create CameraManager service for camera feed capture
-- Implement AudioDescriptionGenerator for visual content analysis
-- Add VisualAccessibilityProcessor for accessibility features
-- Create CameraPreviewView for live camera display
-- Implement camera session configuration and management
-- Add camera permission handling and user guidance
-- Create audio description synthesis and playback
-- Implement camera controls (focus, exposure, zoom, flash)
-- Add camera quality settings and optimization
-- Create accessibility overlays and audio cues
-- Implement camera error handling and recovery
-- Add camera session persistence and state management
+- [ ] CameraManager.swift - Camera feed capture and management
+- [ ] AudioDescriptionGenerator.swift - Visual content analysis
+- [ ] VisualAccessibilityProcessor.swift - Accessibility features
+- [ ] CameraPreviewView.swift - Live camera display
+- [ ] CameraControlsView.swift - Camera controls interface
+- [ ] CameraSettingsView.swift - Camera quality settings
 
-**New Components Required:**
-- CameraManager.swift - Camera feed capture and management
-- AudioDescriptionGenerator.swift - Visual content analysis and description generation
-- VisualAccessibilityProcessor.swift - Accessibility features for visual content
-- CameraPreviewView.swift - Live camera display with accessibility overlays
-- CameraControlsView.swift - Camera controls (focus, exposure, zoom, flash)
-- CameraSettingsView.swift - Camera quality and accessibility settings
-
----
-
-### TASK-019: Enhanced Audio Descriptions & Accessibility
+### TASK-019: Enhanced Audio Descriptions & Accessibility - PLANNED
 **Status**: PLANNING
 **Priority**: HIGH
-**Estimated Effort**: 8-12 hours
-**Target Completion**: January 2025
+**Effort**: 8-12 hours
+**Target**: January 2025
 
 **User Story:**
 As a user with visual impairments, I want detailed and contextual audio descriptions of visual content so that I can fully understand and interact with the environment around me.
 
 **Acceptance Criteria:**
-- Implement detailed audio descriptions for visual elements
-- Add contextual information (location, movement, relationships)
-- Support multiple description detail levels (basic, detailed, comprehensive)
-- Add audio cues for important visual events
-- Implement spatial audio descriptions for location awareness
-- Add voice customization for audio descriptions
-- Support multiple languages for audio descriptions
-- Create accessibility shortcuts and gestures
-- Add haptic feedback for visual events
-- Implement audio description timing and synchronization
-- Add audio description preferences and customization
-- Create accessibility training and onboarding
-
-**Technical Implementation:**
-- Enhance AudioDescriptionGenerator with detailed analysis
-- Implement contextual information extraction
-- Add spatial audio processing and positioning
-- Create voice synthesis customization
-- Implement accessibility gesture recognition
-- Add haptic feedback integration
-- Create accessibility settings and preferences
-- Implement audio description timing and sync
-- Add multi-language support for descriptions
-- Create accessibility onboarding flow
+- [ ] Implement detailed audio descriptions for visual elements
+- [ ] Add contextual information (location, movement, relationships)
+- [ ] Support multiple description detail levels (basic, detailed, comprehensive)
+- [ ] Add audio cues for important visual events
+- [ ] Implement spatial audio descriptions for location awareness
+- [ ] Add voice customization for audio descriptions
+- [ ] Support multiple languages for audio descriptions
+- [ ] Create accessibility shortcuts and gestures
 
 ---
 
-### TASK-002: Text Editing & Correction
-**Description:** Users should be able to edit and correct transcribed text before saving or sharing.
+## MEDIUM PRIORITY TASKS
+
+### TASK-002: Text Editing & Correction - PENDING
+**Status**: PENDING
+**Priority**: MEDIUM
+**Effort**: 6-8 hours
 
 **User Story:**
 As a user, I want to edit the transcribed text to correct any speech recognition errors so that my final document is accurate.
 
 **Acceptance Criteria:**
-- Make transcription text view editable
-- Add text selection capabilities
-- Implement undo/redo functionality
-- Add search and replace functionality
-- Support text formatting options (bold, italic, etc.)
-- Preserve editing state during app backgrounding
-- Auto-save edited content
+- [ ] Make transcription text view editable
+- [ ] Add text selection capabilities
+- [ ] Implement undo/redo functionality
+- [ ] Add search and replace functionality
+- [ ] Support text formatting options (bold, italic, etc.)
+- [ ] Preserve editing state during app backgrounding
+- [ ] Auto-save edited content
 
----
-
-### TASK-003: Recording Session Management
-**Description:** Implement proper session handling with pause, resume, and multiple recording management.
+### TASK-003: Recording Session Management - PENDING
+**Status**: PENDING
+**Priority**: MEDIUM
+**Effort**: 4-6 hours
 
 **User Story:**
 As a user, I want to pause and resume my recording session so that I can take breaks without losing my progress or starting over.
 
 **Acceptance Criteria:**
-- Add pause/resume functionality to recording
-- Maintain transcription state during pause
-- Display recording duration timer
-- Show visual recording state indicators
-- Support multiple named recording sessions
-- Auto-save session progress
-- Recover sessions after app crash/restart
+- [ ] Add pause/resume functionality to recording
+- [ ] Maintain transcription state during pause
+- [ ] Display recording duration timer
+- [ ] Show visual recording state indicators
+- [ ] Support multiple named recording sessions
+- [ ] Auto-save session progress
+- [ ] Recover sessions after app crash/restart
 
----
-
-### TASK-004: Audio Playback & Review
-**Description:** Users need to review their recorded audio alongside the transcription.
+### TASK-004: Audio Playback & Review - PENDING
+**Status**: PENDING
+**Priority**: MEDIUM
+**Effort**: 6-8 hours
 
 **User Story:**
 As a user, I want to listen to my recorded audio while reading the transcription so that I can verify accuracy and make corrections.
 
 **Acceptance Criteria:**
-- Record and store audio during transcription
-- Implement audio playback controls (play, pause, stop, seek)
-- Sync audio playback with transcription text highlighting
-- Add playback speed controls (0.5x, 1x, 1.5x, 2x)
-- Show audio waveform with playback position
-- Support jumping to specific parts of audio by tapping text
-- Display audio duration and current position
+- [ ] Enhanced audio playback controls (play, pause, stop, seek)
+- [ ] Improved sync between audio playback and transcription highlighting
+- [ ] Enhanced playback speed controls with more options
+- [ ] Better audio waveform with playback position indicator
+- [ ] Improved jumping to specific audio parts by tapping text
+- [ ] Enhanced audio duration and position display
 
----
-
-### TASK-005: Enhanced Waveform Visualization
-**Description:** Improve the current basic waveform to provide better visual feedback.
+### TASK-005: Enhanced Waveform Visualization - PENDING
+**Status**: PENDING
+**Priority**: MEDIUM
+**Effort**: 4-6 hours
 
 **User Story:**
 As a user, I want to see a detailed waveform of my audio so that I can visually identify speaking patterns and silence periods.
 
 **Acceptance Criteria:**
-- Display real-time animated waveform during recording
-- Show different colors for volume levels (quiet, normal, loud)
-- Add silence detection visualization
-- Implement zoom controls for detailed waveform view
-- Show speaking vs. silence periods clearly
-- Add volume level indicators
-- Smooth animation with 60fps performance
+- [ ] Display real-time animated waveform during recording
+- [ ] Show different colors for volume levels (quiet, normal, loud)
+- [ ] Add silence detection visualization
+- [ ] Implement zoom controls for detailed waveform view
+- [ ] Show speaking vs. silence periods clearly
+- [ ] Add volume level indicators
+- [ ] Smooth animation with 60fps performance
 
----
-
-## Medium Priority Tasks
-
-### TASK-006: Advanced Settings & Preferences
-**Description:** Expand settings beyond current basic font size and theme options.
+### TASK-006: Advanced Settings & Preferences - PENDING
+**Status**: PENDING
+**Priority**: MEDIUM
+**Effort**: 6-8 hours
 
 **User Story:**
 As a user, I want comprehensive settings to customize the app's behavior to match my preferences and use cases.
 
 **Acceptance Criteria:**
-- Add language selection for speech recognition
-- Implement auto-punctuation toggle
-- Add profanity filter option
-- Include audio quality settings (sample rate, bit depth)
-- Support custom vocabulary/words
-- Add automatic session saving preferences
-- Include accessibility options (larger text, high contrast)
-- Export/import settings capability
+- [ ] Add language selection for speech recognition
+- [ ] Implement auto-punctuation toggle
+- [ ] Add profanity filter option
+- [ ] Include audio quality settings (sample rate, bit depth)
+- [ ] Support custom vocabulary/words
+- [ ] Add automatic session saving preferences
+- [ ] Include accessibility options (larger text, high contrast)
+- [ ] Export/import settings capability
 
----
-
-### TASK-007: File Management System
-**Description:** Organize and manage multiple transcription files and recordings.
+### TASK-007: File Management System - PENDING
+**Status**: PENDING
+**Priority**: MEDIUM
+**Effort**: 8-10 hours
 
 **User Story:**
 As a user, I want to organize my transcriptions and recordings into a file system so that I can easily find and manage my content.
 
 **Acceptance Criteria:**
-- Create file browser interface
-- Support file/folder organization
-- Add search functionality across all files
-- Include file metadata (date, duration, word count)
-- Support file renaming and deletion
-- Add tags/categories for organization
-- Implement sorting options (date, name, size)
-- Include cloud sync capabilities
+- [ ] Create file browser interface
+- [ ] Support file/folder organization
+- [ ] Add search functionality across all files
+- [ ] Include file metadata (date, duration, word count)
+- [ ] Support file renaming and deletion
+- [ ] Add tags/categories for organization
+- [ ] Implement sorting options (date, name, size)
+- [ ] Include cloud sync capabilities
 
 ---
+
+## LOW PRIORITY / FUTURE TASKS
 
 ### TASK-008: Background Recording & App State Management
-**Description:** Handle app backgrounding and interruptions gracefully.
+**Status**: PENDING
+**Priority**: LOW
+**Effort**: 6-8 hours
 
 **User Story:**
-As a user, I want the app to continue recording when I switch to other apps or when I receive calls so that I don't lose my transcription progress.
+As a user, I want the app to continue recording when I switch to other apps or when my phone locks so that I don't lose content.
 
 **Acceptance Criteria:**
-- Support background audio recording
-- Handle phone call interruptions gracefully
-- Resume recording after interruptions
-- Show persistent notification during background recording
-- Implement proper audio session management
-- Handle low battery scenarios
-- Respect system audio policy changes
-
----
-
-## User Experience Improvements
+- [ ] Enable background audio recording
+- [ ] Maintain transcription during background operation
+- [ ] Handle app state transitions gracefully
+- [ ] Implement background task management
+- [ ] Add background recording indicators
+- [ ] Support background recording time limits
+- [ ] Implement proper background permissions
 
 ### TASK-009: Enhanced UI/UX Design
-**Description:** Improve the overall user interface and experience.
+**Status**: PENDING
+**Priority**: LOW
+**Effort**: 8-12 hours
 
 **User Story:**
-As a user, I want an intuitive and beautiful interface that makes speech transcription enjoyable and efficient.
+As a user, I want a polished, intuitive interface that makes the app enjoyable to use and easy to navigate.
 
 **Acceptance Criteria:**
-- Redesign main interface with better visual hierarchy
-- Add animations and micro-interactions
-- Implement haptic feedback for key actions
-- Create onboarding flow for new users
-- Add contextual help and tips
-- Support Dynamic Type for accessibility
-- Implement proper dark mode support
-- Add keyboard shortcuts for power users
+- [ ] Redesign main interface with modern iOS design patterns
+- [ ] Add haptic feedback for user interactions
+- [ ] Implement smooth animations and transitions
+- [ ] Create custom icons and visual elements
+- [ ] Add dark mode optimization
+- [ ] Implement accessibility features (VoiceOver, Dynamic Type)
+- [ ] Add onboarding flow for new users
+- [ ] Create help/tutorial system
 
----
-
-### TASK-010: Performance Optimization
-**Description:** Optimize app performance for extended use and low-memory devices.
+### TASK-010: Multi-Language Support
+**Status**: PENDING
+**Priority**: LOW
+**Effort**: 12-16 hours
 
 **User Story:**
-As a user, I want the app to perform smoothly even during long recording sessions without draining my battery excessively.
+As a user, I want to use the app in my preferred language and transcribe speech in multiple languages.
 
 **Acceptance Criteria:**
-- Optimize memory usage for long sessions
-- Implement efficient audio buffer management
-- Reduce battery drain during extended use
-- Add performance monitoring and metrics
-- Optimize app launch time
-- Implement lazy loading for large transcriptions
-- Add low-power mode optimizations
-
----
-
-## Technical Debt & Quality
+- [ ] Add localization for app interface
+- [ ] Support multiple speech recognition languages
+- [ ] Implement language detection
+- [ ] Add language switching during recording
+- [ ] Support right-to-left languages
+- [ ] Include language-specific formatting
+- [ ] Add translation capabilities
+- [ ] Support mixed-language transcription
 
 ### TASK-011: Error Handling & Recovery
-**Description:** Implement comprehensive error handling and recovery mechanisms.
+**Status**: PENDING
+**Priority**: LOW
+**Effort**: 4-6 hours
 
 **User Story:**
-As a user, I want the app to handle errors gracefully and provide clear feedback when something goes wrong.
+As a user, I want the app to handle errors gracefully and recover from issues without losing my work.
 
 **Acceptance Criteria:**
-- Add comprehensive error handling for all speech recognition scenarios
-- Implement automatic retry mechanisms for transient failures
-- Show user-friendly error messages with actionable suggestions
-- Add offline capability detection and handling
-- Implement crash recovery mechanisms
-- Log errors for debugging (with privacy protection)
-- Add network connectivity handling
+- [ ] Implement comprehensive error handling
+- [ ] Add automatic recovery mechanisms
+- [ ] Create user-friendly error messages
+- [ ] Implement crash reporting
+- [ ] Add data backup and recovery
+- [ ] Handle network connectivity issues
+- [ ] Implement graceful degradation
+- [ ] Add error logging and diagnostics
 
 ---
 
-### TASK-012: Testing & Quality Assurance
-**Description:** Improve test coverage and quality assurance processes.
+## TECHNICAL DEBT & IMPROVEMENTS
 
-**User Story:**
-As a developer, I want comprehensive tests to ensure the app works reliably across different scenarios and devices.
+### Architecture Improvements
+- [ ] Implement proper dependency injection throughout codebase
+- [ ] Adopt async/await pattern consistently across all components
+- [ ] Enhance unit test coverage for all services
+- [ ] Implement proper error handling patterns
+- [ ] Add comprehensive logging system
+- [ ] Implement proper state management patterns
 
-**Acceptance Criteria:**
-- Implement unit tests for all business logic
-- Add integration tests for speech recognition workflows
-- Create UI tests for critical user paths
-- Add performance tests for memory and battery usage
-- Implement accessibility tests
-- Add regression tests for bug fixes
-- Create automated testing pipeline
+### Performance Optimizations
+- [ ] Optimize audio processing for better performance
+- [ ] Implement efficient memory management for large transcriptions
+- [ ] Add performance monitoring and metrics
+- [ ] Optimize UI rendering for smooth animations
+- [ ] Implement efficient data persistence
+- [ ] Add background processing optimizations
 
----
-
-### TASK-013: Code Architecture Improvements
-**Description:** Refactor code for better maintainability and scalability.
-
-**User Story:**
-As a developer, I want clean, maintainable code that follows best practices and is easy to extend.
-
-**Acceptance Criteria:**
-- Implement proper dependency injection throughout the app
-- Create protocol abstractions for testability
-- Refactor SpeechRecognizer extensions into separate concerns
-- Add proper async/await patterns throughout codebase
-- Implement actor-based concurrency where appropriate
-- Add comprehensive documentation and code comments
-- Follow Swift concurrency best practices
+### Security & Privacy
+- [ ] Implement data encryption for stored transcriptions
+- [ ] Add privacy settings for data handling
+- [ ] Implement secure audio file storage
+- [ ] Add data retention policies
+- [ ] Implement secure sharing mechanisms
+- [ ] Add privacy compliance features
 
 ---
 
-## Future Enhancements
+## DEVELOPMENT WORKFLOW
 
-### TASK-014: AI-Powered Features
-**Description:** Integrate AI capabilities for enhanced transcription and content processing.
+### Current Tools
+- `utility/build_and_test.sh` - Full project validation
+- `utility/quick_iterate.sh` - Fast development cycles
+- Comprehensive reporting system
+- Simulator and device testing support
 
-**User Story:**
-As a user, I want AI-powered features to automatically improve my transcriptions and provide intelligent insights.
+### Development Process
+1. **Planning Phase**: Define requirements and acceptance criteria
+2. **Implementation Phase**: Code development with testing
+3. **Validation Phase**: Build and test automation
+4. **Review Phase**: Code review and documentation updates
+5. **Integration Phase**: Merge and deploy changes
 
-**Acceptance Criteria:**
-- Implement automatic punctuation and capitalization
-- Add speaker identification for multi-person conversations
-- Create automatic summary generation
-- Add sentiment analysis for transcribed content
-- Implement smart editing suggestions
-- Add automatic topic extraction and tagging
-- Support real-time translation capabilities
-
----
-
-### TASK-015: Collaboration Features
-**Description:** Enable sharing and collaboration on transcriptions.
-
-**User Story:**
-As a user, I want to collaborate with others on transcriptions so that we can work together on shared content.
-
-**Acceptance Criteria:**
-- Add real-time collaboration capabilities
-- Implement user authentication and accounts
-- Create shared workspace functionality
-- Add commenting and annotation features
-- Support version history and conflict resolution
-- Implement permission management (view, edit, admin)
-- Add notification system for collaboration events
+### Quality Assurance
+- All features must pass unit tests
+- Code must follow Swift concurrency best practices
+- UI must be accessible and follow iOS design guidelines
+- Performance must meet benchmarks
+- Documentation must be updated with changes
 
 ---
 
-## Analytics & Insights
+## PROJECT METRICS
 
-### TASK-016: Usage Analytics & Insights
-**Description:** Provide users with insights about their transcription usage and patterns.
-
-**User Story:**
-As a user, I want to see analytics about my transcription usage so that I can understand my speaking patterns and productivity.
-
-**Acceptance Criteria:**
-- Track and display transcription statistics (words per minute, session duration)
-- Show usage patterns and trends over time
-- Provide vocabulary insights and most used words
-- Add productivity metrics and goals
-- Create weekly/monthly usage reports
-- Implement privacy-first analytics (local processing)
-- Add export functionality for personal data
-
----
-
-## Priority Matrix
-
-**Critical (Week 1-2):**
-- ~~TASK-001: Export & Share Functionality~~ **COMPLETED**
-- ~~TASK-001A: Intelligent Autoscroll System~~ **COMPLETED**
-- ~~TASK-017: Audio Recording with Timing Data~~ **COMPLETED**
-- **TASK-018: Live Camera Feed with Audio Descriptions** - NEW PRIORITY
-- **TASK-019: Enhanced Audio Descriptions & Accessibility** - NEW PRIORITY
-- TASK-002: Text Editing & Correction
-- TASK-011: Error Handling & Recovery
-
-**High (Week 3-4):**
-- TASK-003: Recording Session Management
-- TASK-004: Audio Playback & Review
-- TASK-008: Background Recording
-
-**Medium (Month 2):**
-- TASK-005: Enhanced Waveform Visualization
-- TASK-006: Advanced Settings & Preferences
-- TASK-009: Enhanced UI/UX Design
-
-**Future (Month 3+):**
-- TASK-014: AI-Powered Features
-- TASK-015: Collaboration Features
-- TASK-016: Usage Analytics & Insights
-
----
-
-## Current Project Status
-
-### Completed Features ✓
-- Real-time speech recognition with millisecond precision
-- Export and sharing functionality (TASK-001)
-- Intelligent autoscroll system (TASK-001A)
-- Audio recording with timing data (TASK-017)
-- High-quality audio recording with native format detection
-- Multiple export formats (SRT, VTT, TTML, JSON)
-- Synchronized audio/text playback with seek functionality
-- Basic audio waveform visualization
-- Settings panel with theme and font size options
-- Custom sharing interface to avoid unwanted extensions
-- Simulator compatibility with graceful fallbacks
+### Completed Features
+- 4 major tasks completed (TASK-001, TASK-001A, TASK-017, TASK-020)
+- Core speech recognition functionality
+- Export and sharing system
+- Audio recording with timing data
+- Build automation system
 
 ### In Progress
-- **TASK-018: Live Camera Feed with Audio Descriptions** - PLANNING PHASE
-- **TASK-019: Enhanced Audio Descriptions & Accessibility** - PLANNING PHASE
+- 1 task in progress (TASK-021: Export Performance)
+- 2 high-priority tasks planned (TASK-018, TASK-019)
 
-### Next Priority
-- TASK-002: Text Editing & Correction
-- TASK-011: Error Handling & Recovery
-- TASK-003: Recording Session Management
+### Upcoming Priorities
+- Camera feed integration (TASK-018)
+- Enhanced accessibility features (TASK-019)
+- Text editing capabilities (TASK-002)
+- Recording session management (TASK-003)
 
----
-
-## Project Evolution: From Speech Dictation to Accessibility Platform
-
-The project has evolved from a simple speech dictation app to a comprehensive **accessibility and content creation platform** that combines:
-
-1. **Real-time Speech Recognition** - High-quality transcription with timing data
-2. **Live Camera Feed Processing** - Visual content capture and analysis
-3. **Audio Descriptions** - Accessibility features for users with visual impairments
-4. **Integrated Audio-Visual Processing** - Combined camera and audio functionality
-5. **Professional Export Capabilities** - Multiple formats for content creation workflows
-
-This expansion positions SpeechDictation as a powerful tool for:
-- **Content Creators** - Professional transcription and video editing workflows
-- **Accessibility Users** - Audio descriptions and visual content accessibility
-- **Educators** - Lecture capture with synchronized transcriptions
-- **Professionals** - Meeting recording with precise timing data
+### Total Estimated Effort Remaining
+- High Priority: ~24-32 hours
+- Medium Priority: ~40-56 hours
+- Low Priority: ~38-54 hours
+- **Total**: ~102-142 hours
 
 ---
 
-*Last Updated: December 19, 2024*
-*Next Review: January 2, 2025* 
+## NOTES
+
+### Recent Achievements
+- Successfully implemented comprehensive export system with professional timing formats
+- Fixed critical UI hangs and performance issues in export functionality
+- Enhanced build automation with simulator selection and test management
+- Improved SRT format output for better subtitle readability
+
+### Current Focus Areas
+1. **Export System Stability**: Ensuring reliable export functionality across all formats
+2. **Camera Integration Planning**: Preparing for major feature expansion
+3. **Accessibility Enhancement**: Building foundation for comprehensive accessibility features
+4. **Development Workflow**: Maintaining efficient build and test processes
+
+### Next Milestones
+- Complete export system validation and testing
+- Begin camera feed integration implementation
+- Implement basic text editing capabilities
+- Enhance audio playback and review features
+
+This comprehensive task list represents the complete roadmap for the SpeechDictation project, from its current state as a functional speech recognition app to its future as a comprehensive accessibility platform. 

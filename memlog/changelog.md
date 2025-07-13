@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Memlog Consolidation** - Unified task management system
+  - Consolidated all task files (current_tasks.md, tasks_updated.md) into comprehensive tasks.md
+  - Organized tasks by status: COMPLETED, HIGH PRIORITY, MEDIUM PRIORITY, LOW PRIORITY
+  - Added project metrics tracking with effort estimates and completion status
+  - Enhanced task documentation with clear acceptance criteria and implementation details
+  - Improved development workflow documentation with quality assurance guidelines
+- **Export System Enhancements** - Improved reliability and performance
+  - Fixed UI hangs during export by moving heavy file generation to background queues
+  - Proper UIDocumentPicker delegate management to prevent crashes and memory leaks
+  - Enhanced SRT format with intelligent segment grouping (2s duration, 42 char limit, sentence boundaries)
+  - Improved export coordinator lifecycle management for better stability
+- **Build Script Improvements** - Enhanced development workflow
+  - Added `--simulator-id <UUID>` flag for targeting specific simulators
+  - Made unit tests opt-in via `--enableUnitTests` flag (build-only by default)
+  - Improved simulator selection and validation logic
+  - Enhanced error handling and reporting for build failures
 - **Reset Button Feature** - Clear text without stopping recording
   - Added reset button next to Start Listening button with SFSymbols "arrow.clockwise" icon
   - Button is disabled when text is empty or shows initial message
