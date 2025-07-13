@@ -186,19 +186,17 @@ struct CameraErrorView: View {
 /// Camera settings view for advanced options
 struct CameraSettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var enableObjectDetection = true
-    @State private var enableSceneDescription = true
+    @ObservedObject private var settings = CameraSettingsManager.shared
     @State private var enableAudioDescriptions = false
-    @State private var detectionSensitivity: Double = 0.5
     
     var body: some View {
         NavigationView {
             Form {
                 Section("Detection Features") {
-                    Toggle("Object Detection", isOn: $enableObjectDetection)
+                    Toggle("Object Detection", isOn: $settings.enableObjectDetection)
                         .accessibilityHint("Enables or disables real-time object detection overlays")
                     
-                    Toggle("Scene Description", isOn: $enableSceneDescription)
+                    Toggle("Scene Description", isOn: $settings.enableSceneDescription)
                         .accessibilityHint("Enables or disables scene classification and description")
                     
                     Toggle("Audio Descriptions", isOn: $enableAudioDescriptions)
@@ -215,9 +213,9 @@ struct CameraSettingsView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             
-                            Slider(value: $detectionSensitivity, in: 0.1...0.9, step: 0.1)
+                            Slider(value: $settings.detectionSensitivity, in: 0.1...0.9, step: 0.1)
                                 .accessibilityLabel("Detection sensitivity")
-                                .accessibilityValue("\(Int(detectionSensitivity * 100)) percent")
+                                .accessibilityValue("\(Int(settings.detectionSensitivity * 100)) percent")
                                 .accessibilityHint("Adjusts how confident the system must be before showing a detection")
                             
                             Text("High")
@@ -226,6 +224,38 @@ struct CameraSettingsView: View {
                         }
                         
                         Text("Higher values show fewer but more confident detections")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Section("Update Frequency") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Scene Description Updates")
+                            .font(.subheadline)
+                        
+                        HStack {
+                            Text("Fast\n(0.5s)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            
+                            Slider(value: $settings.sceneUpdateFrequency, in: 0.5...5.0, step: 0.5)
+                                .accessibilityLabel("Scene update frequency")
+                                .accessibilityValue("\(settings.sceneUpdateFrequency, specifier: "%.1f") seconds")
+                                .accessibilityHint("Controls how often the scene description text updates")
+                            
+                            Text("Slow\n(5.0s)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        
+                        Text("Current: \(settings.sceneUpdateFrequency, specifier: "%.1f") seconds between updates")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text("Slower updates are easier to read but less responsive")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }

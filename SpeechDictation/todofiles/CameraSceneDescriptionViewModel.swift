@@ -4,6 +4,9 @@ import Vision
 import CoreML
 import Combine
 
+// Import the settings manager
+// Note: This may need to be moved to Services/ directory if build fails
+
 /// ViewModel for managing camera scene description and object detection
 /// This actor handles the coordination between camera input and ML models
 @MainActor
@@ -21,6 +24,8 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
     private let processingQueue = DispatchQueue(label: "CameraSceneDescriptionViewModel.processingQueue", qos: .userInitiated)
     private var cancellables = Set<AnyCancellable>()
     private let sampleBufferProcessor = SampleBufferProcessor()
+    private let settings = CameraSettingsManager.shared
+    private var lastSceneUpdateTime: Date = .distantPast
     
     // MARK: - Initialization
     
@@ -63,17 +68,27 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
             self.errorMessage = nil
         }
         
-        // Process object detection and scene description concurrently
-        async let objectDetectionTask = processObjectDetection(pixelBuffer)
-        async let sceneDescriptionTask = processSceneDescription(pixelBuffer)
+        // Always process object detection (immediate response)
+        let detectedObjects = await processObjectDetection(pixelBuffer)
         
-        // Wait for both tasks to complete
-        let (detectedObjects, sceneDescription) = await (objectDetectionTask, sceneDescriptionTask)
+        // Process scene description only if enough time has passed (debounced)
+        let currentTime = Date()
+        let timeSinceLastUpdate = currentTime.timeIntervalSince(lastSceneUpdateTime)
+        let shouldUpdateScene = timeSinceLastUpdate >= settings.sceneUpdateFrequency
+        
+        var sceneDescription: String? = nil
+        if shouldUpdateScene {
+            sceneDescription = await processSceneDescription(pixelBuffer)
+            lastSceneUpdateTime = currentTime
+        }
         
         // Update UI on main thread
         await MainActor.run {
             self.detectedObjects = detectedObjects
-            self.sceneLabel = sceneDescription
+            // Only update scene label if we processed a new scene description
+            if let newSceneDescription = sceneDescription {
+                self.sceneLabel = newSceneDescription
+            }
             self.isProcessing = false
         }
     }
