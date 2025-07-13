@@ -44,32 +44,56 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
     /// - Parameter sampleBuffer: The camera sample buffer to process
     /// - Note: This method is designed to be called from the camera capture callback
     func processSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        guard !isProcessing else { return }
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         
-        // Extract pixel buffer from sample buffer
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-            Task { @MainActor in
-                self.errorMessage = "Failed to get pixel buffer from sample"
-            }
-            return
-        }
-        
-        // Process on background queue to avoid blocking the camera
+        // Process the pixel buffer with orientation support
         Task {
-            await processPixelBuffer(pixelBuffer)
+            await processPixelBufferWithOrientation(pixelBuffer)
         }
     }
     
     /// Processes a pixel buffer using the configured ML models
     /// - Parameter pixelBuffer: The pixel buffer to process
+    @MainActor
     private func processPixelBuffer(_ pixelBuffer: CVPixelBuffer) async {
         await MainActor.run {
             self.isProcessing = true
             self.errorMessage = nil
         }
         
+        // Get current orientation for Vision framework - but don't use it in this legacy method
+        _ = visionOrientation(from: UIDevice.current.orientation)
+    }
+    
+    /// Convert UIDeviceOrientation to CGImagePropertyOrientation for Vision framework
+    private func visionOrientation(from deviceOrientation: UIDeviceOrientation) -> CGImagePropertyOrientation {
+        switch deviceOrientation {
+        case .portrait:
+            return .right
+        case .landscapeLeft:
+            return .down
+        case .landscapeRight:
+            return .up
+        case .portraitUpsideDown:
+            return .left
+        default:
+            return .right
+        }
+    }
+    
+    /// Processes a pixel buffer using the configured ML models with orientation support
+    /// - Parameter pixelBuffer: The pixel buffer to process
+    private func processPixelBufferWithOrientation(_ pixelBuffer: CVPixelBuffer) async {
+        await MainActor.run {
+            self.isProcessing = true
+            self.errorMessage = nil
+        }
+        
+        // Get current orientation for Vision framework
+        let currentOrientation = visionOrientation(from: UIDevice.current.orientation)
+        
         // Always process object detection (immediate response)
-        let detectedObjects = await processObjectDetection(pixelBuffer)
+        let detectedObjects = await processObjectDetection(pixelBuffer, orientation: currentOrientation)
         
         // Process scene description only if enough time has passed (debounced)
         let currentTime = Date()
@@ -78,7 +102,7 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
         
         var sceneDescription: String? = nil
         if shouldUpdateScene {
-            sceneDescription = await processSceneDescription(pixelBuffer)
+            sceneDescription = await processSceneDescription(pixelBuffer, orientation: currentOrientation)
             lastSceneUpdateTime = currentTime
         }
         
@@ -94,16 +118,18 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
     }
     
     /// Processes object detection on the pixel buffer
-    /// - Parameter pixelBuffer: The pixel buffer to analyze
+    /// - Parameters:
+    ///   - pixelBuffer: The pixel buffer to analyze
+    ///   - orientation: The image orientation for proper coordinate transformation
     /// - Returns: Array of detected objects
-    private func processObjectDetection(_ pixelBuffer: CVPixelBuffer) async -> [VNRecognizedObjectObservation] {
+    private func processObjectDetection(_ pixelBuffer: CVPixelBuffer, orientation: CGImagePropertyOrientation = .right) async -> [VNRecognizedObjectObservation] {
         guard let objectDetector = objectDetector else { 
             print("⚠️ No object detector available")
             return [] 
         }
         
         do {
-            let results = try await objectDetector.detectObjects(from: pixelBuffer)
+            let results = try await objectDetector.detectObjects(from: pixelBuffer, orientation: orientation)
             print("📱 Object detection returned \(results.count) objects")
             return results
         } catch {
@@ -116,13 +142,15 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
     }
     
     /// Processes scene description on the pixel buffer
-    /// - Parameter pixelBuffer: The pixel buffer to analyze
+    /// - Parameters:
+    ///   - pixelBuffer: The pixel buffer to analyze
+    ///   - orientation: The image orientation for proper coordinate transformation
     /// - Returns: Scene description string or nil
-    private func processSceneDescription(_ pixelBuffer: CVPixelBuffer) async -> String? {
+    private func processSceneDescription(_ pixelBuffer: CVPixelBuffer, orientation: CGImagePropertyOrientation = .right) async -> String? {
         guard let sceneDescriber = sceneDescriber else { return nil }
         
         do {
-            return try await sceneDescriber.classifyScene(from: pixelBuffer)
+            return try await sceneDescriber.classifyScene(from: pixelBuffer, orientation: orientation)
         } catch {
             await MainActor.run {
                 self.errorMessage = "Scene description failed: \(error.localizedDescription)"

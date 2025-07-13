@@ -1,59 +1,54 @@
 import Foundation
-import CoreML
 import Vision
+import CoreML
+import ImageIO
 
-/// A scene classification implementation using Vision framework's built-in scene classifier
-/// This provides real scene analysis instead of placeholder random descriptions
-@available(iOS 15.0, *)
+/// A real scene describer implementation using Vision framework's built-in scene classification
+/// Replaces the previous placeholder implementation that returned random descriptions
 final class Places365SceneDescriber: SceneDescribingModel {
-    
-    /// Initialize the Places365SceneDescriber
-    /// Uses Vision framework's built-in scene classification capabilities
     init() {
-        // Using Vision framework's built-in scene classification
+        // No initialization needed - using Vision framework's built-in scene classification
     }
     
     /// Performs real scene classification on a pixel buffer using Vision framework
-    /// - Parameter pixelBuffer: The input image as a CVPixelBuffer
+    /// - Parameters:
+    ///   - pixelBuffer: The input image as a CVPixelBuffer
+    ///   - orientation: The image orientation for proper coordinate transformation
     /// - Returns: A string label describing the scene based on actual image analysis
     /// - Throws: Vision framework errors if classification fails
     /// - Note: This implementation uses Vision's VNClassifyImageRequest for real scene analysis
-    func classifyScene(from pixelBuffer: CVPixelBuffer) async throws -> String {
+    func classifyScene(from pixelBuffer: CVPixelBuffer, orientation: CGImagePropertyOrientation = .right) async throws -> String {
         return try await withCheckedThrowingContinuation { continuation in
             let request = VNClassifyImageRequest { request, error in
                 if let error = error {
+                    print("🚨 Scene classification error: \(error)")
                     continuation.resume(throwing: error)
                     return
                 }
                 
-                guard let observations = request.results as? [VNClassificationObservation] else {
+                // Get the most confident scene classification
+                guard let results = request.results as? [VNClassificationObservation],
+                      let topResult = results.first else {
+                    print("⚠️ No scene classification results found")
                     continuation.resume(returning: "Unknown Scene")
                     return
                 }
                 
-                // Filter for high-confidence classifications (>30%) and get the top result
-                let highConfidenceObservations = observations.filter { $0.confidence > 0.3 }
+                // Clean up the identifier for better readability
+                let cleanedIdentifier = self.cleanSceneIdentifier(topResult.identifier)
+                let confidencePercentage = Int(topResult.confidence * 100)
                 
-                if let topObservation = highConfidenceObservations.first {
-                    // Clean up the identifier to make it more readable
-                    let cleanedIdentifier = self.cleanSceneIdentifier(topObservation.identifier)
-                    let confidencePercent = Int(topObservation.confidence * 100)
-                    continuation.resume(returning: "\(cleanedIdentifier) (\(confidencePercent)%)")
-                } else if let fallbackObservation = observations.first {
-                    // Use lower confidence result as fallback
-                    let cleanedIdentifier = self.cleanSceneIdentifier(fallbackObservation.identifier)
-                    let confidencePercent = Int(fallbackObservation.confidence * 100)
-                    continuation.resume(returning: "\(cleanedIdentifier) (\(confidencePercent)%)")
-                } else {
-                    continuation.resume(returning: "Unknown Scene")
-                }
+                print("🎯 Scene detected: \(cleanedIdentifier) (\(confidencePercentage)% confidence)")
+                
+                // Return the cleaned scene description
+                continuation.resume(returning: cleanedIdentifier)
             }
             
             // Configure request for better scene classification
             request.revision = VNClassifyImageRequestRevision1
             
-            // Set the image orientation correctly for camera input (portrait mode)
-            let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .right)
+            // Set the image orientation correctly for camera input based on device orientation
+            let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: orientation)
             
             do {
                 try handler.perform([request])
@@ -63,24 +58,30 @@ final class Places365SceneDescriber: SceneDescribingModel {
         }
     }
     
+    /// Legacy method for backward compatibility
+    /// - Parameter pixelBuffer: The input image as a CVPixelBuffer
+    /// - Returns: A string label describing the scene based on actual image analysis
+    func classifyScene(from pixelBuffer: CVPixelBuffer) async throws -> String {
+        return try await classifyScene(from: pixelBuffer, orientation: .right)
+    }
+    
     /// Cleans up scene identifiers to make them more human-readable
     /// - Parameter identifier: Raw identifier from Vision framework
-    /// - Returns: Cleaned, human-readable scene description
+    /// - Returns: Cleaned, human-readable description
     private func cleanSceneIdentifier(_ identifier: String) -> String {
-        // Remove technical prefixes and clean up common scene identifiers
-        var cleaned = identifier
-            .replacingOccurrences(of: "_", with: " ")
-            .replacingOccurrences(of: "-", with: " ")
-            .capitalized
+        // Remove prefixes like "n02" or similar scientific notation
+        let cleanedBase = identifier.replacingOccurrences(of: "^n?\\d+_?", with: "", options: .regularExpression)
         
-        // Handle common Vision framework scene classifications
-        if cleaned.lowercased().contains("indoor") {
-            cleaned = cleaned.replacingOccurrences(of: "Indoor", with: "Indoor:")
-        }
-        if cleaned.lowercased().contains("outdoor") {
-            cleaned = cleaned.replacingOccurrences(of: "Outdoor", with: "Outdoor:")
+        // Replace underscores with spaces and capitalize appropriately
+        let withSpaces = cleanedBase.replacingOccurrences(of: "_", with: " ")
+        
+        // Capitalize the first letter of each word
+        let components = withSpaces.components(separatedBy: " ")
+        let capitalizedComponents = components.map { component in
+            guard !component.isEmpty else { return component }
+            return component.prefix(1).uppercased() + component.dropFirst().lowercased()
         }
         
-        return cleaned
+        return capitalizedComponents.joined(separator: " ")
     }
 }

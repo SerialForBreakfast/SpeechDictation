@@ -20,7 +20,7 @@ struct CameraSceneDescriptionView: View {
     var body: some View {
         ZStack {
             // Camera preview background
-            CameraPreview(session: cameraManager.session)
+            CameraPreview(session: cameraManager.session, cameraManager: cameraManager)
                 .edgesIgnoringSafeArea(.all)
                 .onAppear {
                     cameraManager.setSampleBufferHandler(viewModel.processSampleBuffer)

@@ -16,65 +16,66 @@ final class YOLOv3Model: ObjectDetectionModel {
             config.computeUnits = .all // Use both CPU and GPU for better performance
             let mlModel = try YOLOv3Tiny(configuration: config)
             self.model = try VNCoreMLModel(for: mlModel.model)
-            
-            print("✅ YOLOv3Model successfully initialized")
         } catch {
-            print("❌ Failed to initialize YOLOv3Model: \(error)")
+            print("🚨 YOLOv3Model initialization failed: \(error)")
             return nil
         }
     }
     
-    /// Performs object detection on a pixel buffer asynchronously
-    /// - Parameter pixelBuffer: The input image as a CVPixelBuffer
-    /// - Returns: An array of VNRecognizedObjectObservation representing detected objects
-    /// - Throws: Vision framework errors if detection fails
-    /// - Note: This method runs on a background queue to avoid blocking the main thread
-    func detectObjects(from pixelBuffer: CVPixelBuffer) async throws -> [VNRecognizedObjectObservation] {
+    /// Detects objects in the given pixel buffer using the YOLOv3Tiny model
+    /// - Parameters:
+    ///   - pixelBuffer: The pixel buffer containing the image data
+    ///   - orientation: The image orientation for proper coordinate transformation
+    /// - Returns: Array of detected objects with their bounding boxes and confidence scores
+    func detectObjects(from pixelBuffer: CVPixelBuffer, orientation: CGImagePropertyOrientation = .right) async throws -> [VNRecognizedObjectObservation] {
         return try await withCheckedThrowingContinuation { continuation in
             let request = VNCoreMLRequest(model: model) { request, error in
                 if let error = error {
-                    print("❌ YOLOv3 detection error: \(error)")
+                    print("🚨 YOLOv3 object detection failed: \(error)")
                     continuation.resume(throwing: error)
                     return
                 }
                 
-                guard let results = request.results as? [VNRecognizedObjectObservation] else {
-                    print("⚠️ YOLOv3 returned no valid results")
-                    continuation.resume(returning: [])
-                    return
+                // Extract detected objects from the request results
+                let detectedObjects = request.results?.compactMap { result in
+                    result as? VNRecognizedObjectObservation
+                } ?? []
+                
+                // Filter by confidence threshold (30% minimum)
+                let filteredObjects = detectedObjects.filter { $0.confidence > 0.3 }
+                
+                print("📊 YOLOv3 detected \(filteredObjects.count) objects with >30% confidence")
+                
+                // Debug: Log detected objects
+                for (index, object) in filteredObjects.enumerated() {
+                    let topLabel = object.labels.first
+                    print("  \(index + 1). \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
                 }
                 
-                // Filter results by confidence threshold (25% minimum)
-                let confidenceThreshold: Float = 0.25
-                let filteredResults = results.filter { observation in
-                    guard let topLabel = observation.labels.first else { return false }
-                    return topLabel.confidence >= confidenceThreshold
-                }
-                
-                print("🔍 YOLOv3 detected \(results.count) total objects, \(filteredResults.count) above \(Int(confidenceThreshold * 100))% confidence")
-                
-                // Debug: Print detected objects
-                for (index, observation) in filteredResults.prefix(5).enumerated() {
-                    if let topLabel = observation.labels.first {
-                        print("   Object \(index + 1): \(topLabel.identifier) (\(Int(topLabel.confidence * 100))%)")
-                    }
-                }
-                
-                continuation.resume(returning: filteredResults)
+                continuation.resume(returning: filteredObjects)
             }
             
             // Configure request for optimal object detection
             request.imageCropAndScaleOption = .scaleFit // Better for object detection than scaleFill
             
-            // Set the image orientation correctly for camera input (portrait mode)
-            let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .right, options: [:])
+            // Set the image orientation correctly for camera input based on device orientation
+            let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: orientation, options: [:])
             
-            do {
-                try handler.perform([request])
-            } catch {
-                print("❌ YOLOv3 request execution failed: \(error)")
-                continuation.resume(throwing: error)
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    try handler.perform([request])
+                } catch {
+                    print("🚨 YOLOv3 request handler failed: \(error)")
+                    continuation.resume(throwing: error)
+                }
             }
         }
+    }
+    
+    /// Legacy method for backward compatibility
+    /// - Parameter pixelBuffer: The pixel buffer containing the image data
+    /// - Returns: Array of detected objects with their bounding boxes and confidence scores
+    func detectObjects(from pixelBuffer: CVPixelBuffer) async throws -> [VNRecognizedObjectObservation] {
+        return try await detectObjects(from: pixelBuffer, orientation: .right)
     }
 }
