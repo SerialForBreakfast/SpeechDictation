@@ -4,12 +4,32 @@
 The SpeechDictation app has evolved from a basic speech recognition tool into a comprehensive accessibility platform. Core features are complete, with new priorities focused on camera integration and enhanced accessibility features.
 
 **Current Build Status**: All tests passing, build automation system operational
-**Latest Achievement**: Enhanced export functionality with professional timing formats (SRT, VTT, TTML, JSON)
-**Next Priority**: Camera feed integration with audio descriptions for accessibility
+**Latest Achievement**: Entry UI with dual experience selection (Audio Transcription + Experimental Camera)
+**Next Priority**: Complete camera experience integration with ML models
 
 ---
 
 ## COMPLETED TASKS
+
+### TASK-022: Entry UI with Dual Experience Selection - COMPLETED
+**Status**: COMPLETED
+**Priority**: HIGH
+**Effort**: 2 hours (estimated 2-3 hours)
+
+**Implementation:**
+- `SpeechDictation/UI/EntryView.swift` - Main entry point with experience selection
+- Updated `SpeechDictationApp.swift` to use EntryView as root view
+- Added EntryView to Xcode project with proper target membership
+- Modern SwiftUI navigation with NavigationView and NavigationLink
+- ExperienceCard component for consistent UI presentation
+- Proper iOS-specific UI patterns and accessibility support
+
+**Features:**
+- Audio Transcription experience (recommended) - routes to existing ContentView
+- Live Camera Input experience (experimental) - placeholder for camera integration
+- Beautiful gradient background with modern card design
+- Responsive layout with proper spacing and typography
+- Clean separation of concerns with enum-based experience types
 
 ### TASK-020: Build & Test Automation System - COMPLETED
 **Status**: COMPLETED

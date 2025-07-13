@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Entry UI with Dual Experience Selection** - New app entry point
+  - Created EntryView.swift with modern SwiftUI navigation
+  - Audio Transcription experience (recommended) - routes to existing ContentView
+  - Live Camera Input experience (experimental) - placeholder for camera integration
+  - Beautiful gradient background with modern card design
+  - ExperienceCard component for consistent UI presentation
+  - Proper iOS-specific UI patterns and accessibility support
+  - Updated SpeechDictationApp.swift to use EntryView as root view
+  - Added proper Xcode project target membership
 - **Memlog Consolidation** - Unified task management system
   - Consolidated all task files (current_tasks.md, tasks_updated.md) into comprehensive tasks.md
   - Organized tasks by status: COMPLETED, HIGH PRIORITY, MEDIUM PRIORITY, LOW PRIORITY
