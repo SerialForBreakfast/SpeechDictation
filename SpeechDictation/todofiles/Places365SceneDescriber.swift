@@ -41,7 +41,7 @@ final class Places365SceneDescriber: SceneDescribingModel {
         return try await withCheckedThrowingContinuation { continuation in
             let request = VNClassifyImageRequest { request, error in
                 if let error = error {
-                    print("🚨 Enhanced scene classification error: \(error)")
+                    print("ERROR: Enhanced scene classification error: \(error)")
                     continuation.resume(throwing: error)
                     return
                 }
@@ -49,7 +49,7 @@ final class Places365SceneDescriber: SceneDescribingModel {
                 // Get multiple classification results for better analysis
                 guard let results = request.results as? [VNClassificationObservation],
                       !results.isEmpty else {
-                    print("⚠️ No scene classification results found")
+                    print("WARNING: No scene classification results found")
                     continuation.resume(returning: self.getStableScene() ?? "Unknown Scene")
                     return
                 }
@@ -64,7 +64,7 @@ final class Places365SceneDescriber: SceneDescribingModel {
                 // Get stabilized scene result
                 let finalScene = self.getStabilizedScene(currentScene)
                 
-                print("🎯 Enhanced scene detected: \(finalScene) (confidence: \(Int(currentScene.confidence * 100))%)")
+                print("Enhanced scene detected: \(finalScene) (confidence: \(Int(currentScene.confidence * 100))%)")
                 
                 continuation.resume(returning: finalScene)
             }

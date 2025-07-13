@@ -27,7 +27,7 @@ final class LiDARDepthManager: ObservableObject {
     /// Set up ARKit session for LiDAR depth sensing
     private func setupARSession() {
         guard ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) else {
-            print("📡 LiDAR not supported on this device")
+            print("LiDAR not supported on this device")
             return
         }
         
@@ -46,7 +46,7 @@ final class LiDARDepthManager: ObservableObject {
         
         // Note: In a production app, you'd start the session when needed
         // For now, we'll simulate having session data available
-        print("📡 LiDAR ARSession configured and ready")
+        print("LiDAR ARSession configured and ready")
     }
     
     /// Start the AR session for depth sensing
@@ -65,14 +65,14 @@ final class LiDARDepthManager: ObservableObject {
         
         session.run(configuration)
         isSessionRunning = true
-        print("📡 LiDAR ARSession started")
+        print("LiDAR ARSession started")
     }
     
     /// Stop the AR session
     func stopSession() {
         arSession?.pause()
         isSessionRunning = false
-        print("📡 LiDAR ARSession stopped")
+        print("LiDAR ARSession stopped")
     }
     
     /// Get depth at a specific point using LiDAR data
@@ -171,13 +171,13 @@ final class ARKitDepthManager: ObservableObject {
         // World tracking session for general depth
         if ARWorldTrackingConfiguration.isSupported {
             arSession = ARSession()
-            print("🔍 ARKit world tracking configured")
+            print("ARKit world tracking configured")
         }
         
         // Face tracking session for TrueDepth
         if ARFaceTrackingConfiguration.isSupported {
             faceSession = ARSession()
-            print("📱 ARKit face tracking configured")
+            print("ARKit face tracking configured")
         }
     }
     
@@ -194,7 +194,7 @@ final class ARKitDepthManager: ObservableObject {
         
         session.run(configuration)
         isWorldSessionRunning = true
-        print("🔍 ARKit world session started")
+        print("ARKit world session started")
     }
     
     /// Start face tracking session for TrueDepth
@@ -204,7 +204,7 @@ final class ARKitDepthManager: ObservableObject {
         let configuration = ARFaceTrackingConfiguration()
         session.run(configuration)
         isFaceSessionRunning = true
-        print("📱 ARKit face session started")
+        print("ARKit face session started")
     }
     
     /// Stop all sessions
@@ -213,7 +213,7 @@ final class ARKitDepthManager: ObservableObject {
         faceSession?.pause()
         isWorldSessionRunning = false
         isFaceSessionRunning = false
-        print("🔍 ARKit sessions stopped")
+        print("ARKit sessions stopped")
     }
     
     /// Get depth at a specific point using ARKit world tracking
@@ -961,6 +961,19 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
         self.objectDetector = objectDetector
         self.sceneDescriber = sceneDescriber
         
+        // Add initialization diagnostics
+        if let objectDetector = objectDetector {
+            print("✅ Object detector initialized successfully")
+        } else {
+            print("❌ Object detector initialization failed - object detection will be disabled")
+        }
+        
+        if let sceneDescriber = sceneDescriber {
+            print("✅ Scene describer initialized successfully")
+        } else {
+            print("❌ Scene describer initialization failed - scene description will be disabled")
+        }
+        
         // Monitor depth settings changes
         setupDepthSessionManagement()
     }
@@ -1042,7 +1055,7 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
     /// - Note: This method is designed to be called from the camera capture callback
     func processSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        
+        print("🧠 ML pipeline received frame at \(Date())")
         // Process the pixel buffer with orientation support
         Task {
             await processPixelBufferWithOrientation(pixelBuffer)
@@ -1212,16 +1225,39 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
     /// - Returns: Array of detected objects
     private func processObjectDetection(_ pixelBuffer: CVPixelBuffer, orientation: CGImagePropertyOrientation = .right) async -> [VNRecognizedObjectObservation] {
         guard let objectDetector = objectDetector else { 
-            print("⚠️ No object detector available")
+            print("WARNING: No object detector available")
             return [] 
         }
         
+        // Add comprehensive diagnostics
+        print("🔍 Running object detection at \(Date())")
+        print("📊 Pixel buffer info: \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer))")
+        print("🎯 Detection sensitivity: \(Int(CameraSettingsManager.shared.detectionSensitivity * 100))%")
+        print("⚙️ Object detection enabled: \(settings.enableObjectDetection)")
+        
         do {
             let results = try await objectDetector.detectObjects(from: pixelBuffer, orientation: orientation)
-            print("📱 Object detection returned \(results.count) objects")
+            print("Object detection returned \(results.count) objects at \(Date())")
+            
+            // Log detailed results for debugging
+            if results.isEmpty {
+                print("⚠️ No objects detected - this could indicate:")
+                print("  - Confidence threshold too high")
+                print("  - Model not recognizing objects in scene")
+                print("  - Image quality issues")
+                print("  - Model loading problems")
+            } else {
+                print("✅ Successfully detected \(results.count) objects:")
+                for (index, object) in results.enumerated() {
+                    let topLabel = object.labels.first
+                    print("  \(index + 1). \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
+                }
+            }
+            
             return results
         } catch {
-            print("❌ Object detection error: \(error)")
+            print("ERROR: Object detection error: \(error)")
+            print("🔧 Error details: \(error.localizedDescription)")
             await MainActor.run {
                 self.errorMessage = "Object detection failed: \(error.localizedDescription)"
             }

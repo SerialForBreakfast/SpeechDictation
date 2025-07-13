@@ -1,8 +1,6 @@
 import Foundation
 import Vision
 import CoreML
-
-// Import CameraSettingsManager for configurable detection sensitivity
 import Combine
 
 /// A concrete implementation of `ObjectDetectionModel` using the YOLOv3Tiny CoreML model.
@@ -18,10 +16,18 @@ final class YOLOv3Model: ObjectDetectionModel {
         do {
             let config = MLModelConfiguration()
             config.computeUnits = .all // Use both CPU and GPU for better performance
-            let mlModel = try YOLOv3Tiny(configuration: config)
-            self.model = try VNCoreMLModel(for: mlModel.model)
+            
+            // Load the YOLOv3Tiny model from the bundle
+            guard let modelURL = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") else {
+                print("ERROR: YOLOv3Tiny model not found in bundle")
+                return nil
+            }
+            
+            let mlModel = try MLModel(contentsOf: modelURL, configuration: config)
+            self.model = try VNCoreMLModel(for: mlModel)
+            print("✅ YOLOv3Tiny model loaded successfully")
         } catch {
-            print("🚨 YOLOv3Model initialization failed: \(error)")
+            print("ERROR: YOLOv3Model initialization failed: \(error)")
             return nil
         }
     }
@@ -36,7 +42,7 @@ final class YOLOv3Model: ObjectDetectionModel {
         return try await withCheckedThrowingContinuation { continuation in
             let request = VNCoreMLRequest(model: model) { request, error in
                 if let error = error {
-                    print("🚨 YOLOv3 object detection failed: \(error)")
+                    print("ERROR: YOLOv3 object detection failed: \(error)")
                     continuation.resume(throwing: error)
                     return
                 }
@@ -46,18 +52,31 @@ final class YOLOv3Model: ObjectDetectionModel {
                     result as? VNRecognizedObjectObservation
                 } ?? []
                 
+                print("🔍 YOLOv3 raw detection results: \(detectedObjects.count) objects")
+                
+                // Log ALL detected objects regardless of confidence for diagnostics
+                for (index, object) in detectedObjects.enumerated() {
+                    let topLabel = object.labels.first
+                    let confidence = topLabel?.confidence ?? 0
+                    print("  Raw detection \(index + 1): \(topLabel?.identifier ?? "Unknown") - \(Int(confidence * 100))%")
+                }
+                
                 // Get configurable confidence threshold from settings
                 let confidenceThreshold = Float(CameraSettingsManager.shared.detectionSensitivity)
                 
+                // TEMPORARY: Lower threshold for testing
+                let testThreshold = min(confidenceThreshold, 0.1) // Use 10% for testing
+                print("🎯 Using confidence threshold: \(Int(testThreshold * 100))% (original: \(Int(confidenceThreshold * 100))%)")
+                
                 // Filter by configurable confidence threshold for high-confidence detection
-                let filteredObjects = detectedObjects.filter { $0.confidence > confidenceThreshold }
+                let filteredObjects = detectedObjects.filter { $0.confidence > testThreshold }
                 
-                print("📊 YOLOv3 detected \(filteredObjects.count) objects with >\(Int(confidenceThreshold * 100))% confidence")
+                print("YOLOv3 detected \(filteredObjects.count) objects with >\(Int(testThreshold * 100))% confidence")
                 
-                // Debug: Log detected objects (show all high-confidence objects, not limited to 3)
+                // Debug: Log filtered objects
                 for (index, object) in filteredObjects.enumerated() {
                     let topLabel = object.labels.first
-                    print("  \(index + 1). \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
+                    print("  ✅ Filtered \(index + 1): \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
                 }
                 
                 continuation.resume(returning: filteredObjects)

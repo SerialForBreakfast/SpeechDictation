@@ -9,32 +9,54 @@ import Foundation
 import AVFoundation
 
 extension SpeechRecognizer {
+    /// Configures the audio session for speech recognition with iPad-specific optimizations
+    /// Coordinates with other audio components to prevent session conflicts
     func configureAudioSession() {
         let audioSession = AVAudioSession.sharedInstance()
         do {
+            // Check if session is already active before trying to deactivate
+            if audioSession.isOtherAudioPlaying {
+                print("Other audio is playing, will configure without deactivation")
+            } else {
+                // Only deactivate if not already inactive
+                if audioSession.category != .playAndRecord {
+                    try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+                }
+            }
+            
             #if targetEnvironment(simulator)
             // Use simpler configuration for simulator
             try audioSession.setCategory(.playAndRecord, mode: .default, options: [])
             #else
-            // Use `.measurement` mode which turns off system-level voice processing (AGC, NR) and gives
-            // us the raw mic signal – better for speech recognizer + manual gain control.
-            try audioSession.setCategory(.playAndRecord,
-                                         mode: .measurement,
-                                         options: [.allowBluetoothA2DP,
-                                                   .allowBluetooth,
-                                                   .defaultToSpeaker])
-            #endif
-            try audioSession.setActive(true)
-            print("Audio session configured")
-        } catch {
-            print("Failed to configure audio session: \(error)")
-            // Try a simpler configuration as fallback
+            // Device-specific configuration with iPad optimizations
+            let options: AVAudioSession.CategoryOptions = [.allowBluetooth, .defaultToSpeaker]
+            
+            // Try measurement mode first for better speech recognition
             do {
-                try audioSession.setCategory(.playAndRecord, mode: .default, options: [])
-                try audioSession.setActive(true)
-                print("Audio session configured with fallback settings")
+                try audioSession.setCategory(.playAndRecord, mode: .measurement, options: options)
+                print("Audio session configured for speech recognition with measurement mode")
             } catch {
-                print("Failed to configure audio session even with fallback: \(error)")
+                print("Measurement mode failed, trying default mode: \(error)")
+                // Fallback to default mode if measurement fails
+                try audioSession.setCategory(.playAndRecord, mode: .default, options: options)
+                print("Audio session configured for speech recognition with default mode")
+            }
+            #endif
+            
+            // Activate session with proper options
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            print("Audio session configured for speech recognition")
+            
+        } catch {
+            print("Error setting up audio session for speech recognition: \(error)")
+            // Final fallback with minimal configuration
+            do {
+                // Don't try to deactivate again if it failed before
+                try audioSession.setCategory(.playAndRecord, mode: .default, options: [])
+                try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+                print("Audio session configured with minimal settings")
+            } catch {
+                print("Critical error: Unable to configure audio session for speech recognition: \(error)")
             }
         }
     }
