@@ -13,6 +13,41 @@ BUILD_DIR="$PROJECT_ROOT/build"
 REPORTS_DIR="$BUILD_DIR/reports"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 REPORT_FILE="$REPORTS_DIR/build_test_report_$TIMESTAMP.txt"
+SIMULATOR_CACHE_FILE="$BUILD_DIR/.simulator_cache"
+
+# Load simulator cache if it exists and is valid
+load_simulator_cache() {
+    if [[ -f "$SIMULATOR_CACHE_FILE" ]]; then
+        source "$SIMULATOR_CACHE_FILE"
+        # Verify cached simulator still exists and is available
+        if [[ -n "$CACHED_SIMULATOR_UUID" ]]; then
+            local sim_exists=$(xcrun simctl list devices | grep "$CACHED_SIMULATOR_UUID" || true)
+            if [[ -n "$sim_exists" ]]; then
+                SIMULATOR_NAME="$CACHED_SIMULATOR_NAME"
+                SIMULATOR_OS="$CACHED_SIMULATOR_OS"
+                SIMULATOR_UUID="$CACHED_SIMULATOR_UUID"
+                log "INFO" "Using cached simulator: $SIMULATOR_NAME (iOS $SIMULATOR_OS) UUID: $SIMULATOR_UUID"
+                return 0
+            else
+                log "WARN" "Cached simulator no longer available, will select new one"
+                rm -f "$SIMULATOR_CACHE_FILE"
+            fi
+        fi
+    fi
+    return 1
+}
+
+# Save simulator cache for future runs
+save_simulator_cache() {
+    if [[ -n "$SIMULATOR_UUID" && -n "$SIMULATOR_NAME" && -n "$SIMULATOR_OS" ]]; then
+        {
+            echo "CACHED_SIMULATOR_NAME='$SIMULATOR_NAME'"
+            echo "CACHED_SIMULATOR_OS='$SIMULATOR_OS'"
+            echo "CACHED_SIMULATOR_UUID='$SIMULATOR_UUID'"
+        } > "$SIMULATOR_CACHE_FILE"
+        log "INFO" "Saved simulator cache for future runs"
+    fi
+}
 
 # Parse command line arguments
 VERBOSE=false
@@ -21,6 +56,7 @@ TARGET_DEVICE=""
 # Feature flags
 ENABLE_UI_TESTS=false     # UI tests are opt-in via --enableUITests (existing)
 ENABLE_UNIT_TESTS=false   # Unit tests are now opt-in via --enableUnitTests
+CLEAR_CACHE=false         # Clear simulator cache and force re-selection
 # Allow caller to override the simulator UUID
 SIMULATOR_OVERRIDE_UUID=""
 
@@ -61,13 +97,23 @@ while [[ $# -gt 0 ]]; do
             ENABLE_UNIT_TESTS=true
             shift
             ;;
+        --cache-clear|--clear-cache)
+            CLEAR_CACHE=true
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--verbose] [--clean] [--device] [--simulator] [--simulator-id <UUID>] [--enableUnitTests] [--enableUITests]"
+            echo "Usage: $0 [--verbose] [--clean] [--device] [--simulator] [--simulator-id <UUID>] [--enableUnitTests] [--enableUITests] [--cache-clear]"
             exit 1
             ;;
     esac
 done
+
+# Clear cache if requested
+if [[ "$CLEAR_CACHE" == true ]]; then
+    log "INFO" "Clearing simulator cache as requested"
+    rm -f "$SIMULATOR_CACHE_FILE"
+fi
 
 # Create necessary directories
 mkdir -p "$BUILD_DIR"
@@ -169,6 +215,50 @@ select_simulator() {
     fi
 }
 
+# Fast simulator status check
+get_simulator_status() {
+    local simulator_uuid="$1"
+    xcrun simctl list devices | grep "$simulator_uuid" | grep -o "Booted\|Shutdown\|Crashed" | head -1
+}
+
+# Optimized simulator boot with faster status checking
+boot_simulator_fast() {
+    local simulator_uuid="$1"
+    local status=$(get_simulator_status "$simulator_uuid")
+    
+    if [[ "$status" == "Booted" ]]; then
+        log "INFO" "Simulator already booted and ready"
+        return 0
+    fi
+    
+    log "INFO" "Booting simulator $simulator_uuid..."
+    xcrun simctl boot "$simulator_uuid" > /dev/null 2>&1
+    
+    # Wait for boot with optimized checking
+    local attempts=0
+    while [[ $attempts -lt 30 ]]; do
+        status=$(get_simulator_status "$simulator_uuid")
+        if [[ "$status" == "Booted" ]]; then
+            # Quick responsiveness test
+            if xcrun simctl list devices "$simulator_uuid" >/dev/null 2>&1; then
+                log "INFO" "Simulator is ready"
+                return 0
+            fi
+        elif [[ "$status" == "Crashed" ]]; then
+            log "WARN" "Simulator crashed, attempting recovery..."
+            xcrun simctl shutdown "$simulator_uuid" > /dev/null 2>&1
+            sleep 2
+            xcrun simctl boot "$simulator_uuid" > /dev/null 2>&1
+            attempts=0  # Reset attempts after recovery
+        fi
+        sleep 1
+        ((attempts++))
+    done
+    
+    log "WARN" "Simulator boot timeout - may need manual intervention"
+    return 1
+}
+
 # Simulator management functions
 manage_simulator() {
     local action="$1"
@@ -177,50 +267,7 @@ manage_simulator() {
     case "$action" in
         "boot")
             if [[ -n "$simulator_uuid" ]]; then
-                # Check if already booted
-                local boot_status=$(xcrun simctl list devices | grep "$simulator_uuid" | grep -o "Booted\|Shutdown")
-                if [[ "$boot_status" == "Shutdown" ]]; then
-                    log "INFO" "Booting simulator $simulator_uuid..."
-                    xcrun simctl boot "$simulator_uuid" > /dev/null 2>&1
-                    # Wait for boot to complete with crash recovery
-                    local attempts=0
-                    while [[ $attempts -lt 45 ]]; do
-                        local current_status=$(xcrun simctl list devices | grep "$simulator_uuid" | grep -o "Booted\|Shutdown\|Crashed")
-                        if [[ "$current_status" == "Booted" ]]; then
-                            # Additional check: wait for simulator to be fully responsive
-                            # Test if simulator can respond to commands
-                            if xcrun simctl list devices | grep "$simulator_uuid" | grep -q "Booted" && \
-                               xcrun simctl list devices | grep "$simulator_uuid" | grep -vq "Crashed"; then
-                                # Test simulator responsiveness by trying to get device info
-                                if xcrun simctl list devices "$simulator_uuid" >/dev/null 2>&1; then
-                                    # Wait a bit more for full readiness
-                                    sleep 3
-                                    log "INFO" "Simulator is ready"
-                                    return 0
-                                else
-                                    # Simulator is booted but not fully ready yet
-                                    sleep 2
-                                fi
-                            else
-                                # Simulator is booted but not fully ready yet
-                                sleep 2
-                            fi
-                        elif [[ "$current_status" == "Crashed" ]]; then
-                            log "WARN" "Simulator crashed, attempting recovery..."
-                            xcrun simctl shutdown "$simulator_uuid" > /dev/null 2>&1
-                            sleep 3
-                            xcrun simctl boot "$simulator_uuid" > /dev/null 2>&1
-                            attempts=0  # Reset attempts after recovery
-                        fi
-                        sleep 1
-                        ((attempts++))
-                    done
-                    log "WARN" "Simulator boot timeout - may need manual intervention"
-                    return 1
-                else
-                    log "INFO" "Simulator is already booted"
-                    return 0
-                fi
+                boot_simulator_fast "$simulator_uuid"
             else
                 log "WARN" "No simulator UUID provided for boot"
                 return 1
@@ -262,6 +309,8 @@ check_prerequisites() {
     if [[ "$TARGET_DEVICE" != "device" ]]; then
 
         if [[ -n "$SIMULATOR_OVERRIDE_UUID" ]]; then
+            # Clear cache when user specifies a specific simulator
+            rm -f "$SIMULATOR_CACHE_FILE"
             # Validate that the provided UUID exists on this machine
             local sim_line
             sim_line=$(xcrun simctl list devices | grep "$SIMULATOR_OVERRIDE_UUID" || true)
@@ -278,9 +327,16 @@ check_prerequisites() {
             log "INFO" "Using user-specified simulator: $SIMULATOR_NAME (iOS $SIMULATOR_OS) UUID: $SIMULATOR_UUID"
 
             # Pre-boot simulator for faster test execution
-            manage_simulator "boot" "$SIMULATOR_UUID"
+            boot_simulator_fast "$SIMULATOR_UUID"
+            # Save the user-specified simulator to cache
+            save_simulator_cache
 
         else
+            # Try to load cached simulator first
+            if load_simulator_cache; then
+                # Pre-boot cached simulator
+                boot_simulator_fast "$SIMULATOR_UUID"
+            else
             local simulator_info=$(select_simulator)
             if [[ $? -eq 0 ]]; then
                 IFS='|' read -r SIMULATOR_NAME SIMULATOR_OS SIMULATOR_UUID <<< "$simulator_info"
@@ -291,7 +347,9 @@ check_prerequisites() {
                 # Pre-boot simulator for faster test execution
                 if [[ -n "$SIMULATOR_UUID" ]]; then
                     log "INFO" "Pre-booting simulator for faster test execution..."
-                    manage_simulator "boot" "$SIMULATOR_UUID"
+                    boot_simulator_fast "$SIMULATOR_UUID"
+                    # Save newly selected simulator to cache
+                    save_simulator_cache
                 else
                     log "ERROR" "No simulator UUID found after selection."
                     exit 1
@@ -299,6 +357,7 @@ check_prerequisites() {
             else
                 log "ERROR" "Failed to select simulator"
                 exit 1
+            fi
             fi
         fi
     fi
@@ -343,8 +402,8 @@ build_project() {
         -scheme SpeechDictation
         -configuration Debug
         -derivedDataPath "$BUILD_DIR/derived_data"
-        -parallelizeTargets
-        -jobs 4
+        -quiet
+        -hideShellScriptEnvironment
     )
     
     # Add simulator destination for build. Prefer UUID if available to avoid name/OS parsing issues.
@@ -416,10 +475,8 @@ run_unit_tests() {
         -scheme SpeechDictation
         -destination "$destination_arg"
         -only-testing:SpeechDictationTests
-        -parallel-testing-enabled YES
-        -parallel-testing-worker-count 4
-        -maximum-concurrent-test-simulator-destinations 2
-        -maximum-concurrent-test-device-destinations 1
+        -quiet
+        -hideShellScriptEnvironment
     )
     
     if [[ "$VERBOSE" == true ]]; then
@@ -507,10 +564,8 @@ run_ui_tests() {
         -scheme SpeechDictation
         -destination "$destination_arg"
         -only-testing:SpeechDictationUITests
-        -parallel-testing-enabled YES
-        -parallel-testing-worker-count 4
-        -maximum-concurrent-test-simulator-destinations 2
-        -maximum-concurrent-test-device-destinations 1
+        -quiet
+        -hideShellScriptEnvironment
     )
     
     if [[ "$VERBOSE" == true ]]; then
@@ -654,7 +709,7 @@ generate_summary() {
 main() {
     update_currently_running "[Prerequisites] Checking prerequisites"
     log "INFO" "Starting SpeechDictation build and test automation"
-    log "INFO" "Arguments: VERBOSE=$VERBOSE, CLEAN=$CLEAN_BUILD, TARGET=$TARGET_DEVICE, ENABLE_UNIT_TESTS=$ENABLE_UNIT_TESTS, ENABLE_UI_TESTS=$ENABLE_UI_TESTS"
+    log "INFO" "Arguments: VERBOSE=$VERBOSE, CLEAN=$CLEAN_BUILD, TARGET=$TARGET_DEVICE, ENABLE_UNIT_TESTS=$ENABLE_UNIT_TESTS, ENABLE_UI_TESTS=$ENABLE_UI_TESTS, CLEAR_CACHE=$CLEAR_CACHE"
     
     local overall_exit_code=0
     

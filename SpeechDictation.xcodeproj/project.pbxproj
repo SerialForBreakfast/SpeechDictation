@@ -9,6 +9,21 @@
 /* Begin PBXBuildFile section */
 		4420D05F2C2E4E2500263CF6 /* WaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4420D05E2C2E4E2500263CF6 /* WaveformView.swift */; };
 		4420D0612C2F6A8C00263CF6 /* CacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4420D0602C2F6A8C00263CF6 /* CacheManager.swift */; };
+		443B0CA32E2366BD00D292B9 /* LiveCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0C9F2E2366BD00D292B9 /* LiveCameraView.swift */; };
+		443B0CA42E2366BD00D292B9 /* SceneDetectionOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CA22E2366BD00D292B9 /* SceneDetectionOverlayView.swift */; };
+		443B0CA52E2366BD00D292B9 /* CameraSceneDescriptionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0C9E2E2366BD00D292B9 /* CameraSceneDescriptionViewModel.swift */; };
+		443B0CA62E2366BD00D292B9 /* ModelSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CA02E2366BD00D292B9 /* ModelSwitcher.swift */; };
+		443B0CA72E2366BD00D292B9 /* CameraSceneDescriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0C9D2E2366BD00D292B9 /* CameraSceneDescriptionView.swift */; };
+		443B0CA82E2366BD00D292B9 /* ObjectDetectionOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CA12E2366BD00D292B9 /* ObjectDetectionOverlayView.swift */; };
+		443B0CAE2E2366D900D292B9 /* ObjectDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CAA2E2366D900D292B9 /* ObjectDetector.swift */; };
+		443B0CAF2E2366D900D292B9 /* YOLOv3Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CAC2E2366D900D292B9 /* YOLOv3Model.swift */; };
+		443B0CB02E2366D900D292B9 /* SceneDescribingModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CAB2E2366D900D292B9 /* SceneDescribingModel.swift */; };
+		443B0CB12E2366D900D292B9 /* ObjectDetectionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CA92E2366D900D292B9 /* ObjectDetectionModel.swift */; };
+		443B0CB32E2366FC00D292B9 /* Places365SceneDescriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CB22E2366FC00D292B9 /* Places365SceneDescriber.swift */; };
+		443B0CB52E2367A900D292B9 /* BoundingBoxOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CB42E2367A900D292B9 /* BoundingBoxOverlayView.swift */; };
+		443B0CB92E236A4C00D292B9 /* TimingData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CB72E236A4C00D292B9 /* TimingData.swift */; };
+		443B0CBA2E236A4C00D292B9 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CB62E236A4C00D292B9 /* Theme.swift */; };
+		443B0CBD2E236A7D00D292B9 /* YOLOv3Tiny.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CBB2E236A7D00D292B9 /* YOLOv3Tiny.mlmodel */; };
 		44CE0E822C3096880060C2FF /* SpeechRecognizer+Authorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CE0E812C30967D0060C2FF /* SpeechRecognizer+Authorization.swift */; };
 		44CE0E842C30977B0060C2FF /* SpeechRecognizer+config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CE0E832C30977B0060C2FF /* SpeechRecognizer+config.swift */; };
 		44CE0E862C30986E0060C2FF /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CE0E852C30986E0060C2FF /* DownloadManager.swift */; };
@@ -27,11 +42,9 @@
 		44EF9A8E2C30A2E00060C2FF /* ExportManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44EF9A8D2C30A2E00060C2FF /* ExportManager.swift */; };
 		44F6EBCC2C31BB2200BBF2F3 /* NativeStyleShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44F6EBCB2C31BB2200BBF2F3 /* NativeStyleShareView.swift */; };
 		4500001B2C60000000AAA112 /* VUMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500001A2C60000000AAA111 /* VUMeterView.swift */; };
-		4500002B2C60001000AAA113 /* Models/Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500002A2C60001000AAA112 /* Models/Theme.swift */; };
 		4500003B2C60005000AAA114 /* TextSizeSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500003A2C60005000AAA113 /* TextSizeSettingView.swift */; };
 		4500003D2C60005000AAA115 /* ThemeSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500003C2C60005000AAA114 /* ThemeSettingView.swift */; };
 		4500003F2C60005000AAA116 /* MicSensitivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500003E2C60005000AAA115 /* MicSensitivityView.swift */; };
-		450000412C60006000AAA118 /* Models/TimingData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 450000402C60006000AAA117 /* Models/TimingData.swift */; };
 		450000422C60007000AAA119 /* TimingDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 450000412C60007000AAA118 /* TimingDataManager.swift */; };
 		450000432C60008000AAA120 /* AudioRecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 450000422C60008000AAA119 /* AudioRecordingManager.swift */; };
 		450000442C60009000AAA121 /* AudioPlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 450000432C60009000AAA120 /* AudioPlaybackManager.swift */; };
@@ -58,6 +71,21 @@
 /* Begin PBXFileReference section */
 		4420D05E2C2E4E2500263CF6 /* WaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformView.swift; sourceTree = "<group>"; };
 		4420D0602C2F6A8C00263CF6 /* CacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheManager.swift; sourceTree = "<group>"; };
+		443B0C9D2E2366BD00D292B9 /* CameraSceneDescriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSceneDescriptionView.swift; sourceTree = "<group>"; };
+		443B0C9E2E2366BD00D292B9 /* CameraSceneDescriptionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSceneDescriptionViewModel.swift; sourceTree = "<group>"; };
+		443B0C9F2E2366BD00D292B9 /* LiveCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCameraView.swift; sourceTree = "<group>"; };
+		443B0CA02E2366BD00D292B9 /* ModelSwitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSwitcher.swift; sourceTree = "<group>"; };
+		443B0CA12E2366BD00D292B9 /* ObjectDetectionOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectDetectionOverlayView.swift; sourceTree = "<group>"; };
+		443B0CA22E2366BD00D292B9 /* SceneDetectionOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDetectionOverlayView.swift; sourceTree = "<group>"; };
+		443B0CA92E2366D900D292B9 /* ObjectDetectionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectDetectionModel.swift; sourceTree = "<group>"; };
+		443B0CAA2E2366D900D292B9 /* ObjectDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectDetector.swift; sourceTree = "<group>"; };
+		443B0CAB2E2366D900D292B9 /* SceneDescribingModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDescribingModel.swift; sourceTree = "<group>"; };
+		443B0CAC2E2366D900D292B9 /* YOLOv3Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YOLOv3Model.swift; sourceTree = "<group>"; };
+		443B0CB22E2366FC00D292B9 /* Places365SceneDescriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Places365SceneDescriber.swift; sourceTree = "<group>"; };
+		443B0CB42E2367A900D292B9 /* BoundingBoxOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoundingBoxOverlayView.swift; sourceTree = "<group>"; };
+		443B0CB62E236A4C00D292B9 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		443B0CB72E236A4C00D292B9 /* TimingData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimingData.swift; sourceTree = "<group>"; };
+		443B0CBB2E236A7D00D292B9 /* YOLOv3Tiny.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Tiny.mlmodel; sourceTree = "<group>"; };
 		44CE0E812C30967D0060C2FF /* SpeechRecognizer+Authorization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpeechRecognizer+Authorization.swift"; sourceTree = "<group>"; };
 		44CE0E832C30977B0060C2FF /* SpeechRecognizer+config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpeechRecognizer+config.swift"; sourceTree = "<group>"; };
 		44CE0E852C30986E0060C2FF /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
@@ -80,11 +108,9 @@
 		44EF9A8D2C30A2E00060C2FF /* ExportManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportManager.swift; sourceTree = "<group>"; };
 		44F6EBCB2C31BB2200BBF2F3 /* NativeStyleShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeStyleShareView.swift; sourceTree = "<group>"; };
 		4500001A2C60000000AAA111 /* VUMeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VUMeterView.swift; sourceTree = "<group>"; };
-		4500002A2C60001000AAA112 /* Models/Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/Theme.swift; sourceTree = "<group>"; };
 		4500003A2C60005000AAA113 /* TextSizeSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSizeSettingView.swift; sourceTree = "<group>"; };
 		4500003C2C60005000AAA114 /* ThemeSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeSettingView.swift; sourceTree = "<group>"; };
 		4500003E2C60005000AAA115 /* MicSensitivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicSensitivityView.swift; sourceTree = "<group>"; };
-		450000402C60006000AAA117 /* Models/TimingData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/TimingData.swift; sourceTree = "<group>"; };
 		450000412C60007000AAA118 /* TimingDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimingDataManager.swift; sourceTree = "<group>"; };
 		450000422C60008000AAA119 /* AudioRecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecordingManager.swift; sourceTree = "<group>"; };
 		450000432C60009000AAA120 /* AudioPlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlaybackManager.swift; sourceTree = "<group>"; };
@@ -116,6 +142,42 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		443B0C9C2E23668E00D292B9 /* todofiles */ = {
+			isa = PBXGroup;
+			children = (
+				443B0CB22E2366FC00D292B9 /* Places365SceneDescriber.swift */,
+				443B0C9D2E2366BD00D292B9 /* CameraSceneDescriptionView.swift */,
+				443B0C9E2E2366BD00D292B9 /* CameraSceneDescriptionViewModel.swift */,
+				443B0C9F2E2366BD00D292B9 /* LiveCameraView.swift */,
+				443B0CA02E2366BD00D292B9 /* ModelSwitcher.swift */,
+				443B0CA12E2366BD00D292B9 /* ObjectDetectionOverlayView.swift */,
+				443B0CA22E2366BD00D292B9 /* SceneDetectionOverlayView.swift */,
+				443B0CB42E2367A900D292B9 /* BoundingBoxOverlayView.swift */,
+			);
+			path = todofiles;
+			sourceTree = "<group>";
+		};
+		443B0CB82E236A4C00D292B9 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				443B0CB62E236A4C00D292B9 /* Theme.swift */,
+				443B0CB72E236A4C00D292B9 /* TimingData.swift */,
+				443B0CA92E2366D900D292B9 /* ObjectDetectionModel.swift */,
+				443B0CAA2E2366D900D292B9 /* ObjectDetector.swift */,
+				443B0CAB2E2366D900D292B9 /* SceneDescribingModel.swift */,
+				443B0CAC2E2366D900D292B9 /* YOLOv3Model.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		443B0CBC2E236A7D00D292B9 /* mlModels */ = {
+			isa = PBXGroup;
+			children = (
+				443B0CBB2E236A7D00D292B9 /* YOLOv3Tiny.mlmodel */,
+			);
+			path = mlModels;
+			sourceTree = "<group>";
+		};
 		44CE0E892C309B060060C2FF /* Speech */ = {
 			isa = PBXGroup;
 			children = (
@@ -180,6 +242,7 @@
 		44E6EBD32C2B99D300BBF2F3 /* SpeechDictation */ = {
 			isa = PBXGroup;
 			children = (
+				443B0C9C2E23668E00D292B9 /* todofiles */,
 				44E6EBFE2C2B9A2100BBF2F3 /* Info.plist */,
 				44E6EBD42C2B99D300BBF2F3 /* SpeechDictationApp.swift */,
 				44EA2BFC2C486C3700F76CFC /* SpeechRecognitionViewModel.swift */,
@@ -188,8 +251,8 @@
 				44CE0E8B2C309B600060C2FF /* Services */,
 				44E6EBD82C2B99D500BBF2F3 /* Assets.xcassets */,
 				44E6EBDA2C2B99D500BBF2F3 /* Preview Content */,
-				4500002A2C60001000AAA112 /* Models/Theme.swift */,
-				450000402C60006000AAA117 /* Models/TimingData.swift */,
+				443B0CB82E236A4C00D292B9 /* Models */,
+				443B0CBC2E236A7D00D292B9 /* mlModels */,
 			);
 			path = SpeechDictation;
 			sourceTree = "<group>";
@@ -353,6 +416,11 @@
 				44F6EBCC2C31BB2200BBF2F3 /* NativeStyleShareView.swift in Sources */,
 				4420D0612C2F6A8C00263CF6 /* CacheManager.swift in Sources */,
 				44CE0E8D2C30A1D80060C2FF /* AlertManager.swift in Sources */,
+				443B0CAE2E2366D900D292B9 /* ObjectDetector.swift in Sources */,
+				443B0CAF2E2366D900D292B9 /* YOLOv3Model.swift in Sources */,
+				443B0CB02E2366D900D292B9 /* SceneDescribingModel.swift in Sources */,
+				443B0CB32E2366FC00D292B9 /* Places365SceneDescriber.swift in Sources */,
+				443B0CB12E2366D900D292B9 /* ObjectDetectionModel.swift in Sources */,
 				44EF9A8E2C30A2E00060C2FF /* ExportManager.swift in Sources */,
 				44EA2BFD2C486C3700F76CFC /* SpeechRecognitionViewModel.swift in Sources */,
 				44E6EBD52C2B99D300BBF2F3 /* SpeechDictationApp.swift in Sources */,
@@ -365,12 +433,20 @@
 				4500003F2C60005000AAA116 /* MicSensitivityView.swift in Sources */,
 				44CE0E822C3096880060C2FF /* SpeechRecognizer+Authorization.swift in Sources */,
 				44EA2BFF2C4884B500F76CFC /* SettingsView.swift in Sources */,
+				443B0CB92E236A4C00D292B9 /* TimingData.swift in Sources */,
+				443B0CBA2E236A4C00D292B9 /* Theme.swift in Sources */,
 				44CE0E882C309ABA0060C2FF /* SpeechRecognizer+Convert.swift in Sources */,
 				44CE0E842C30977B0060C2FF /* SpeechRecognizer+config.swift in Sources */,
-				4500002B2C60001000AAA113 /* Models/Theme.swift in Sources */,
-				450000412C60006000AAA118 /* Models/TimingData.swift in Sources */,
 				450000422C60007000AAA119 /* TimingDataManager.swift in Sources */,
 				450000432C60008000AAA120 /* AudioRecordingManager.swift in Sources */,
+				443B0CA32E2366BD00D292B9 /* LiveCameraView.swift in Sources */,
+				443B0CA42E2366BD00D292B9 /* SceneDetectionOverlayView.swift in Sources */,
+				443B0CA52E2366BD00D292B9 /* CameraSceneDescriptionViewModel.swift in Sources */,
+				443B0CBD2E236A7D00D292B9 /* YOLOv3Tiny.mlmodel in Sources */,
+				443B0CA62E2366BD00D292B9 /* ModelSwitcher.swift in Sources */,
+				443B0CB52E2367A900D292B9 /* BoundingBoxOverlayView.swift in Sources */,
+				443B0CA72E2366BD00D292B9 /* CameraSceneDescriptionView.swift in Sources */,
+				443B0CA82E2366BD00D292B9 /* ObjectDetectionOverlayView.swift in Sources */,
 				450000442C60009000AAA121 /* AudioPlaybackManager.swift in Sources */,
 				450000452C60010000AAA122 /* SpeechRecognizer+Timing.swift in Sources */,
 			);
