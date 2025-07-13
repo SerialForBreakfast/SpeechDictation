@@ -191,15 +191,14 @@ struct EntryView: View {
         }
     }
     
-    /// Creates the camera view with the required models
-    /// - Returns: A configured view for camera experience
+    /// Creates the camera experience with permission handling and ML models
+    /// - Returns: A configured camera experience coordinator
     private func createCameraView() -> some View {
-        // TODO: Implement camera view when models are properly imported
-        Text("Camera Experience Coming Soon")
-            .font(.title)
-            .foregroundColor(.secondary)
-            .accessibilityLabel("Camera Experience Coming Soon")
-            .accessibilityHint("This feature is under development and will be available soon")
+        return AnyView(
+            CameraExperienceView()
+                .accessibilityLabel("Camera Experience")
+                .accessibilityHint("Live camera with object detection, scene description, and accessibility features")
+        )
     }
 }
 

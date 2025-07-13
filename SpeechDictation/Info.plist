@@ -7,5 +7,9 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Speech Dictation uses the camera to provide live object detection and scene description for accessibility and content creation features.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Speech Dictation uses the microphone to convert your speech to text with real-time transcription.</string>
 </dict>
 </plist>

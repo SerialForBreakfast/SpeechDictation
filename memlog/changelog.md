@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Live Camera Input Implementation** - Complete camera experience with ML integration
+  - **CameraExperienceView.swift** - Camera experience coordinator with permission flow
+  - **CameraPermissionsView.swift** - Comprehensive permission handling with user guidance
+  - **Camera Settings Integration** - Advanced controls for detection sensitivity and accessibility
+  - **Real-time Object Detection** - YOLOv3Tiny model with bounding box overlays
+  - **Scene Description Pipeline** - Places365 model integration (placeholder implementation)
+  - **Error Handling & Fallbacks** - Graceful degradation for model loading failures
+  - **Flashlight Controls** - Built-in flashlight toggle for low-light scenarios
+  - **Privacy-First Design** - All ML processing happens on-device only
+  - **Professional Permission Flow** - iOS best practices with feature explanations
+  - **Complete Accessibility Support** - VoiceOver, Dynamic Type, and assistive technology compatibility
 - **Entry UI with Dual Experience Selection** - New app entry point with comprehensive accessibility
   - Created EntryView.swift with modern SwiftUI navigation
   - Audio Transcription experience (recommended) - routes to existing ContentView
