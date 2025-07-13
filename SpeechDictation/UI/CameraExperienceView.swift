@@ -54,13 +54,6 @@ struct CameraExperienceView: View {
                     objectDetector: detector,
                     sceneDescriber: sceneDescriber
                 )
-                .navigationTitle("Live Camera")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        CameraControlsMenu()
-                    }
-                }
                 .accessibilityLabel("Live Camera View")
                 .accessibilityHint("Camera feed with real-time object detection and scene description overlays")
             )
@@ -68,8 +61,6 @@ struct CameraExperienceView: View {
             // Fallback if model loading fails
             return AnyView(
                 CameraErrorView()
-                    .navigationTitle("Camera Error")
-                    .navigationBarTitleDisplayMode(.inline)
             )
         }
     }

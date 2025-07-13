@@ -97,11 +97,17 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
     /// - Parameter pixelBuffer: The pixel buffer to analyze
     /// - Returns: Array of detected objects
     private func processObjectDetection(_ pixelBuffer: CVPixelBuffer) async -> [VNRecognizedObjectObservation] {
-        guard let objectDetector = objectDetector else { return [] }
+        guard let objectDetector = objectDetector else { 
+            print("⚠️ No object detector available")
+            return [] 
+        }
         
         do {
-            return try await objectDetector.detectObjects(from: pixelBuffer)
+            let results = try await objectDetector.detectObjects(from: pixelBuffer)
+            print("📱 Object detection returned \(results.count) objects")
+            return results
         } catch {
+            print("❌ Object detection error: \(error)")
             await MainActor.run {
                 self.errorMessage = "Object detection failed: \(error.localizedDescription)"
             }

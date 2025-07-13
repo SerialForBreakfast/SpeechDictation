@@ -13,10 +13,13 @@ final class YOLOv3Model: ObjectDetectionModel {
     init?() {
         do {
             let config = MLModelConfiguration()
+            config.computeUnits = .all // Use both CPU and GPU for better performance
             let mlModel = try YOLOv3Tiny(configuration: config)
             self.model = try VNCoreMLModel(for: mlModel.model)
+            
+            print("✅ YOLOv3Model successfully initialized")
         } catch {
-            print("Failed to initialize YOLOv3Model: \(error)")
+            print("❌ Failed to initialize YOLOv3Model: \(error)")
             return nil
         }
     }
@@ -30,20 +33,46 @@ final class YOLOv3Model: ObjectDetectionModel {
         return try await withCheckedThrowingContinuation { continuation in
             let request = VNCoreMLRequest(model: model) { request, error in
                 if let error = error {
+                    print("❌ YOLOv3 detection error: \(error)")
                     continuation.resume(throwing: error)
                     return
                 }
                 
-                let results = request.results as? [VNRecognizedObjectObservation] ?? []
-                continuation.resume(returning: results)
+                guard let results = request.results as? [VNRecognizedObjectObservation] else {
+                    print("⚠️ YOLOv3 returned no valid results")
+                    continuation.resume(returning: [])
+                    return
+                }
+                
+                // Filter results by confidence threshold (25% minimum)
+                let confidenceThreshold: Float = 0.25
+                let filteredResults = results.filter { observation in
+                    guard let topLabel = observation.labels.first else { return false }
+                    return topLabel.confidence >= confidenceThreshold
+                }
+                
+                print("🔍 YOLOv3 detected \(results.count) total objects, \(filteredResults.count) above \(Int(confidenceThreshold * 100))% confidence")
+                
+                // Debug: Print detected objects
+                for (index, observation) in filteredResults.prefix(5).enumerated() {
+                    if let topLabel = observation.labels.first {
+                        print("   Object \(index + 1): \(topLabel.identifier) (\(Int(topLabel.confidence * 100))%)")
+                    }
+                }
+                
+                continuation.resume(returning: filteredResults)
             }
             
-            request.imageCropAndScaleOption = .scaleFill
-            let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up)
+            // Configure request for optimal object detection
+            request.imageCropAndScaleOption = .scaleFit // Better for object detection than scaleFill
+            
+            // Set the image orientation correctly for camera input (portrait mode)
+            let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .right, options: [:])
             
             do {
                 try handler.perform([request])
             } catch {
+                print("❌ YOLOv3 request execution failed: \(error)")
                 continuation.resume(throwing: error)
             }
         }

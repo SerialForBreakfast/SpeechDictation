@@ -57,6 +57,12 @@ final class LiveCameraView: NSObject, ObservableObject {
 
             if self.session.canAddOutput(self.videoOutput) {
                 self.session.addOutput(self.videoOutput)
+                
+                // Configure the connection orientation for proper ML processing
+                if let connection = self.videoOutput.connection(with: .video) {
+                    connection.videoOrientation = .portrait
+                    connection.isVideoMirrored = false
+                }
             }
 
             self.session.commitConfiguration()
@@ -79,6 +85,12 @@ struct CameraPreview: UIViewRepresentable {
         let previewLayer = AVCaptureVideoPreviewLayer(session: session)
         previewLayer.videoGravity = .resizeAspectFill
         previewLayer.frame = view.bounds
+        
+        // Set the preview layer orientation to match the camera connection
+        if let connection = previewLayer.connection {
+            connection.videoOrientation = .portrait
+        }
+        
         view.layer.addSublayer(previewLayer)
 
         // Keep previewLayer properly sized
