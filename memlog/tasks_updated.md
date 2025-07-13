@@ -7,7 +7,7 @@ The app successfully performs real-time speech recognition with export/sharing f
 
 ## High Priority Tasks
 
-### TASK-001: Export & Share Functionality - COMPLETED ✓
+### TASK-001: Export & Share Functionality - COMPLETED
 **Status**: COMPLETED
 **Priority**: HIGH
 **Estimated Effort**: 8-12 hours
@@ -32,7 +32,7 @@ As a user, I want to export and share my transcribed text in multiple formats so
 - [x] Environment-based URL opening for system app integration
 - [x] Project file updated with proper target membership
 
-### TASK-001A: Intelligent Autoscroll System - COMPLETED ✓
+### TASK-001A: Intelligent Autoscroll System - COMPLETED
 **Status**: COMPLETED
 **Priority**: HIGH (User Request)
 **Estimated Effort**: 6-8 hours
@@ -70,14 +70,14 @@ _As a user, I want my audio recordings stored with precise timing data, so I can
 
 **Subtasks Breakdown:**
 
-#### ✅ UI Layer
+#### UI Layer
 - [ ] Playback controls: Play, Pause, Stop
 - [ ] Speed adjustment (0.5x, 1x, 1.5x, 2x)
 - [ ] Seek-to-text functionality (tap to jump)
 - [ ] Real-time waveform display with current position
 - [ ] Display duration and timestamp overlay
 
-#### ✅ Logic / Services
+#### Logic / Services
 - [ ] `AudioRecordingManager`
   - Capture audio with high-quality config (sample rate, bit depth)
   - Implement efficient storage and compression
@@ -91,14 +91,14 @@ _As a user, I want my audio recordings stored with precise timing data, so I can
   - Load, buffer, and sync audio with transcript
   - Manage seek logic and handle playback speed
 
-#### 🔁 Integration Points
+#### Integration Points
 - [ ] Extend `SpeechRecognizer`:
   - Capture timestamps from `SpeechRecognitionResult`
   - Hand off segment/timing data to `TimingDataManager`
 - [ ] Synchronize playback UI with `AudioPlaybackManager`
 - [ ] Ensure `ExportManager` pulls unified data from all services
 
-#### 🧵 Concurrency Requirements
+#### Concurrency Requirements
 - All mutable state (timing, audio) managed within `actors`
 - Export tasks and audio file writing must use `async let` or `Task.detached`
 - Avoid blocking operations; schedule disk I/O on background threads

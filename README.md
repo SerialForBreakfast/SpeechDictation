@@ -190,4 +190,4 @@ For questions, suggestions, or support:
 
 ---
 
-*Built with ❤️ for accessibility and content creation*
+*Built with love for accessibility and content creation*
