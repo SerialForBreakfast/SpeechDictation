@@ -40,88 +40,80 @@ struct CameraSceneDescriptionView: View {
             
             // UI Overlays
             VStack {
-                // Top bar with navigation and settings
+                // Navigation controls
                 HStack {
-                    // Back button
                     Button(action: { dismiss() }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .medium))
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 32))
                             .foregroundColor(.white)
-                            .padding(12)
-                            .background(Color.black.opacity(0.7))
+                            .background(Color.black.opacity(0.5))
                             .clipShape(Circle())
+                            .accessibilityLabel("Close camera")
+                            .accessibilityHint("Returns to the previous screen")
                     }
-                    .accessibilityLabel("Back")
-                    .accessibilityHint("Returns to the previous screen")
                     
                     Spacer()
                     
-                    // Settings button
                     Button(action: { showingSettings = true }) {
-                        Image(systemName: "gear")
-                            .font(.system(size: 18, weight: .medium))
+                        Image(systemName: "gear.circle.fill")
+                            .font(.system(size: 32))
                             .foregroundColor(.white)
-                            .padding(12)
-                            .background(Color.black.opacity(0.7))
+                            .background(Color.black.opacity(0.5))
                             .clipShape(Circle())
+                            .accessibilityLabel("Camera settings")
+                            .accessibilityHint("Opens camera and detection settings")
                     }
-                    .accessibilityLabel("Settings")
-                    .accessibilityHint("Opens camera detection and display settings")
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
+                .padding()
+                .padding(.top, 44) // Account for status bar
                 
                 Spacer()
                 
-                // Bottom overlays
+                // Always visible overlay information - green and blue sections
                 VStack(spacing: 12) {
-                    // Scene Description Overlay
-                    if let scene = viewModel.sceneLabel {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Scene Environment")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(sceneOverlayTextColor)
-                            
-                            Text(scene)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .foregroundColor(sceneOverlayTextColor)
-                                .lineLimit(2)
-                                .multilineTextAlignment(.leading)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(sceneOverlayBackgroundColor)
-                        .cornerRadius(12)
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Scene: \(scene)")
-                        .accessibilityHint("Current environment classification")
+                    // Scene Description Overlay - Always visible blue section
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Scene Environment")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(sceneOverlayTextColor)
+                        
+                        Text(viewModel.sceneLabel ?? "Analyzing scene...")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(sceneOverlayTextColor)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(sceneOverlayBackgroundColor)
+                    .cornerRadius(12)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Scene: \(viewModel.sceneLabel ?? "Analyzing")")
+                    .accessibilityHint("Current environment classification")
                     
-                    // Detected Objects Overlay
-                    if !viewModel.detectedObjects.isEmpty {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Detected Objects")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(objectOverlayTextColor)
-                            
-                            Text(formatDetectedObjects())
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .foregroundColor(objectOverlayTextColor)
-                                .lineLimit(3)
-                                .multilineTextAlignment(.leading)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(objectOverlayBackgroundColor)
-                        .cornerRadius(12)
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Objects: \(formatDetectedObjects())")
-                        .accessibilityHint("Currently detected objects in the scene")
+                    // Detected Objects Overlay - Always visible green section
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Detected Objects")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(objectOverlayTextColor)
+                        
+                        Text(formatDetectedObjects())
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(objectOverlayTextColor)
+                            .lineLimit(3)
+                            .multilineTextAlignment(.leading)
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(objectOverlayBackgroundColor)
+                    .cornerRadius(12)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Objects: \(formatDetectedObjects())")
+                    .accessibilityHint("Currently detected objects in the scene")
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 34) // Account for home indicator
@@ -152,9 +144,13 @@ struct CameraSceneDescriptionView: View {
     
     // MARK: - Helper Methods
     
-    /// Formats detected objects into a readable string
-    /// - Returns: Formatted string of detected objects with confidence
+    /// Formats detected objects into a readable string with proper undetected state
+    /// - Returns: Formatted string of detected objects with confidence or undetected message
     private func formatDetectedObjects() -> String {
+        guard !viewModel.detectedObjects.isEmpty else {
+            return "No objects detected"
+        }
+        
         let objectStrings = viewModel.detectedObjects.compactMap { object -> String? in
             guard let topLabel = object.labels.first else { return nil }
             let confidence = Int(topLabel.confidence * 100)
@@ -168,7 +164,7 @@ struct CameraSceneDescriptionView: View {
     
     // MARK: - Dark/Light Mode Color Helpers
     
-    /// Scene overlay background color that adapts to dark/light mode
+    /// Scene overlay background color that adapts to dark/light mode - Always blue
     private var sceneOverlayBackgroundColor: Color {
         switch colorScheme {
         case .dark:
@@ -182,10 +178,10 @@ struct CameraSceneDescriptionView: View {
     
     /// Scene overlay text color that adapts to dark/light mode
     private var sceneOverlayTextColor: Color {
-        return .white // White text works well on both dark and light blue backgrounds
+        return .white // White text works well on blue backgrounds in both modes
     }
     
-    /// Object overlay background color that adapts to dark/light mode
+    /// Object overlay background color that adapts to dark/light mode - Always green
     private var objectOverlayBackgroundColor: Color {
         switch colorScheme {
         case .dark:
@@ -199,7 +195,7 @@ struct CameraSceneDescriptionView: View {
     
     /// Object overlay text color that adapts to dark/light mode
     private var objectOverlayTextColor: Color {
-        return .white // White text works well on both dark and light green backgrounds
+        return .white // White text works well on green backgrounds in both modes
     }
     
     /// Error overlay background color that adapts to dark/light mode

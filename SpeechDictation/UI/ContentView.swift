@@ -4,6 +4,8 @@
 //
 //  Created by Joseph McCraw on 6/25/24.
 //
+//  Main content view with proper dark/light mode support.
+//
 
 import SwiftUI
 
@@ -13,6 +15,7 @@ struct ContentView: View {
     @State private var isUserScrolling = false
     @State private var showJumpToLiveButton = false
     @State private var lastTranscriptLength = 0
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         ZStack {
@@ -24,6 +27,7 @@ struct ContentView: View {
                             VStack {
                                 Text(viewModel.transcribedText)
                                     .font(.system(size: viewModel.fontSize))
+                                    .foregroundColor(.primary)
                                     .padding()
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .id("transcriptText")
@@ -35,9 +39,9 @@ struct ContentView: View {
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(backgroundColor)
+                        .background(transcriptBackgroundColor)
                         .cornerRadius(10)
-                        .shadow(radius: 5)
+                        .shadow(color: shadowColor, radius: 5, x: 0, y: 0)
                         .simultaneousGesture(
                             DragGesture()
                                 .onChanged { _ in
@@ -45,11 +49,11 @@ struct ContentView: View {
                                     isUserScrolling = true
                                 }
                         )
-                                                 .onChange(of: viewModel.transcribedText) { newText in
-                             handleTranscriptChange(newText: newText) {
-                                 proxy.scrollTo("bottom", anchor: .bottom)
-                             }
-                         }
+                        .onChange(of: viewModel.transcribedText) { newText in
+                            handleTranscriptChange(newText: newText) {
+                                proxy.scrollTo("bottom", anchor: .bottom)
+                            }
+                        }
                     }
                     
                     // Jump to Live button
@@ -65,10 +69,10 @@ struct ContentView: View {
                             }
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(Color.blue)
+                            .background(Color.accentColor)
                             .foregroundColor(.white)
                             .cornerRadius(20)
-                            .shadow(radius: 4)
+                            .shadow(color: shadowColor, radius: 4, x: 0, y: 0)
                         }
                         .padding(.trailing, 16)
                         .padding(.bottom, 16)
@@ -87,10 +91,12 @@ struct ContentView: View {
                     }) {
                         Text(viewModel.isRecording ? "Stop Listening" : "Start Listening")
                             .font(.title2)
+                            .fontWeight(.semibold)
                             .padding()
-                            .background(Color.blue)
+                            .background(primaryActionButtonColor)
                             .foregroundColor(.white)
                             .cornerRadius(10)
+                            .shadow(color: shadowColor, radius: 2, x: 0, y: 0)
                     }
 
                     // Reset button - clears text without stopping recording
@@ -100,8 +106,10 @@ struct ContentView: View {
                         Image(systemName: "arrow.clockwise")
                             .font(.title2)
                             .padding()
-                            .background(Color.orange.opacity(0.2))
+                            .background(resetButtonBackgroundColor)
+                            .foregroundColor(resetButtonForegroundColor)
                             .clipShape(Circle())
+                            .shadow(color: shadowColor, radius: 2, x: 0, y: 0)
                     }
                     .disabled(viewModel.transcribedText.isEmpty)
                     .opacity(viewModel.transcribedText.isEmpty ? 0.5 : 1.0)
@@ -114,8 +122,10 @@ struct ContentView: View {
                         Image(systemName: "square.and.arrow.up")
                             .font(.title2)
                             .padding()
-                            .background(Color.green.opacity(0.2))
+                            .background(shareButtonBackgroundColor)
+                            .foregroundColor(shareButtonForegroundColor)
                             .clipShape(Circle())
+                            .shadow(color: shadowColor, radius: 2, x: 0, y: 0)
                     }
                     .disabled(!canExport)
                     .opacity(canExport ? 1.0 : 0.5)
@@ -127,8 +137,10 @@ struct ContentView: View {
                         Image(systemName: "gear")
                             .font(.title2)
                             .padding()
-                            .background(Color.gray.opacity(0.2))
+                            .background(settingsButtonBackgroundColor)
+                            .foregroundColor(settingsButtonForegroundColor)
                             .clipShape(Circle())
+                            .shadow(color: shadowColor, radius: 2, x: 0, y: 0)
                     }
                 }
                 .padding()
@@ -136,22 +148,16 @@ struct ContentView: View {
             .padding()
 
             if viewModel.showSettings {
-                Color.black.opacity(0.5)
+                overlayBackgroundColor
                     .edgesIgnoringSafeArea(.all)
                     .onTapGesture {
                         self.viewModel.showSettings.toggle()
                     }
 
                 SettingsView(viewModel: viewModel)
-                    .background(Color(UIColor.systemBackground))
-                    .cornerRadius(10)
-                    .shadow(radius: 10)
-                    .padding()
                     .transition(.move(edge: .bottom))
                     .animation(.easeInOut)
             }
-            
-
         }
         .onAppear {
             applyTheme()
@@ -169,7 +175,9 @@ struct ContentView: View {
         }
     }
 
-    private var backgroundColor: Color {
+    // MARK: - Color Helpers
+    
+    private var transcriptBackgroundColor: Color {
         switch viewModel.theme {
         case .light:
             return Color.white
@@ -178,6 +186,42 @@ struct ContentView: View {
         case .highContrast:
             return Color.yellow
         }
+    }
+    
+    private var primaryActionButtonColor: Color {
+        Color.accentColor
+    }
+    
+    private var resetButtonBackgroundColor: Color {
+        Color.orange.opacity(colorScheme == .dark ? 0.3 : 0.2)
+    }
+    
+    private var resetButtonForegroundColor: Color {
+        Color.orange
+    }
+    
+    private var shareButtonBackgroundColor: Color {
+        Color.green.opacity(colorScheme == .dark ? 0.3 : 0.2)
+    }
+    
+    private var shareButtonForegroundColor: Color {
+        Color.green
+    }
+    
+    private var settingsButtonBackgroundColor: Color {
+        Color(UIColor.tertiarySystemFill)
+    }
+    
+    private var settingsButtonForegroundColor: Color {
+        Color.primary
+    }
+    
+    private var overlayBackgroundColor: Color {
+        Color.black.opacity(colorScheme == .dark ? 0.6 : 0.4)
+    }
+    
+    private var shadowColor: Color {
+        Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1)
     }
 
     private func applyTheme() {

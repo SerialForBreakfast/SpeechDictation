@@ -4,8 +4,11 @@
 //
 //  Created by AI Assistant on 6/30/24.
 //
+//  Enhanced native iOS share sheet style interface with proper dark/light mode support.
+//
 
 import SwiftUI
+import Foundation
 
 /// Enhanced native iOS share sheet style interface
 /// Supports both basic text formats and professional timing formats
@@ -20,6 +23,7 @@ struct NativeStyleShareView: View {
     @State private var showingFormatSelector = false
     @State private var exportType: ExportType = .text
     @Environment(\.openURL) var openURL
+    @Environment(\.colorScheme) private var colorScheme
     
     enum ExportType {
         case text
@@ -40,6 +44,7 @@ struct NativeStyleShareView: View {
             Text("Export Transcription")
                 .font(.headline)
                 .fontWeight(.semibold)
+                .foregroundColor(.primary)
                 .padding(.bottom, 32)
             
             // Export type selector
@@ -133,15 +138,15 @@ struct NativeStyleShareView: View {
                 isPresented = false
             }
             .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.blue)
+            .foregroundColor(.accentColor)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
-            .background(Color.gray.opacity(0.1))
+            .background(cancelButtonBackgroundColor)
             .cornerRadius(12)
             .padding(.horizontal, 20)
             .padding(.bottom, 24)
         }
-        .background(Color.white)
+        .background(mainBackgroundColor)
         .alert("Export Result", isPresented: $showingAlert) {
             Button("OK") { }
         } message: {
@@ -155,6 +160,16 @@ struct NativeStyleShareView: View {
                 isPresented: $showingFormatSelector
             )
         }
+    }
+    
+    // MARK: - Color Helpers
+    
+    private var mainBackgroundColor: Color {
+        Color(UIColor.systemBackground)
+    }
+    
+    private var cancelButtonBackgroundColor: Color {
+        Color(UIColor.secondarySystemBackground)
     }
     
     // MARK: - Computed Properties
@@ -194,8 +209,6 @@ struct NativeStyleShareView: View {
     
     private func saveToFiles() {
         Task { @MainActor in
-            let success: Bool
-            
             switch exportType {
             case .text:
                 ExportManager.shared.saveToFiles(text: text, format: selectedTextFormat) { success in
@@ -248,8 +261,8 @@ struct NativeStyleShareView: View {
         let encodedContent = content.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         if let url = URL(string: "mailto:?subject=Speech Transcription&body=\(encodedContent)") {
             openURL(url)
-            isPresented = false
         }
+        isPresented = false
     }
     
     private func shareViaMessages() {
@@ -265,8 +278,8 @@ struct NativeStyleShareView: View {
         let encodedContent = content.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         if let url = URL(string: "sms:&body=\(encodedContent)") {
             openURL(url)
-            isPresented = false
         }
+        isPresented = false
     }
     
     private func showAlert(_ message: String) {
@@ -282,59 +295,80 @@ struct FormatSelectorView: View {
     @Binding var selectedTextFormat: ExportManager.ExportFormat
     @Binding var selectedTimingFormat: ExportManager.TimingExportFormat
     @Binding var isPresented: Bool
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                if exportType == .text {
-                    TextFormatSelectorView(selectedFormat: $selectedTextFormat)
-                } else {
-                    TimingFormatSelectorView(selectedFormat: $selectedTimingFormat)
+            ScrollView {
+                VStack(spacing: 20) {
+                    headerView
+                    formatSelectionView
+                    Spacer(minLength: 20)
                 }
+                .padding()
             }
-            .navigationTitle("Select Format")
+            .background(Color(UIColor.systemBackground))
+            .navigationTitle("Export Format")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        isPresented = false
-                    }
+            .navigationBarItems(
+                trailing: Button("Cancel") {
+                    isPresented = false
                 }
+                .foregroundColor(.accentColor)
+            )
+        }
+    }
+    
+    private var headerView: some View {
+        Text("Select Export Format")
+            .font(.headline)
+            .foregroundColor(.primary)
+            .padding(.top, 20)
+    }
+    
+    @ViewBuilder
+    private var formatSelectionView: some View {
+        if exportType == .text {
+            textFormatButtons
+        } else {
+            timingFormatButtons
+        }
+    }
+    
+    private var textFormatButtons: some View {
+        LazyVStack(spacing: 12) {
+            let formats = [ExportManager.ExportFormat.plainText, .richText, .markdown]
+            ForEach(0..<formats.count, id: \.self) { index in
+                let format = formats[index]
+                Button(action: {
+                    selectedTextFormat = format
+                    isPresented = false
+                }) {
+                    FormatRow(
+                        title: format.displayName,
+                        description: format.description,
+                        isSelected: selectedTextFormat == format
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
             }
         }
     }
-}
-
-// MARK: - Text Format Selector
-
-struct TextFormatSelectorView: View {
-    @Binding var selectedFormat: ExportManager.ExportFormat
     
-    var body: some View {
-        List {
-            ForEach([ExportManager.ExportFormat.plainText, .richText, .markdown], id: \.self) { format in
+    private var timingFormatButtons: some View {
+        LazyVStack(spacing: 12) {
+            let formats = [ExportManager.TimingExportFormat.srt, .vtt, .ttml, .json]
+            ForEach(0..<formats.count, id: \.self) { index in
+                let format = formats[index]
                 Button(action: {
-                    selectedFormat = format
+                    selectedTimingFormat = format
+                    isPresented = false
                 }) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(format.displayName)
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            
-                            Text(format.description)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        if selectedFormat == format {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.blue)
-                        }
-                    }
-                    .padding(.vertical, 8)
+                    FormatRow(
+                        title: format.displayName,
+                        description: format.description,
+                        isSelected: selectedTimingFormat == format
+                    )
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -342,40 +376,42 @@ struct TextFormatSelectorView: View {
     }
 }
 
-// MARK: - Timing Format Selector
+// MARK: - Format Row Component
 
-struct TimingFormatSelectorView: View {
-    @Binding var selectedFormat: ExportManager.TimingExportFormat
+struct FormatRow: View {
+    let title: String
+    let description: String
+    let isSelected: Bool
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        List {
-            ForEach([ExportManager.TimingExportFormat.srt, .vtt, .ttml, .json], id: \.self) { format in
-                Button(action: {
-                    selectedFormat = format
-                }) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(format.displayName)
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            
-                            Text(format.description)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        if selectedFormat == format {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.blue)
-                        }
-                    }
-                    .padding(.vertical, 8)
-                }
-                .buttonStyle(PlainButtonStyle())
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.leading)
+            }
+            
+            Spacer()
+            
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.accentColor)
+                    .font(.system(size: 20))
             }
         }
+        .padding()
+        .background(isSelected ? Color.accentColor.opacity(0.1) : Color(UIColor.secondarySystemBackground))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+        )
     }
 }
 

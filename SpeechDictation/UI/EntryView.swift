@@ -8,6 +8,7 @@ struct EntryView: View {
     @Environment(\.accessibilityInvertColors) private var invertColors
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         NavigationView {
@@ -86,7 +87,8 @@ struct EntryView: View {
                     systemImage: "mic.fill",
                     color: .blue,
                     isRecommended: true,
-                    differentiateWithoutColor: differentiateWithoutColor
+                    differentiateWithoutColor: differentiateWithoutColor,
+                    colorScheme: colorScheme
                 )
             }
             .buttonStyle(PlainButtonStyle())
@@ -112,7 +114,8 @@ struct EntryView: View {
                     systemImage: "camera.fill",
                     color: .purple,
                     isRecommended: false,
-                    differentiateWithoutColor: differentiateWithoutColor
+                    differentiateWithoutColor: differentiateWithoutColor,
+                    colorScheme: colorScheme
                 )
             }
             .buttonStyle(PlainButtonStyle())
@@ -150,12 +153,19 @@ struct EntryView: View {
         )
     }
     
-    /// Adaptive gradient colors based on accessibility settings
+    /// Adaptive gradient colors based on accessibility settings and dark/light mode
     private var gradientColors: [Color] {
         if invertColors {
             return [Color.primary.opacity(0.1), Color.secondary.opacity(0.1)]
         } else {
-            return [Color.blue.opacity(0.1), Color.purple.opacity(0.1)]
+            switch colorScheme {
+            case .dark:
+                return [Color.blue.opacity(0.15), Color.purple.opacity(0.15)]
+            case .light:
+                return [Color.blue.opacity(0.08), Color.purple.opacity(0.08)]
+            @unknown default:
+                return [Color.blue.opacity(0.1), Color.purple.opacity(0.1)]
+            }
         }
     }
     
@@ -216,6 +226,7 @@ struct ExperienceCard: View {
     let color: Color
     let isRecommended: Bool
     let differentiateWithoutColor: Bool
+    let colorScheme: ColorScheme
     
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -311,12 +322,19 @@ struct ExperienceCard: View {
         "Double tap to select this experience"
     }
     
-    /// Card background with high contrast support
+    /// Card background with semantic colors and high contrast support
     private var cardBackground: Color {
         if differentiateWithoutColor {
             return Color.primary.opacity(0.05)
         } else {
-            return Color.white
+            switch colorScheme {
+            case .dark:
+                return Color(UIColor.secondarySystemBackground)
+            case .light:
+                return Color(UIColor.systemBackground)
+            @unknown default:
+                return Color(UIColor.systemBackground)
+            }
         }
     }
     
@@ -329,12 +347,19 @@ struct ExperienceCard: View {
         }
     }
     
-    /// Shadow color with accessibility considerations
+    /// Shadow color with accessibility considerations and dark/light mode support
     private var shadowColor: Color {
         if differentiateWithoutColor {
             return Color.primary.opacity(0.2)
         } else {
-            return Color.black.opacity(0.1)
+            switch colorScheme {
+            case .dark:
+                return Color.black.opacity(0.3)
+            case .light:
+                return Color.black.opacity(0.1)
+            @unknown default:
+                return Color.black.opacity(0.1)
+            }
         }
     }
     

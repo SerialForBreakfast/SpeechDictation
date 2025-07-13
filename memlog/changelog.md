@@ -8,6 +8,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Universal Dark/Light Mode Support** - Complete theme adaptation for all UI views
+  - **Entry View Color Fixes** - Comprehensive dark/light mode support for app entry point
+    - Fixed hardcoded white card backgrounds with semantic system colors
+    - Updated gradient colors to adapt properly to dark/light mode
+    - Improved contrast ratios for better accessibility
+    - Enhanced visual hierarchy with proper color adaptation
+  - **Camera Interface Color Consistency** - Always visible green and blue overlays with proper states
+    - Scene Environment overlay: Always visible blue background with "Analyzing scene..." fallback
+    - Detected Objects overlay: Always visible green background with "No objects detected" fallback
+    - Consistent green bounding boxes for object detection across all camera views
+    - Proper undetected states prevent empty overlays from disappearing
+    - Enhanced contrast and readability in both dark and light modes
+  - **Main Interface Adaptation** - All views properly adapt to system light/dark mode
+    - ContentView: Updated all buttons, backgrounds, and text to use semantic colors
+    - SettingsView: Comprehensive color scheme support with proper contrast
+    - ThemeSettingView: Fixed "white on light gray" contrast issues with semantic colors
+    - TextSizeSettingView: Proper dark/light mode adaptation
+    - MicSensitivityView: Semantic color system for all UI elements
+    - NativeStyleShareView: Complete share interface adaptation
+  - **Semantic Color System** - Professional color implementation
+    - Uses UIColor.systemBackground, secondarySystemBackground, tertiarySystemBackground
+    - Proper .primary, .secondary, .accentColor for text and interactive elements
+    - Adaptive opacity levels (0.8 light mode, 0.9 dark mode) for optimal visibility
+    - Dynamic shadow colors with appropriate opacity for each mode
+    - Consistent button styles with proper contrast ratios
+  - **UIKit Import Justification** - Proper usage of UIKit only where necessary
+    - SettingsView: UIColor semantic colors for dark/light mode adaptation
+    - LiveCameraView: UIDevice orientation, AVCaptureVideoPreviewLayer for camera management
+    - ExportManager: UIApplication, UIActivityViewController for share functionality
+    - AlertManager: UIViewController, UIAlertController for alert presentation
+    - BoundingBoxOverlayView: UIView, CAShapeLayer, CATextLayer for bounding box overlays
+    - All other views use pure SwiftUI with semantic colors
+  - **Enhanced User Experience** - Improved accessibility and visual clarity
+    - No more hardcoded colors causing contrast issues
+    - Always visible blue and green sections on camera interface
+    - Proper color adaptation for all interactive elements
+    - Maintains visual hierarchy across both modes
+    - Consistent styling with iOS design guidelines
+    - Improved readability and accessibility compliance
 - **Live Camera Input Implementation** - Complete camera experience with ML integration
   - **CameraExperienceView.swift** - Camera experience coordinator with permission flow
   - **CameraPermissionsView.swift** - Comprehensive permission handling with user guidance
