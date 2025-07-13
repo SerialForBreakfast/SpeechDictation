@@ -178,7 +178,6 @@ struct CameraErrorView: View {
 struct CameraSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var settings = CameraSettingsManager.shared
-    @State private var enableAudioDescriptions = false
     
     var body: some View {
         NavigationView {
@@ -190,7 +189,7 @@ struct CameraSettingsView: View {
                     Toggle("Scene Description", isOn: $settings.enableSceneDescription)
                         .accessibilityHint("Enables or disables scene classification and description")
                     
-                    Toggle("Audio Descriptions", isOn: $enableAudioDescriptions)
+                    Toggle("Audio Descriptions", isOn: $settings.enableAudioDescriptions)
                         .accessibilityHint("Enables spoken descriptions of detected objects and scenes")
                 }
                 

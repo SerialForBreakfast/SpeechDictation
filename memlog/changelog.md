@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Speech Synthesis for Object Detection** - Added text-to-speech functionality for camera object detection and scene description
+  - **YOLO Object Detection Speech** - Speaks detected objects with distance information (e.g., "Objects detected: dog in lower left, close")
+  - **Scene Description Speech** - Speaks scene classifications without distance information (e.g., "Scene: Indoor Living Room")
+  - **Audio Descriptions Toggle** - New camera setting to enable/disable spoken descriptions
+  - **Intelligent Speech Timing** - Prevents repetitive announcements with 2-second minimum interval between the same announcement
+  - **Integrated Speech Engine** - Built-in AVSpeechSynthesizer integration with proper audio session management
+  - **Distance-Aware Speech** - YOLO objects include spatial positioning and distance estimates in speech output
+  - **Scene-Only Speech** - Scene descriptions intentionally exclude distance information as requested
+  - **Settings Integration** - Speech synthesis controlled via Camera Settings with persistent user preferences
 - **Spatial Object Detection Enhancement** - Enhanced object detection with positional and distance context
   - **SpatialDescriptor System** - Comprehensive spatial analysis for detected objects
     - Horizontal positioning: left, center-left, center, center-right, right
