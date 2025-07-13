@@ -8,15 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Entry UI with Dual Experience Selection** - New app entry point
+- **Entry UI with Dual Experience Selection** - New app entry point with comprehensive accessibility
   - Created EntryView.swift with modern SwiftUI navigation
   - Audio Transcription experience (recommended) - routes to existing ContentView
   - Live Camera Input experience (experimental) - placeholder for camera integration
   - Beautiful gradient background with modern card design
   - ExperienceCard component for consistent UI presentation
-  - Proper iOS-specific UI patterns and accessibility support
   - Updated SpeechDictationApp.swift to use EntryView as root view
   - Added proper Xcode project target membership
+  - **Accessibility Features:**
+    - Full VoiceOver support with proper accessibility labels and hints
+    - Dynamic Type support with adaptive spacing, padding, and icon sizing
+    - High contrast mode support with alternative color schemes
+    - Differentiate Without Color support for colorblind users
+    - Reduce Motion support for users with motion sensitivity
+    - Proper semantic structure with heading hierarchy (H1, H2)
+    - Accessibility actions for direct experience selection
+    - Screen reader friendly navigation with logical focus order
+    - Adaptive layout adjustments for accessibility text sizes
 - **Memlog Consolidation** - Unified task management system
   - Consolidated all task files (current_tasks.md, tasks_updated.md) into comprehensive tasks.md
   - Organized tasks by status: COMPLETED, HIGH PRIORITY, MEDIUM PRIORITY, LOW PRIORITY

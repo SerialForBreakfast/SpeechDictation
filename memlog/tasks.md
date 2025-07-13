@@ -14,7 +14,7 @@ The SpeechDictation app has evolved from a basic speech recognition tool into a 
 ### TASK-022: Entry UI with Dual Experience Selection - COMPLETED
 **Status**: COMPLETED
 **Priority**: HIGH
-**Effort**: 2 hours (estimated 2-3 hours)
+**Effort**: 4 hours (estimated 2-3 hours)
 
 **Implementation:**
 - `SpeechDictation/UI/EntryView.swift` - Main entry point with experience selection
@@ -22,7 +22,7 @@ The SpeechDictation app has evolved from a basic speech recognition tool into a 
 - Added EntryView to Xcode project with proper target membership
 - Modern SwiftUI navigation with NavigationView and NavigationLink
 - ExperienceCard component for consistent UI presentation
-- Proper iOS-specific UI patterns and accessibility support
+- Comprehensive accessibility support with all iOS standards
 
 **Features:**
 - Audio Transcription experience (recommended) - routes to existing ContentView
@@ -30,6 +30,18 @@ The SpeechDictation app has evolved from a basic speech recognition tool into a 
 - Beautiful gradient background with modern card design
 - Responsive layout with proper spacing and typography
 - Clean separation of concerns with enum-based experience types
+
+**Accessibility Features:**
+- Full VoiceOver support with proper accessibility labels and hints
+- Dynamic Type support with adaptive spacing, padding, and icon sizing
+- High contrast mode support with alternative color schemes
+- Differentiate Without Color support for colorblind users
+- Reduce Motion support for users with motion sensitivity
+- Proper semantic structure with heading hierarchy (H1, H2)
+- Accessibility actions for direct experience selection
+- Screen reader friendly navigation with logical focus order
+- Adaptive layout adjustments for accessibility text sizes
+- Comprehensive accessibility testing with multiple preview modes
 
 ### TASK-020: Build & Test Automation System - COMPLETED
 **Status**: COMPLETED
