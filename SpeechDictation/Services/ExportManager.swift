@@ -402,14 +402,76 @@ class ExportManager {
     
     // MARK: - Private Format Generation Methods
     
+    /// Generates grouped SRT content that is easier to read and standards-compliant.
+    ///
+    /// Rules:
+    ///   • Combine consecutive `TranscriptionSegment`s until one of the limits is hit:
+    ///       1. Maximum caption duration (`maxCaptionDuration`, default 2 s).
+    ///       2. Maximum character length (`maxCaptionChars`, default 42).
+    ///       3. The current segment text ends with a sentence-terminating punctuation mark (., !, ?).
+    ///   • Identical consecutive captions are de-duplicated to avoid partial-result overlap.
+    ///
+    /// ‑ Parameter session: The recording session containing word-level segments.
+    /// ‑ Returns: Well-formed SRT text.
     private func generateSRTContent(from session: AudioRecordingSession) -> String {
-        var content = ""
-        for (index, segment) in session.segments.enumerated() {
-            content += "\(index + 1)\n"
-            content += "\(formatSRTTime(segment.startTime)) --> \(formatSRTTime(segment.endTime))\n"
-            content += "\(segment.text)\n\n"
+        let maxCaptionDuration: TimeInterval = 2.0
+        let maxCaptionChars: Int = 42
+
+        var captions: [(start: TimeInterval, end: TimeInterval, text: String)] = []
+
+        var currentStart: TimeInterval?
+        var currentEnd: TimeInterval?
+        var currentText: String = ""
+
+        func flushCurrent() {
+            guard let start = currentStart, let end = currentEnd, !currentText.isEmpty else { return }
+            // Avoid duplicate consecutive captions
+            if captions.last?.text.trimmingCharacters(in: .whitespacesAndNewlines) != currentText.trimmingCharacters(in: .whitespacesAndNewlines) {
+                captions.append((start, end, currentText))
+            }
+            currentStart = nil
+            currentEnd = nil
+            currentText = ""
         }
-        return content
+
+        for segment in session.segments {
+            if currentStart == nil {
+                currentStart = segment.startTime
+            }
+
+            // Proposed combined text if we append this segment
+            let proposedText = currentText.isEmpty ? segment.text : currentText + " " + segment.text
+            let proposedDuration = segment.endTime - (currentStart ?? segment.startTime)
+
+            let endsWithSentenceBreak = segment.text.last.map { ".$!?".contains($0) } ?? false
+
+            let exceedsDuration = proposedDuration > maxCaptionDuration
+            let exceedsChars = proposedText.count > maxCaptionChars
+
+            if exceedsDuration || exceedsChars || endsWithSentenceBreak {
+                // Flush the caption built so far, start new one with this segment
+                flushCurrent()
+                currentStart = segment.startTime
+                currentText = segment.text
+                currentEnd = segment.endTime
+            } else {
+                // Append to current caption
+                currentText = proposedText
+                currentEnd = segment.endTime
+            }
+        }
+
+        // Flush remaining caption
+        flushCurrent()
+
+        // Build SRT string
+        var result = ""
+        for (index, cap) in captions.enumerated() {
+            result += "\(index + 1)\n"
+            result += "\(formatSRTTime(cap.start)) --> \(formatSRTTime(cap.end))\n"
+            result += "\(cap.text)\n\n"
+        }
+        return result
     }
     
     private func generateVTTContent(from session: AudioRecordingSession) -> String {
