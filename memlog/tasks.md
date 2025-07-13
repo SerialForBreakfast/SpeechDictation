@@ -11,6 +11,39 @@ The SpeechDictation app has evolved from a basic speech recognition tool into a 
 
 ## COMPLETED TASKS
 
+### TASK-024: Apple's Official Core ML Models Integration - COMPLETED
+**Status**: COMPLETED  
+**Priority**: HIGH
+**Effort**: 2 hours (implementation and testing)
+
+**Implementation:**
+- Enhanced `SpeechDictation/Models/ModelCatalog.swift` with 12 official Apple models
+- Real model specifications from Apple's Core ML Gallery documentation
+- Complete metadata including file sizes, performance metrics, and device compatibility
+- Seamless integration with existing model management architecture
+
+**Apple Models Included:**
+- **Object Detection**: YOLOv3 (248.4MB), YOLOv3 FP16 (124.2MB), YOLOv3 Tiny (35.4MB)
+- **Image Classification**: FastViT T8 (8.2MB), FastViT MA36 (88.3MB), MobileNetV2 (24.7MB), ResNet-50 (102.6MB)
+- **Image Segmentation**: DETR ResNet50 (85.5MB), DeepLabV3 (8.6MB), Depth Anything V2 (49.8MB)
+- **Text Processing**: BERT SQuAD (217.8MB) for question answering
+- **Specialized**: MNIST Classifier (395KB), Updatable Drawing Classifier (382KB)
+
+**Technical Features:**
+- **Real Specifications**: Authentic file sizes, inference times, and compatibility data from Apple
+- **Performance Tiers**: Ultra Light to Max Quality categorization based on size and compute requirements
+- **Device Compatibility**: iPhone, iPad, Mac support with memory and performance requirements
+- **Model Categories**: Organized by ML capabilities (detection, classification, segmentation, NLP)
+- **Caching System**: Local storage with JSON catalog caching and installation state tracking
+- **Validation**: Successfully builds and integrates with existing ModelDownloadManager and DynamicModelLoader
+
+**Benefits:**
+- Provides real, tested ML models instead of placeholder implementations
+- Professional-grade models with documented performance characteristics
+- Ready for immediate integration with ModelManagementView UI components
+- Establishes foundation for downloadable model ecosystem
+- Maintains full compatibility with existing model management infrastructure
+
 ### TASK-023: Live Camera Input Implementation - COMPLETED
 **Status**: COMPLETED
 **Priority**: HIGH

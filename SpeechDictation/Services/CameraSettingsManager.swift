@@ -66,4 +66,30 @@ final class CameraSettingsManager: ObservableObject {
             enableSceneDescription = true
         }
     }
+    
+    // MARK: - Reset Functionality
+    
+    /// Resets all camera settings to their default values
+    /// - Note: This will trigger all published property observers to update UI
+    func resetToDefaults() {
+        print("🔄 Resetting camera settings to defaults...")
+        
+        // Reset all settings to their default values
+        self.sceneUpdateFrequency = 1.0
+        self.enableObjectDetection = true
+        self.enableSceneDescription = true
+        self.detectionSensitivity = 0.5
+        
+        print("✅ Camera settings reset to defaults")
+    }
+    
+    // MARK: - Default Values
+    
+    /// Default values for camera settings
+    enum DefaultValues {
+        static let sceneUpdateFrequency: Double = 1.0
+        static let enableObjectDetection: Bool = true
+        static let enableSceneDescription: Bool = true
+        static let detectionSensitivity: Double = 0.5
+    }
 } 

@@ -97,13 +97,14 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
         // Get current orientation for Vision framework
         let currentOrientation = visionOrientation(from: UIDevice.current.orientation)
         
-        // Always process object detection (immediate response)
-        let detectedObjects = await processObjectDetection(pixelBuffer, orientation: currentOrientation)
+        // Only process object detection if enabled in settings
+        let detectedObjects = settings.enableObjectDetection ? 
+            await processObjectDetection(pixelBuffer, orientation: currentOrientation) : []
         
-        // Process scene description only if enough time has passed (debounced)
+        // Process scene description only if enabled and enough time has passed (debounced)
         let currentTime = Date()
         let timeSinceLastUpdate = currentTime.timeIntervalSince(lastSceneUpdateTime)
-        let shouldUpdateScene = timeSinceLastUpdate >= settings.sceneUpdateFrequency
+        let shouldUpdateScene = settings.enableSceneDescription && timeSinceLastUpdate >= settings.sceneUpdateFrequency
         
         var sceneDescription: String? = nil
         if shouldUpdateScene {
@@ -113,30 +114,47 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
         
         // Update UI on main thread with persistence logic
         await MainActor.run {
-            // Only update detected objects if we have new detections or if old detections are stale
-            if !detectedObjects.isEmpty {
-                // We have new detections - update immediately
-                self.detectedObjects = detectedObjects
-                self.lastObjectDetectionTime = currentTime
-                print("📦 Updated bounding boxes with \(detectedObjects.count) new detections")
-            } else {
-                // No new detections - check if we should clear stale detections
-                let timeSinceLastDetection = currentTime.timeIntervalSince(self.lastObjectDetectionTime)
-                if timeSinceLastDetection > self.objectDetectionTimeout {
-                    // Clear stale detections after timeout
-                    if !self.detectedObjects.isEmpty {
-                        self.detectedObjects = []
-                        print("🕐 Cleared stale bounding boxes after \(self.objectDetectionTimeout)s timeout")
-                    }
+            // Only update detected objects if object detection is enabled
+            if settings.enableObjectDetection {
+                // Only update detected objects if we have new detections or if old detections are stale
+                if !detectedObjects.isEmpty {
+                    // We have new detections - update immediately
+                    self.detectedObjects = detectedObjects
+                    self.lastObjectDetectionTime = currentTime
+                    print("📦 Updated bounding boxes with \(detectedObjects.count) new detections")
                 } else {
-                    // Keep existing detections visible
-                    print("🔄 Keeping \(self.detectedObjects.count) existing bounding boxes visible")
+                    // No new detections - check if we should clear stale detections
+                    let timeSinceLastDetection = currentTime.timeIntervalSince(self.lastObjectDetectionTime)
+                    if timeSinceLastDetection > self.objectDetectionTimeout {
+                        // Clear stale detections after timeout
+                        if !self.detectedObjects.isEmpty {
+                            self.detectedObjects = []
+                            print("🕐 Cleared stale bounding boxes after \(self.objectDetectionTimeout)s timeout")
+                        }
+                    } else {
+                        // Keep existing detections visible
+                        print("🔄 Keeping \(self.detectedObjects.count) existing bounding boxes visible")
+                    }
+                }
+            } else {
+                // Object detection is disabled - clear any existing detections
+                if !self.detectedObjects.isEmpty {
+                    self.detectedObjects = []
+                    print("🚫 Cleared bounding boxes - object detection disabled")
                 }
             }
             
-            // Only update scene label if we processed a new scene description
-            if let newSceneDescription = sceneDescription {
-                self.sceneLabel = newSceneDescription
+            // Only update scene label if scene description is enabled and we processed a new description
+            if settings.enableSceneDescription {
+                if let newSceneDescription = sceneDescription {
+                    self.sceneLabel = newSceneDescription
+                }
+            } else {
+                // Scene description is disabled - clear any existing label
+                if self.sceneLabel != nil {
+                    self.sceneLabel = nil
+                    print("🚫 Cleared scene label - scene description disabled")
+                }
             }
             self.isProcessing = false
         }
