@@ -1,78 +1,11 @@
-//
-//  SettingsView.swift
-//  SpeechDictation
-//
-//  Created by Joseph McCraw on 7/17/24.
-//
-//  Main settings view that combines all setting components.
-//  Now supports proper dark/light mode adaptation.
-//
-
 import SwiftUI
-import Foundation
-import AVFoundation
-import CoreML
-import Vision
-import Combine
-import ARKit
-#if canImport(UIKit)
-import UIKit
-#endif
-
-struct SettingsView: View {
-    @ObservedObject var viewModel: SpeechRecognizerViewModel
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Settings")
-                .font(.title)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-                .padding()
-                .background(headerBackgroundColor)
-                .cornerRadius(10)
-
-            TextSizeSettingView(viewModel: viewModel)
-            ThemeSettingView(viewModel: viewModel)
-            MicSensitivityView(viewModel: viewModel)
-            DepthBasedDistanceView()
-        }
-        .padding()
-        .background(mainBackgroundColor)
-        .cornerRadius(10)
-        .shadow(color: shadowColor, radius: 10, x: 0, y: 0)
-        .padding()
-        .fixedSize(horizontal: true, vertical: false) // Ensures the width fits the content
-    }
-    
-    // MARK: - Color Helpers
-    
-    private var headerBackgroundColor: Color {
-        Color(UIColor.tertiarySystemBackground)
-    }
-    
-    private var mainBackgroundColor: Color {
-        #if canImport(UIKit)
-        Color(UIColor.systemBackground)
-        #else
-        Color(NSColor.windowBackgroundColor)
-        #endif
-    }
-    
-    private var shadowColor: Color {
-        Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1)
-    }
-}
 
 /// SwiftUI view for configuring depth-based distance estimation settings
-/// Provides toggle control and information about device capabilities  
-struct DepthBasedDistanceView: View {
+/// Provides toggle control and information about device capabilities
+struct DepthSettingView: View {
     @ObservedObject private var cameraSettings = CameraSettingsManager.shared
-    @State private var availableDepthSources: [String] = []
-    @State private var hasLiDAR = false
-    @State private var hasARKit = false
-    @State private var hasMLModel = false
+    @State private var availableDepthSources: [DepthEstimationService.DepthSource] = []
+    @State private var depthService: DepthEstimationService?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -145,46 +78,23 @@ struct DepthBasedDistanceView: View {
         }
     }
     
-    /// Load available depth sources from device capabilities
+    /// Load available depth sources from the depth service
     private func loadDepthCapabilities() {
-        var sources: [String] = []
-        
-        // Check LiDAR availability (iPhone 12 Pro+, iPad Pro 2020+)
-        if ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) {
-            sources.append("LiDAR")
-            hasLiDAR = true
-            print("📡 LiDAR scanner detected")
+        Task {
+            let service = DepthEstimationService()
+            self.depthService = service
+            
+            let sources = await service.getAvailableDepthSources()
+            await MainActor.run {
+                self.availableDepthSources = sources
+            }
         }
-        
-        // Check ARKit availability (iPhone 6s+, iOS 11+)
-        if ARWorldTrackingConfiguration.isSupported {
-            sources.append("ARKit")
-            hasARKit = true
-            print("🔍 ARKit world tracking supported")
-        }
-        
-        // Check TrueDepth camera availability (Face ID devices)
-        if ARFaceTrackingConfiguration.isSupported {
-            sources.append("TrueDepth")
-            print("📱 TrueDepth camera detected")
-        }
-        
-        // Check for ML model availability (Depth Anything V2 from ModelCatalog)
-        // In a full implementation, this would check ModelCatalog.shared.getInstalledModelURL(for: "depth-anything-v2")
-        sources.append("ML Model")
-        hasMLModel = true
-        
-        // Always have fallback
-        sources.append("Fallback")
-        
-        availableDepthSources = sources
-        print("🎯 Detected \(sources.count) depth estimation sources: \(sources.joined(separator: ", "))")
     }
 }
 
 /// Badge view for displaying depth source capabilities
 struct DepthSourceBadge: View {
-    let source: String
+    let source: DepthEstimationService.DepthSource
     
     var body: some View {
         HStack(spacing: 4) {
@@ -192,7 +102,7 @@ struct DepthSourceBadge: View {
                 .font(.caption2)
                 .foregroundColor(badgeColor)
             
-            Text(source)
+            Text(displayName)
                 .font(.caption2)
                 .fontWeight(.medium)
         }
@@ -210,35 +120,54 @@ struct DepthSourceBadge: View {
     
     private var iconName: String {
         switch source {
-        case "LiDAR":
+        case .lidar:
             return "laser.burst"
-        case "ARKit":
+        case .arkit:
             return "arkit"
-        case "TrueDepth":
-            return "faceid"
-        case "ML Model":
+        case .mlModel:
             return "brain.head.profile"
-        case "Fallback":
+        case .fallback:
             return "rectangle.badge.minus"
-        default:
-            return "questionmark.circle"
+        }
+    }
+    
+    private var displayName: String {
+        switch source {
+        case .lidar:
+            return "LiDAR"
+        case .arkit:
+            return "ARKit"
+        case .mlModel:
+            return "ML Model"
+        case .fallback:
+            return "Fallback"
         }
     }
     
     private var badgeColor: Color {
         switch source {
-        case "LiDAR":
+        case .lidar:
             return .blue
-        case "ARKit":
+        case .arkit:
             return .green
-        case "TrueDepth":
-            return .orange
-        case "ML Model":
+        case .mlModel:
             return .purple
-        case "Fallback":
-            return .gray
-        default:
+        case .fallback:
             return .gray
         }
     }
 }
+
+/// Preview for development
+struct DepthSettingView_Previews: PreviewProvider {
+    static var previews: some View {
+        VStack {
+            DepthSettingView()
+                .padding()
+            
+            Spacer()
+        }
+        .background(Color(UIColor.systemBackground))
+        .previewLayout(.sizeThatFits)
+    }
+} 

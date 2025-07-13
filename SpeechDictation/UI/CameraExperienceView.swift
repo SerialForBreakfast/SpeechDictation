@@ -178,7 +178,6 @@ struct CameraErrorView: View {
 struct CameraSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var settings = CameraSettingsManager.shared
-    @State private var enableAudioDescriptions = false
     
     var body: some View {
         NavigationView {
@@ -190,7 +189,7 @@ struct CameraSettingsView: View {
                     Toggle("Scene Description", isOn: $settings.enableSceneDescription)
                         .accessibilityHint("Enables or disables scene classification and description")
                     
-                    Toggle("Audio Descriptions", isOn: $enableAudioDescriptions)
+                    Toggle("Audio Descriptions", isOn: $settings.enableAudioDescriptions)
                         .accessibilityHint("Enables spoken descriptions of detected objects and scenes")
                 }
                 
@@ -280,6 +279,27 @@ struct CameraSettingsView: View {
                     }
                     .accessibilityLabel("Privacy: All processing happens on device only")
                 }
+                
+                Section("Model Management") {
+                    // NavigationLink("Browse Model Store") {
+                    //     ModelManagementView()
+                    // }
+                    // .accessibilityHint("Browse and download additional ML models")
+                    
+                    // NavigationLink("Current Models") {
+                    //     CurrentModelsView()
+                    // }
+                    // .accessibilityHint("View and manage currently loaded models")
+                }
+                
+                Section("Reset") {
+                    Button("Reset to Defaults") {
+                        resetSettings()
+                    }
+                    .foregroundColor(.red)
+                    .accessibilityLabel("Reset all settings to defaults")
+                    .accessibilityHint("Resets all camera and detection settings to their original values")
+                }
             }
             .navigationTitle("Camera Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -293,6 +313,19 @@ struct CameraSettingsView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Camera Settings")
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// Resets all camera settings to their default values
+    private func resetSettings() {
+        settings.resetToDefaults()
+        
+        // Provide haptic feedback for the reset action
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        print("🔄 Camera settings reset by user")
     }
 }
 

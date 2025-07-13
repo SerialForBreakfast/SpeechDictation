@@ -9,6 +9,7 @@ struct CameraSceneDescriptionView: View {
     @State private var showingSettings = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @ObservedObject private var settings = CameraSettingsManager.shared
     private let cameraManager = LiveCameraView()
 
     init(objectDetector: ObjectDetectionModel, sceneDescriber: SceneDescribingModel) {
@@ -69,51 +70,55 @@ struct CameraSceneDescriptionView: View {
                 
                 Spacer()
                 
-                // Always visible overlay information - green and blue sections
+                // Always visible overlay information - conditionally show based on settings
                 VStack(spacing: 12) {
-                    // Scene Description Overlay - Always visible blue section
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Scene Environment")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(sceneOverlayTextColor)
-                        
-                        Text(viewModel.sceneLabel ?? "Analyzing scene...")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(sceneOverlayTextColor)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
+                    // Scene Description Overlay - Only show when enabled
+                    if settings.enableSceneDescription {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Scene Environment")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(sceneOverlayTextColor)
+                            
+                            Text(viewModel.sceneLabel ?? "Analyzing scene...")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(sceneOverlayTextColor)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(sceneOverlayBackgroundColor)
+                        .cornerRadius(12)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Scene: \(viewModel.sceneLabel ?? "Analyzing")")
+                        .accessibilityHint("Current environment classification")
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(sceneOverlayBackgroundColor)
-                    .cornerRadius(12)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Scene: \(viewModel.sceneLabel ?? "Analyzing")")
-                    .accessibilityHint("Current environment classification")
                     
-                    // Detected Objects Overlay - Always visible green section
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Detected Objects")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(objectOverlayTextColor)
-                        
-                        Text(formatDetectedObjects())
-                            .font(adaptiveObjectFont)
-                            .fontWeight(.medium)
-                            .foregroundColor(objectOverlayTextColor)
-                            .lineLimit(adaptiveObjectLineLimit)
-                            .multilineTextAlignment(.leading)
+                    // Detected Objects Overlay - Only show when enabled
+                    if settings.enableObjectDetection {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Detected Objects")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(objectOverlayTextColor)
+                            
+                            Text(formatDetectedObjectsWithSpatialContext())
+                                .font(adaptiveObjectFont)
+                                .fontWeight(.medium)
+                                .foregroundColor(objectOverlayTextColor)
+                                .lineLimit(adaptiveObjectLineLimit)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, adaptiveObjectPadding)
+                        .background(objectOverlayBackgroundColor)
+                        .cornerRadius(12)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Objects: \(viewModel.spatialSummary)")
+                        .accessibilityHint("Currently detected objects with spatial positioning")
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, adaptiveObjectPadding)
-                    .background(objectOverlayBackgroundColor)
-                    .cornerRadius(12)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Objects: \(formatDetectedObjects())")
-                    .accessibilityHint("Currently detected objects in the scene")
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 34) // Account for home indicator
@@ -168,6 +173,20 @@ struct CameraSceneDescriptionView: View {
         } else {
             return displayedObjects.joined(separator: ", ")
         }
+    }
+    
+    /// Formats detected objects with spatial context into a readable string
+    /// - Returns: Formatted string of detected objects with spatial positioning
+    private func formatDetectedObjectsWithSpatialContext() -> String {
+        guard !viewModel.spatialDescriptions.isEmpty else {
+            return viewModel.spatialSummary.isEmpty ? "No objects detected" : viewModel.spatialSummary
+        }
+        
+        // Use the compact list format for UI display (limit to 4 objects for better readability)
+        let limitedDescriptions = Array(viewModel.spatialDescriptions.prefix(4))
+        return limitedDescriptions
+            .map { $0.spatialDescription }
+            .joined(separator: "\n")
     }
     
     // MARK: - Dark/Light Mode Color Helpers

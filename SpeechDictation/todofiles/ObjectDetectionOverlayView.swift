@@ -1,16 +1,18 @@
 import SwiftUI
 import Vision
 
-/// A SwiftUI view that overlays bounding boxes and labels for object detection results with dark/light mode support
-/// Always shows green color with proper undetected state
+/// A SwiftUI view that overlays bounding boxes and labels for object detection results with spatial context
+/// Always shows green color with proper undetected state and enhanced spatial descriptions
 struct ObjectDetectionOverlayView: View {
     let observations: [VNRecognizedObjectObservation]
+    let spatialDescriptions: [SpatialDescriptor.SpatialObjectDescription]
+    let spatialSummary: String
     
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ZStack {
-            // Always show the object detection info overlay
+            // Always show the object detection info overlay with spatial context
             VStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Detected Objects")
@@ -18,7 +20,7 @@ struct ObjectDetectionOverlayView: View {
                         .fontWeight(.medium)
                         .foregroundColor(overlayTextColor)
                     
-                    Text(formatDetectedObjects())
+                    Text(formatDetectedObjectsWithSpatialContext())
                         .font(adaptiveFont)
                         .fontWeight(.medium)
                         .foregroundColor(overlayTextColor)
@@ -34,10 +36,12 @@ struct ObjectDetectionOverlayView: View {
                 Spacer()
             }
             
-            // Bounding boxes for detected objects
+            // Enhanced bounding boxes for detected objects with spatial labels
             GeometryReader { geometry in
-                ForEach(observations, id: \.uuid) { observation in
-                    if let topLabel = observation.labels.first {
+                ForEach(Array(observations.enumerated()), id: \.element.uuid) { index, observation in
+                    if let topLabel = observation.labels.first,
+                       index < spatialDescriptions.count {
+                        let spatialDescription = spatialDescriptions[index]
                         let rect = CGRect(
                             x: observation.boundingBox.origin.x * geometry.size.width,
                             y: (1 - observation.boundingBox.origin.y - observation.boundingBox.size.height) * geometry.size.height,
@@ -51,7 +55,7 @@ struct ObjectDetectionOverlayView: View {
                                 .frame(width: rect.width, height: rect.height)
                                 .position(x: rect.midX, y: rect.midY)
 
-                            Text("\(topLabel.identifier) \(Int(topLabel.confidence * 100))%")
+                            Text("\(spatialDescription.compactDescription)")
                                 .font(.caption2)
                                 .foregroundColor(labelTextColor)
                                 .padding(4)
@@ -67,7 +71,18 @@ struct ObjectDetectionOverlayView: View {
     
     // MARK: - Helper Methods
     
-    /// Formats detected objects into a readable string with proper undetected state
+    /// Formats detected objects with spatial context into a readable string
+    /// - Returns: Formatted string of detected objects with spatial positioning
+    private func formatDetectedObjectsWithSpatialContext() -> String {
+        guard !spatialDescriptions.isEmpty else {
+            return spatialSummary.isEmpty ? "No objects detected" : spatialSummary
+        }
+        
+        // Use the compact list format for UI display
+        return SpatialDescriptor.formatCompactList(spatialDescriptions)
+    }
+    
+    /// Formats detected objects into a readable string with proper undetected state (legacy method)
     /// - Returns: Formatted string of detected objects with confidence or undetected message
     private func formatDetectedObjects() -> String {
         guard !observations.isEmpty else {
@@ -158,6 +173,6 @@ struct ObjectDetectionOverlayView: View {
 }
 
 #Preview {
-    ObjectDetectionOverlayView(observations: [])
+    ObjectDetectionOverlayView(observations: [], spatialDescriptions: [], spatialSummary: "")
         .previewDisplayName("No Objects")
 }

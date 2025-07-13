@@ -8,6 +8,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Speech Synthesis for Object Detection** - Added text-to-speech functionality for camera object detection and scene description
+  - **YOLO Object Detection Speech** - Speaks detected objects with distance information (e.g., "Objects detected: dog in lower left, close")
+  - **Scene Description Speech** - Speaks scene classifications without distance information (e.g., "Scene: Indoor Living Room")
+  - **Audio Descriptions Toggle** - New camera setting to enable/disable spoken descriptions
+  - **Intelligent Speech Timing** - Prevents repetitive announcements with 2-second minimum interval between the same announcement
+  - **Integrated Speech Engine** - Built-in AVSpeechSynthesizer integration with proper audio session management
+  - **Distance-Aware Speech** - YOLO objects include spatial positioning and distance estimates in speech output
+  - **Scene-Only Speech** - Scene descriptions intentionally exclude distance information as requested
+  - **Settings Integration** - Speech synthesis controlled via Camera Settings with persistent user preferences
+- **Spatial Object Detection Enhancement** - Enhanced object detection with positional and distance context
+  - **SpatialDescriptor System** - Comprehensive spatial analysis for detected objects
+    - Horizontal positioning: left, center-left, center, center-right, right
+    - Vertical positioning: top, upper-middle, middle, lower-middle, bottom
+    - Distance/size indicators: very close, close, medium distance, far away, very far away
+    - Intelligent position combining for natural descriptions (e.g., "upper left", "center", "lower right")
+  - **Enhanced Object Descriptions** - Natural language spatial context instead of basic labels
+    - "dog in lower left, close" instead of just "dog"
+    - "person in the center" instead of just "person"  
+    - "car on the right, far away" instead of just "car"
+    - Multiple objects with grouped descriptions: "2 cars: left and right"
+  - **Smart Formatting** - Context-aware description generation
+    - Compact format for UI overlays: "dog (bottom-left)"
+    - Full descriptions for accessibility: "dog in the lower left, close"
+    - Grouped object handling for multiple instances of same type
+    - Adaptive line limits and display based on object count
+  - **Bounding Box Analysis** - Precise spatial calculations
+    - Normalized coordinate system (0-1) for device independence
+    - Center-point positioning for accurate spatial categorization
+    - Area-based size/distance estimation using bounding box dimensions
+    - Vision framework coordinate system compatibility (inverted Y-axis)
+  - **Integration Points** - Seamless enhancement of existing detection system
+    - Enhanced CameraSceneDescriptionViewModel with spatial descriptions published properties
+    - Updated object detection processing to include spatial context
+    - Modified UI overlays to display spatial information
+    - Maintained backward compatibility with existing object detection
+  - **Accessibility Improvements** - Better spatial awareness for users
+    - VoiceOver descriptions include spatial positioning information
+    - Clear positional context for visually impaired users
+    - Natural language descriptions for better comprehension
+    - Enhanced spatial understanding of detected objects in real-time
+- **Apple's Official Core ML Models Integration** - Real ML models from Apple's Core ML Gallery
+  - **ModelCatalog.swift** - Complete catalog system with 12 official Apple models
+    - YOLOv3 (248.4MB), YOLOv3 FP16 (124.2MB), YOLOv3 Tiny (35.4MB) for object detection
+    - FastViT T8 (8.2MB), FastViT MA36 (88.3MB) for image classification with Vision Transformer architecture
+    - MobileNetV2 (24.7MB), ResNet-50 (102.6MB) for general image classification
+    - DETR ResNet50 (85.5MB) for semantic segmentation using Detection Transformer
+    - DeepLabV3 (8.6MB) for lightweight semantic segmentation with atrous convolution
+    - Depth Anything V2 (49.8MB) for monocular depth estimation
+    - BERT SQuAD (217.8MB) for question answering and text comprehension
+    - MNIST Classifier (395KB), Updatable Drawing Classifier (382KB) for specialized tasks
+  - **Real Model Metadata** - Authentic specifications from Apple's official documentation
+    - Actual file sizes, download URLs, and performance metrics from Apple
+    - Inference times measured on real iOS devices (iPhone 15 Pro, iPhone 16 Pro)
+    - Compatibility requirements, memory usage, and supported device information
+    - Accuracy ratings, author information, and licensing details
+  - **Performance Categories** - Professional model classification system
+    - Ultra Light (<5MB), Light (5-20MB), Balanced (20-50MB), Performance (50-100MB), Max Quality (>100MB)
+    - Device-specific optimization recommendations
+    - Memory and compute unit compatibility checking
+  - **Model Type Classification** - Organized by ML capabilities
+    - Object Detection: Real-time multi-object detection with bounding boxes
+    - Scene Classification: ImageNet-trained models for scene understanding
+    - Image Segmentation: Semantic segmentation and depth estimation
+    - Speech Recognition: Text comprehension and question answering
+  - **Caching System** - Local storage with version management
+    - JSON catalog caching with timestamp-based refresh logic
+    - Model installation state tracking (notInstalled, downloading, installed, updateAvailable)
+    - Local file management with SHA256 checksum validation
+    - Automatic cleanup and storage space checking
+  - **Build Validation** - Successfully compiled and tested
+    - All Apple models properly integrated into existing ModelCatalog system
+    - Compatible with existing ModelDownloadManager and DynamicModelLoader
+    - Ready for integration with ModelManagementView UI components
+    - Maintains backward compatibility with existing model management system
 - **Universal Dark/Light Mode Support** - Complete theme adaptation for all UI views
   - **Entry View Color Fixes** - Comprehensive dark/light mode support for app entry point
     - Fixed hardcoded white card backgrounds with semantic system colors
@@ -531,6 +605,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Maintains all existing functionality while fixing critical issues 
 
 ## [Current Session] - 2025-01-13
+
+### Scene Detection Improvements & Settings Fixes
+
+**Summary**: Enhanced scene detection with temporal analysis, fixed camera settings persistence, and added reset functionality for better user experience.
+
+**Changes Made**:
+
+1. **Enhanced Scene Detection with Temporal Analysis**:
+   - `Places365SceneDescriber.swift`: Completely rewritten with advanced scene analysis
+   - **Multi-Result Analysis**: Processes top 5 classification results for better accuracy
+   - **Temporal Stability**: Tracks scene history to reduce flickering and improve stability
+   - **Contextual Enhancement**: Combines multiple results for better scene descriptions
+   - **Scene Categorization**: Automatically categorizes scenes (Indoor, Outdoor, Commercial, Transportation)
+   - **Confidence Tracking**: Maintains confidence levels over time for stable results
+
+2. **Fixed Camera Settings Behavior**:
+   - `CameraSceneDescriptionViewModel.swift`: Added settings checks in processing pipeline
+   - **Conditional Processing**: Only processes object detection when `enableObjectDetection` is true
+   - **Conditional Scene Analysis**: Only processes scene description when `enableSceneDescription` is true
+   - **Automatic Clearing**: Clears overlays when features are disabled
+   - **Real-time Updates**: Settings changes take effect immediately
+
+3. **Fixed UI Overlay Visibility**:
+   - `CameraSceneDescriptionView.swift`: Added conditional overlay display
+   - **Blue Overlay**: Only shows when scene description is enabled
+   - **Green Overlay**: Only shows when object detection is enabled
+   - **Settings Integration**: Observes CameraSettingsManager for real-time updates
+
+4. **Added Reset Functionality**:
+   - `CameraSettingsManager.swift`: Added `resetToDefaults()` method with default values enum
+   - `CameraExperienceView.swift`: Added reset button in CameraSettingsView
+   - **Haptic Feedback**: Provides tactile feedback when resetting settings
+   - **Immediate Effect**: All settings reset to defaults with instant UI updates
+
+5. **Enhanced Settings Persistence**:
+   - All settings already persist to UserDefaults automatically
+   - Settings are restored on app launch
+   - Reset functionality verified to work correctly
+
+**Technical Improvements**:
+- **Temporal Analysis**: 10-frame history buffer for scene stability
+- **Confidence Thresholds**: Stability threshold (60%) and transition threshold (40%)
+- **Scene Categories**: Predefined categories for better context
+- **Memory Management**: Efficient circular buffer for scene history
+- **Error Handling**: Graceful fallbacks when detection fails
+
+**Scene Detection Options Available**:
+1. **Multi-Model Ensemble**: Combine Vision + CoreML for better accuracy
+2. **Temporal Scene Analysis**: Track changes over time (✅ Implemented)
+3. **Custom CoreML Model**: Deploy specialized scene models
+4. **Semantic Segmentation**: Pixel-level scene understanding
+
+**Build Status**: ✅ All changes successfully compiled and tested
+
+**Files Modified**:
+- `SpeechDictation/todofiles/Places365SceneDescriber.swift`
+- `SpeechDictation/todofiles/CameraSceneDescriptionViewModel.swift`
+- `SpeechDictation/todofiles/CameraSceneDescriptionView.swift`
+- `SpeechDictation/Services/CameraSettingsManager.swift`
+- `SpeechDictation/UI/CameraExperienceView.swift`
+
+---
+
+## [Previous Session] - Multiple Object Detection Implementation
 
 ### Multiple Object Detection for High Confidence Items
 
