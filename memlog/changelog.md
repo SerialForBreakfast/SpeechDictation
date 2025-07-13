@@ -8,6 +8,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Spatial Object Detection Enhancement** - Enhanced object detection with positional and distance context
+  - **SpatialDescriptor System** - Comprehensive spatial analysis for detected objects
+    - Horizontal positioning: left, center-left, center, center-right, right
+    - Vertical positioning: top, upper-middle, middle, lower-middle, bottom
+    - Distance/size indicators: very close, close, medium distance, far away, very far away
+    - Intelligent position combining for natural descriptions (e.g., "upper left", "center", "lower right")
+  - **Enhanced Object Descriptions** - Natural language spatial context instead of basic labels
+    - "dog in lower left, close" instead of just "dog"
+    - "person in the center" instead of just "person"  
+    - "car on the right, far away" instead of just "car"
+    - Multiple objects with grouped descriptions: "2 cars: left and right"
+  - **Smart Formatting** - Context-aware description generation
+    - Compact format for UI overlays: "dog (bottom-left)"
+    - Full descriptions for accessibility: "dog in the lower left, close"
+    - Grouped object handling for multiple instances of same type
+    - Adaptive line limits and display based on object count
+  - **Bounding Box Analysis** - Precise spatial calculations
+    - Normalized coordinate system (0-1) for device independence
+    - Center-point positioning for accurate spatial categorization
+    - Area-based size/distance estimation using bounding box dimensions
+    - Vision framework coordinate system compatibility (inverted Y-axis)
+  - **Integration Points** - Seamless enhancement of existing detection system
+    - Enhanced CameraSceneDescriptionViewModel with spatial descriptions published properties
+    - Updated object detection processing to include spatial context
+    - Modified UI overlays to display spatial information
+    - Maintained backward compatibility with existing object detection
+  - **Accessibility Improvements** - Better spatial awareness for users
+    - VoiceOver descriptions include spatial positioning information
+    - Clear positional context for visually impaired users
+    - Natural language descriptions for better comprehension
+    - Enhanced spatial understanding of detected objects in real-time
 - **Apple's Official Core ML Models Integration** - Real ML models from Apple's Core ML Gallery
   - **ModelCatalog.swift** - Complete catalog system with 12 official Apple models
     - YOLOv3 (248.4MB), YOLOv3 FP16 (124.2MB), YOLOv3 Tiny (35.4MB) for object detection

@@ -104,7 +104,7 @@ struct CameraSceneDescriptionView: View {
                                 .fontWeight(.medium)
                                 .foregroundColor(objectOverlayTextColor)
                             
-                            Text(formatDetectedObjects())
+                            Text(formatDetectedObjectsWithSpatialContext())
                                 .font(adaptiveObjectFont)
                                 .fontWeight(.medium)
                                 .foregroundColor(objectOverlayTextColor)
@@ -116,8 +116,8 @@ struct CameraSceneDescriptionView: View {
                         .background(objectOverlayBackgroundColor)
                         .cornerRadius(12)
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Objects: \(formatDetectedObjects())")
-                        .accessibilityHint("Currently detected objects in the scene")
+                        .accessibilityLabel("Objects: \(viewModel.spatialSummary)")
+                        .accessibilityHint("Currently detected objects with spatial positioning")
                     }
                 }
                 .padding(.horizontal, 16)
@@ -173,6 +173,20 @@ struct CameraSceneDescriptionView: View {
         } else {
             return displayedObjects.joined(separator: ", ")
         }
+    }
+    
+    /// Formats detected objects with spatial context into a readable string
+    /// - Returns: Formatted string of detected objects with spatial positioning
+    private func formatDetectedObjectsWithSpatialContext() -> String {
+        guard !viewModel.spatialDescriptions.isEmpty else {
+            return viewModel.spatialSummary.isEmpty ? "No objects detected" : viewModel.spatialSummary
+        }
+        
+        // Use the compact list format for UI display (limit to 4 objects for better readability)
+        let limitedDescriptions = Array(viewModel.spatialDescriptions.prefix(4))
+        return limitedDescriptions
+            .map { $0.spatialDescription }
+            .joined(separator: "\n")
     }
     
     // MARK: - Dark/Light Mode Color Helpers
