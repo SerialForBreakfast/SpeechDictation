@@ -52,7 +52,7 @@ class SpeechRecognizerViewModel: ObservableObject {
         self.timingDataManager = TimingDataManager.shared
         self.audioPlaybackManager = AudioPlaybackManager.shared
 
-        // 1️⃣ --- LOAD PERSISTED VALUES ---
+        // 1 --- LOAD PERSISTED VALUES ---
         let defaults = UserDefaults.standard
         if let storedFont = defaults.object(forKey: SettingsKey.fontSize) as? Double {
             self.fontSize = CGFloat(storedFont)
@@ -71,7 +71,7 @@ class SpeechRecognizerViewModel: ObservableObject {
             self.audioQuality = quality
         }
 
-        // 2️⃣ --- LINK SPEECH RECOGNIZER PUBLISHERS ---
+        // 2 --- LINK SPEECH RECOGNIZER PUBLISHERS ---
         self.speechRecognizer.$transcribedText
             .assign(to: \.transcribedText, on: self)
             .store(in: &cancellables)
@@ -115,7 +115,7 @@ class SpeechRecognizerViewModel: ObservableObject {
             .assign(to: \.currentSegment, on: self)
             .store(in: &cancellables)
 
-        // 3️⃣ --- PERSIST SETTINGS WHEN THEY CHANGE ---
+        // 3 --- PERSIST SETTINGS WHEN THEY CHANGE ---
         $fontSize
             .dropFirst() // skip the initial value load
             .sink { value in

@@ -325,7 +325,7 @@ struct CameraSettingsView: View {
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
         
-        print("🔄 Camera settings reset by user")
+                    print("Camera settings reset by user")
     }
 }
 

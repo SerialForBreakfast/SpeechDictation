@@ -114,7 +114,7 @@ class SpeechRecognizer: ObservableObject {
         let samples = Array(UnsafeBufferPointer(start: channelData, count: frameLength))
 
         // ---------------------------------------------------------------
-        // 🔈  CALCULATE NORMALISED INPUT LEVEL FOR VU-METER
+        // CALCULATE NORMALISED INPUT LEVEL FOR VU-METER
         // ---------------------------------------------------------------
         // Use **root-mean-square** (RMS) → dBFS mapping which is similar to
         // how human ears perceive loudness.  Then convert a –60 dB … 0 dB
@@ -161,7 +161,7 @@ class SpeechRecognizer: ObservableObject {
             #if canImport(AVFoundation) && !os(macOS)
             let session = AVAudioSession.sharedInstance()
 
-            // 1️⃣ Try hardware input-gain if the device supports it.
+            // 1 Try hardware input-gain if the device supports it.
             if session.isInputGainSettable {
                 do {
                     try session.setInputGain(gain)
@@ -173,7 +173,7 @@ class SpeechRecognizer: ObservableObject {
             }
             #endif
 
-            // 2️⃣ Software gain fallback via inputNode.volume
+            // 2 Software gain fallback via inputNode.volume
             if let inputNode = self.audioEngine?.inputNode {
                 inputNode.volume = gain
                 print("Software mic gain set to \(gain)")

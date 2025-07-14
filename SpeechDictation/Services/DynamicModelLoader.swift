@@ -126,7 +126,7 @@ final class DynamicModelLoader: ObservableObject {
                 loadingProgress = 1.0
             }
             
-            print("✅ Loaded model '\(metadata.name)' in \(String(format: "%.2f", loadTime))s")
+            print("Loaded model '\(metadata.name)' in \(String(format: "%.2f", loadTime))s")
             return .success(modelId: modelId)
             
         } catch {
@@ -157,7 +157,7 @@ final class DynamicModelLoader: ObservableObject {
             currentSceneModel = nil
         }
         
-        print("🗑️ Unloaded model: \(modelId)")
+                    print("Unloaded model: \(modelId)")
     }
     
     /// Sets the current active model for a given type
@@ -169,12 +169,12 @@ final class DynamicModelLoader: ObservableObject {
         case .objectDetection:
             if let model = loadedObjectModels[modelId] {
                 currentObjectModel = model
-                print("🔄 Switched to object detection model: \(metadata.name)")
+                print("Switched to object detection model: \(metadata.name)")
             }
         case .sceneClassification:
             if let model = loadedSceneModels[modelId] {
                 currentSceneModel = model
-                print("🔄 Switched to scene classification model: \(metadata.name)")
+                print("Switched to scene classification model: \(metadata.name)")
             }
         default:
             break
@@ -234,7 +234,7 @@ final class DynamicModelLoader: ObservableObject {
         currentObjectModel = nil
         currentSceneModel = nil
         
-        print("🧹 Cleared all loaded models")
+                    print("Cleared all loaded models")
     }
     
     // MARK: - Private Implementation
@@ -259,7 +259,7 @@ final class DynamicModelLoader: ObservableObject {
             loadedSceneModels["embedded_places365"] = places365Model
             currentSceneModel = places365Model
             
-            print("📦 Loaded embedded models")
+            print("Loaded embedded models")
         }
     }
     

@@ -22,15 +22,20 @@ struct CameraSceneDescriptionView: View {
     var body: some View {
         ZStack {
             // Camera preview background
-            CameraPreview(session: cameraManager.session, cameraManager: cameraManager)
-                .edgesIgnoringSafeArea(.all)
-                .onAppear {
-                    cameraManager.setSampleBufferHandler(viewModel.processSampleBuffer)
-                    cameraManager.startSession()
+            CameraPreview(session: cameraManager.session, cameraManager: cameraManager) { location in
+                cameraManager.focus(at: location)
+                if let sampleBuffer = cameraManager.latestSampleBuffer {
+                    viewModel.processSampleBuffer(sampleBuffer)
                 }
-                .onDisappear {
-                    cameraManager.stopSession()
-                }
+            }
+            .edgesIgnoringSafeArea(.all)
+            .onAppear {
+                cameraManager.setSampleBufferHandler(viewModel.processSampleBuffer)
+                cameraManager.startSession()
+            }
+            .onDisappear {
+                cameraManager.stopSession()
+            }
 
             // Object detection bounding boxes
             ForEach(viewModel.detectedObjects, id: \.uuid) { object in
@@ -56,8 +61,16 @@ struct CameraSceneDescriptionView: View {
                     Spacer()
                     
                     // Flashlight toggle button
-                    FlashlightToggleButton()
-                        .padding(.trailing, 8)
+                    Button(action: { cameraManager.toggleFlashlight() }) {
+                        Image(systemName: cameraManager.isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(cameraManager.isFlashlightOn ? .yellow : .white)
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
+                            .accessibilityLabel(cameraManager.isFlashlightOn ? "Turn flashlight off" : "Turn flashlight on")
+                            .accessibilityHint("Toggles the device flashlight for low light situations")
+                    }
+                    .padding(.trailing, 8)
                     
                     Button(action: { showingSettings = true }) {
                         Image(systemName: "gear.circle.fill")
@@ -131,7 +144,7 @@ struct CameraSceneDescriptionView: View {
             // Error overlay
             if let error = viewModel.errorMessage {
                 VStack {
-                    Text("⚠️ \(error)")
+                    Text("\(error)")
                         .font(.subheadline)
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
@@ -346,43 +359,6 @@ struct ObjectBoundingBoxView: View {
     /// Bounding box label text color that adapts to dark/light mode
     private var boundingBoxLabelTextColor: Color {
         return .white // White text works well on green backgrounds in both modes
-    }
-}
-
-/// Flashlight toggle button for camera view
-struct FlashlightToggleButton: View {
-    @State private var isTorchOn = false
-    
-    var body: some View {
-        Button(action: toggleFlashlight) {
-            Image(systemName: isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill")
-                .font(.system(size: 32))
-                .foregroundColor(isTorchOn ? .yellow : .white)
-                .background(Color.black.opacity(0.5))
-                .clipShape(Circle())
-                .accessibilityLabel(isTorchOn ? "Turn flashlight off" : "Turn flashlight on")
-                .accessibilityHint("Toggles the device flashlight for low light situations")
-        }
-        .onAppear {
-            updateTorchState()
-        }
-    }
-    
-    private func toggleFlashlight() {
-        guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
-        do {
-            try device.lockForConfiguration()
-            device.torchMode = isTorchOn ? .off : .on
-            device.unlockForConfiguration()
-            isTorchOn.toggle()
-        } catch {
-            print("Flashlight error: \(error)")
-        }
-    }
-    
-    private func updateTorchState() {
-        guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
-        isTorchOn = device.torchMode == .on
     }
 }
 

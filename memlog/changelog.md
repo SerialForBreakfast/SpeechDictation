@@ -681,7 +681,7 @@ private func configureCameraFocus(_ camera: AVCaptureDevice) {
         camera.unlockForConfiguration()
         
     } catch {
-        print("❌ Failed to configure camera focus: \(error)")
+        print("Failed to configure camera focus: \(error)")
     }
 }
 ```
@@ -693,7 +693,7 @@ private func configureCameraFocus(_ camera: AVCaptureDevice) {
 - Maintains performance with efficient configuration approach
 - Provides robust error handling and device compatibility
 
-**Build Status**: ✅ All targets build successfully with only minor warnings (no errors)
+**Build Status**: All targets build successfully with only minor warnings (no errors)
 
 ### Scene Detection Improvements & Settings Fixes
 
@@ -742,11 +742,11 @@ private func configureCameraFocus(_ camera: AVCaptureDevice) {
 
 **Scene Detection Options Available**:
 1. **Multi-Model Ensemble**: Combine Vision + CoreML for better accuracy
-2. **Temporal Scene Analysis**: Track changes over time (✅ Implemented)
+2. **Temporal Scene Analysis**: Track changes over time (Implemented)
 3. **Custom CoreML Model**: Deploy specialized scene models
 4. **Semantic Segmentation**: Pixel-level scene understanding
 
-**Build Status**: ✅ All changes successfully compiled and tested
+**Build Status**: All changes successfully compiled and tested
 
 **Files Modified**:
 - `SpeechDictation/todofiles/Places365SceneDescriber.swift`
@@ -836,3 +836,22 @@ private func configureCameraFocus(_ camera: AVCaptureDevice) {
    - **ExportManager**: UIApplication, UIActivityViewController for sharing
    - **AlertManager**: UIViewController, UIAlertController for alerts
    - **BoundingBoxOverlayView**: UIView, CAShapeLayer, CATextLayer for overlays 
+
+### Camera Interaction and Control Enhancements - COMPLETED
+
+**Summary**: Implemented tap-to-focus, fixed the flashlight functionality, and enabled object redetection on focus to improve camera control and user experience.
+
+**Changes Made**:
+
+1.  **Tap-to-Focus**:
+    *   `LiveCameraView.swift`: Modified `CameraPreview` to use a `UITapGestureRecognizer` to capture tap events, ensuring compatibility with iOS 15.
+    *   `CameraSceneDescriptionView.swift`: Updated to use the new `onTap` closure on `CameraPreview`, which calls `cameraManager.focus(at:)` to set the focus and exposure points.
+2.  **Object Redetection on Focus**:
+    *   `LiveCameraView.swift`: Added a `latestSampleBuffer` property to store the most recent camera frame.
+    *   `CameraSceneDescriptionView.swift`: When a tap gesture is recognized, the latest sample buffer is processed to redetect objects in the scene.
+3.  **Flashlight Fix**:
+    *   `LiveCameraView.swift`: The `toggleFlashlight` function now correctly toggles the torch on the active camera device.
+    *   `CameraSceneDescriptionView.swift`: The flashlight button now correctly calls the `toggleFlashlight` function and updates its state based on the `isFlashlightOn` property.
+4.  **Emoji Removal**:
+    *   `utility/strip_emojis.sh`: Corrected the script to be compatible with macOS by using `perl` instead of `grep -P` for emoji detection.
+    *   Ran the script to remove all emojis from the codebase. 

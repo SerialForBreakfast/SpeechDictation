@@ -94,7 +94,7 @@ final class CameraSettingsManager: ObservableObject {
     /// Resets all camera settings to their default values
     /// - Note: This will trigger all published property observers to update UI
     func resetToDefaults() {
-        print("🔄 Resetting camera settings to defaults...")
+        print("Resetting camera settings to defaults...")
         
         // Reset all settings to their default values
         self.sceneUpdateFrequency = 1.0
@@ -104,7 +104,7 @@ final class CameraSettingsManager: ObservableObject {
         self.enableDepthBasedDistance = false
         self.enableAudioDescriptions = false
         
-        print("✅ Camera settings reset to defaults")
+        print("Camera settings reset to defaults")
     }
     
     // MARK: - Default Values

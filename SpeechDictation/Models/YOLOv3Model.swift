@@ -25,7 +25,7 @@ final class YOLOv3Model: ObjectDetectionModel {
             
             let mlModel = try MLModel(contentsOf: modelURL, configuration: config)
             self.model = try VNCoreMLModel(for: mlModel)
-            print("✅ YOLOv3Tiny model loaded successfully")
+            print("YOLOv3Tiny model loaded successfully")
         } catch {
             print("ERROR: YOLOv3Model initialization failed: \(error)")
             return nil
@@ -52,7 +52,7 @@ final class YOLOv3Model: ObjectDetectionModel {
                     result as? VNRecognizedObjectObservation
                 } ?? []
                 
-                print("🔍 YOLOv3 raw detection results: \(detectedObjects.count) objects")
+                print("YOLOv3 raw detection results: \(detectedObjects.count) objects")
                 
                 // Log ALL detected objects regardless of confidence for diagnostics
                 for (index, object) in detectedObjects.enumerated() {
@@ -66,7 +66,7 @@ final class YOLOv3Model: ObjectDetectionModel {
                 
                 // TEMPORARY: Lower threshold for testing
                 let testThreshold = min(confidenceThreshold, 0.1) // Use 10% for testing
-                print("🎯 Using confidence threshold: \(Int(testThreshold * 100))% (original: \(Int(confidenceThreshold * 100))%)")
+                print("Using confidence threshold: \(Int(testThreshold * 100))% (original: \(Int(confidenceThreshold * 100))%)")
                 
                 // Filter by configurable confidence threshold for high-confidence detection
                 let filteredObjects = detectedObjects.filter { $0.confidence > testThreshold }
@@ -76,7 +76,7 @@ final class YOLOv3Model: ObjectDetectionModel {
                 // Debug: Log filtered objects
                 for (index, object) in filteredObjects.enumerated() {
                     let topLabel = object.labels.first
-                    print("  ✅ Filtered \(index + 1): \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
+                    print("  Filtered \(index + 1): \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
                 }
                 
                 continuation.resume(returning: filteredObjects)
@@ -92,7 +92,7 @@ final class YOLOv3Model: ObjectDetectionModel {
                 do {
                     try handler.perform([request])
                 } catch {
-                    print("🚨 YOLOv3 request handler failed: \(error)")
+                    print("YOLOv3 request handler failed: \(error)")
                     continuation.resume(throwing: error)
                 }
             }

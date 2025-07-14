@@ -11,10 +11,13 @@ final class LiveCameraView: NSObject, ObservableObject {
     private let videoOutput = AVCaptureVideoDataOutput()
     private var sampleBufferHandler: ((CMSampleBuffer) -> Void)?
     private var videoConnection: AVCaptureConnection?
+    var previewLayer: AVCaptureVideoPreviewLayer?
+    var latestSampleBuffer: CMSampleBuffer?
     
     /// Current device orientation for Vision framework processing
     @Published var currentOrientation: UIDeviceOrientation = .portrait
-    
+    @Published var isFlashlightOn: Bool = false
+
     // MARK: - Frame Monitoring Properties
     private var frameCount: Int = 0
     private var droppedFrameCount: Int = 0
@@ -50,7 +53,7 @@ final class LiveCameraView: NSObject, ObservableObject {
         sessionQueue.async {
             if !self.session.isRunning {
                 self.session.startRunning()
-                print("📹 Camera session started")
+                print("Camera session started")
             }
         }
     }
@@ -60,7 +63,7 @@ final class LiveCameraView: NSObject, ObservableObject {
         sessionQueue.async {
             if self.session.isRunning {
                 self.session.stopRunning()
-                print("📹 Camera session stopped")
+                print("Camera session stopped")
             }
         }
     }
@@ -93,12 +96,12 @@ final class LiveCameraView: NSObject, ObservableObject {
             droppedFramePercentage = totalFrames > 0 ? (Double(droppedFrameCount) / Double(totalFrames)) * 100.0 : 0.0
             
             // Log performance metrics
-            print("📊 Camera Performance - FPS: \(String(format: "%.1f", currentFrameRate)), Avg: \(String(format: "%.1f", averageFrameRate)), Dropped: \(String(format: "%.1f", droppedFramePercentage))%")
+            print("Camera Performance - FPS: \(String(format: "%.1f", currentFrameRate)), Avg: \(String(format: "%.1f", averageFrameRate)), Dropped: \(String(format: "%.1f", droppedFramePercentage))%")
             
             // Warn if frame dropping is detected
             if droppedFramePercentage > 5.0 || currentFrameRate < 15.0 {
                 isFrameDropping = true
-                print("⚠️ Frame dropping detected! FPS: \(String(format: "%.1f", currentFrameRate)), Dropped: \(String(format: "%.1f", droppedFramePercentage))%")
+                print("Frame dropping detected! FPS: \(String(format: "%.1f", currentFrameRate)), Dropped: \(String(format: "%.1f", droppedFramePercentage))%")
             } else {
                 isFrameDropping = false
             }
@@ -190,7 +193,7 @@ final class LiveCameraView: NSObject, ObservableObject {
             guard let camera = AVCaptureDevice.default(for: .video),
                   let input = try? AVCaptureDeviceInput(device: camera),
                   self.session.canAddInput(input) else {
-                print("❌ Failed to access camera input")
+                print(" Failed to access camera input")
                 return
             }
 
@@ -221,15 +224,63 @@ final class LiveCameraView: NSObject, ObservableObject {
                     // connection.isVideoMirrored = false
                 }
                 
-                print("✅ Camera session configured successfully with focus optimization")
+                print(" Camera session configured successfully with focus optimization")
             } else {
-                print("❌ Failed to add video output to session")
+                print("Failed to add video output to session")
             }
 
             self.session.commitConfiguration()
         }
     }
-    
+
+    /// Toggles the device's flashlight.
+    func toggleFlashlight() {
+        sessionQueue.async {
+            guard let camera = AVCaptureDevice.default(for: .video), camera.hasTorch else { return }
+            
+            do {
+                try camera.lockForConfiguration()
+                let isOn = camera.torchMode == .on
+                camera.torchMode = isOn ? .off : .on
+                camera.unlockForConfiguration()
+                
+                DispatchQueue.main.async {
+                    self.isFlashlightOn = !isOn
+                }
+            } catch {
+                print("Failed to toggle flashlight: \(error)")
+            }
+        }
+    }
+
+    /// Sets the focus and exposure point of the camera to a specified point.
+    /// - Parameter point: The point in the view's coordinate system to focus on.
+    func focus(at point: CGPoint) {
+        guard let camera = AVCaptureDevice.default(for: .video), let previewLayer = self.previewLayer else { return }
+        
+        let cameraPoint = previewLayer.captureDevicePointConverted(fromLayerPoint: point)
+        
+        sessionQueue.async {
+            do {
+                try camera.lockForConfiguration()
+                
+                if camera.isFocusPointOfInterestSupported {
+                    camera.focusPointOfInterest = cameraPoint
+                    camera.focusMode = .autoFocus
+                }
+                
+                if camera.isExposurePointOfInterestSupported {
+                    camera.exposurePointOfInterest = cameraPoint
+                    camera.exposureMode = .autoExpose
+                }
+                
+                camera.unlockForConfiguration()
+            } catch {
+                print("Failed to set focus point: \(error)")
+            }
+        }
+    }
+
     /// Configure camera focus settings for optimal image quality
     /// - Parameter camera: The AVCaptureDevice to configure
     /// - Note: This method must be called on the session queue to avoid threading issues
@@ -240,41 +291,41 @@ final class LiveCameraView: NSObject, ObservableObject {
             // Enable continuous autofocus for sharp images
             if camera.isFocusModeSupported(.continuousAutoFocus) {
                 camera.focusMode = .continuousAutoFocus
-                print("✅ Continuous autofocus enabled")
+                print("Continuous autofocus enabled")
             } else if camera.isFocusModeSupported(.autoFocus) {
                 camera.focusMode = .autoFocus
-                print("✅ Auto focus enabled")
+                print("Auto focus enabled")
             }
             
             // Enable continuous auto exposure for proper lighting
             if camera.isExposureModeSupported(.continuousAutoExposure) {
                 camera.exposureMode = .continuousAutoExposure
-                print("✅ Continuous auto exposure enabled")
+                print("Continuous auto exposure enabled")
             }
             
             // Enable auto white balance for accurate colors
             if camera.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
                 camera.whiteBalanceMode = .continuousAutoWhiteBalance
-                print("✅ Continuous auto white balance enabled")
+                print("Continuous auto white balance enabled")
             }
             
             // Set focus point to center of frame for consistent focus
             if camera.isFocusPointOfInterestSupported {
                 camera.focusPointOfInterest = CGPoint(x: 0.5, y: 0.5)
-                print("✅ Focus point set to center")
+                print("Focus point set to center")
             }
             
             // Set exposure point to center for consistent exposure
             if camera.isExposurePointOfInterestSupported {
                 camera.exposurePointOfInterest = CGPoint(x: 0.5, y: 0.5)
-                print("✅ Exposure point set to center")
+                print("Exposure point set to center")
             }
             
             camera.unlockForConfiguration()
-            print("✅ Camera focus and exposure configuration completed")
+            print("Camera focus and exposure configuration completed")
             
         } catch {
-            print("❌ Failed to configure camera focus: \(error)")
+            print("Failed to configure camera focus: \(error)")
         }
     }
 }
@@ -285,8 +336,9 @@ extension LiveCameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
         frameMonitoringQueue.async {
             self.frameCount += 1
         }
+        self.latestSampleBuffer = sampleBuffer
         // Log every frame delivered to the ML pipeline
-        print("📸 Frame delivered to ML pipeline at \(Date())")
+                    print("Frame delivered to ML pipeline at \(Date())")
         // Process the sample buffer
         sampleBufferHandler?(sampleBuffer)
     }
@@ -294,7 +346,7 @@ extension LiveCameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         frameMonitoringQueue.async {
             self.droppedFrameCount += 1
-            print("⚠️ Frame dropped: \(self.droppedFrameCount) total dropped frames")
+                            print("Frame dropped: \(self.droppedFrameCount) total dropped frames")
         }
     }
 }
@@ -315,44 +367,50 @@ extension UIDeviceOrientation {
 /// Now supports dynamic orientation changes for proper camera display on all devices including iPad.
 struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
-    @ObservedObject var cameraManager: LiveCameraView
+    let cameraManager: LiveCameraView
+    var onTap: (CGPoint) -> Void
 
     func makeUIView(context: Context) -> UIView {
-        let view = UIView()
+        let view = UIView(frame: UIScreen.main.bounds)
+        
         let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-        
-        // Use resizeAspectFill for better iPad display
-        previewLayer.videoGravity = .resizeAspectFill
         previewLayer.frame = view.bounds
-        
-        // Set the preview layer orientation to match the camera connection
-        if let connection = previewLayer.connection {
-            connection.videoOrientation = cameraManager.videoOrientation(from: UIDevice.current.orientation)
-            // Let the system handle mirroring automatically to avoid crashes
-            // connection.isVideoMirrored = false
-        }
-        
+        previewLayer.videoGravity = .resizeAspectFill
         view.layer.addSublayer(previewLayer)
+        
+        cameraManager.previewLayer = previewLayer
 
-        // Keep previewLayer properly sized with proper timing
-        DispatchQueue.main.async {
-            previewLayer.frame = view.bounds
-        }
-
+        let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
+        view.addGestureRecognizer(tapGesture)
+        
         return view
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        if let previewLayer = uiView.layer.sublayers?.first(where: { $0 is AVCaptureVideoPreviewLayer }) as? AVCaptureVideoPreviewLayer {
-            // Update frame to match view bounds
+        if let previewLayer = uiView.layer.sublayers?.first as? AVCaptureVideoPreviewLayer {
             previewLayer.frame = uiView.bounds
             
-            // Update orientation when the view updates
-            if let connection = previewLayer.connection {
+            // Update video orientation when device orientation changes
+            if let connection = previewLayer.connection, connection.isVideoOrientationSupported {
                 connection.videoOrientation = cameraManager.videoOrientation(from: cameraManager.currentOrientation)
-                // Let the system handle mirroring automatically to avoid crashes
-                // connection.isVideoMirrored = false
             }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onTap: onTap)
+    }
+
+    class Coordinator: NSObject {
+        var onTap: (CGPoint) -> Void
+
+        init(onTap: @escaping (CGPoint) -> Void) {
+            self.onTap = onTap
+        }
+
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            let location = gesture.location(in: gesture.view)
+            onTap(location)
         }
     }
 }

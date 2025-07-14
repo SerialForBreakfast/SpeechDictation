@@ -146,7 +146,7 @@ final class LiDARDepthManager: ObservableObject {
         }
         
         let simulatedDistance = baseDistance * verticalFactor
-        print("📡 LiDAR simulated depth: \(String(format: "%.2f", simulatedDistance))m (area: \(String(format: "%.4f", area)))")
+                    print("LiDAR simulated depth: \(String(format: "%.2f", simulatedDistance))m (area: \(String(format: "%.4f", area)))")
         
         return simulatedDistance
     }
@@ -317,7 +317,7 @@ final class ARKitDepthManager: ObservableObject {
         }
         
         let simulatedDistance = baseDistance * verticalFactor
-        print("🔍 ARKit simulated depth: \(String(format: "%.2f", simulatedDistance))m")
+                    print("ARKit simulated depth: \(String(format: "%.2f", simulatedDistance))m")
         
         return simulatedDistance
     }
@@ -331,7 +331,7 @@ final class ARKitDepthManager: ObservableObject {
         guard area > 0.05 else { return nil }
         
         let distance = Float.random(in: 0.3...1.2)
-        print("📱 TrueDepth simulated: \(String(format: "%.2f", distance))m")
+                    print("TrueDepth simulated: \(String(format: "%.2f", distance))m")
         
         return distance
     }
@@ -627,11 +627,11 @@ final class SpatialDescriptor {
             y: boundingBox.midY,
             boundingBox: boundingBox
         ) {
-            print("📡 LiDAR depth estimation: \(String(format: "%.2f", distance))m at (\(String(format: "%.2f", boundingBox.midX)), \(String(format: "%.2f", boundingBox.midY)))")
+            print("LiDAR depth estimation: \(String(format: "%.2f", distance))m at (\(String(format: "%.2f", boundingBox.midX)), \(String(format: "%.2f", boundingBox.midY)))")
             return categorizeDistance(distance)
         }
         
-        print("📡 LiDAR available but no active AR session depth data")
+                    print("LiDAR available but no active AR session depth data")
         return nil
     }
     
@@ -655,7 +655,7 @@ final class SpatialDescriptor {
             y: boundingBox.midY,
             boundingBox: boundingBox
         ) {
-            print("🔍 ARKit depth estimation: \(String(format: "%.2f", distance))m at (\(String(format: "%.2f", boundingBox.midX)), \(String(format: "%.2f", boundingBox.midY)))")
+            print("ARKit depth estimation: \(String(format: "%.2f", distance))m at (\(String(format: "%.2f", boundingBox.midX)), \(String(format: "%.2f", boundingBox.midY)))")
             return categorizeDistance(distance)
         }
         
@@ -665,12 +665,12 @@ final class SpatialDescriptor {
                 for: boundingBox,
                 pixelBuffer: pixelBuffer
             ) {
-                print("📱 ARKit TrueDepth estimation: \(String(format: "%.2f", faceDistance))m")
+                print("ARKit TrueDepth estimation: \(String(format: "%.2f", faceDistance))m")
                 return categorizeDistance(faceDistance)
             }
         }
         
-        print("🔍 ARKit available but no active session depth data")
+                    print("ARKit available but no active session depth data")
         return nil
     }
     
@@ -710,7 +710,7 @@ final class SpatialDescriptor {
             positionFactor: Float(positionFactor * aspectFactor)
         )
         
-        print("🧠 ML model depth estimation (simulated): \(String(format: "%.1f", estimatedDistance))m for object at (\(String(format: "%.2f", centerX)), \(String(format: "%.2f", centerY))), aspect: \(String(format: "%.2f", aspectRatio))")
+            print("ML model depth estimation (simulated): \(String(format: "%.1f", estimatedDistance))m for object at (\(String(format: "%.2f", centerX)), \(String(format: "%.2f", centerY))), aspect: \(String(format: "%.2f", aspectRatio))")
         
         return categorizeDistance(estimatedDistance)
     }
@@ -724,7 +724,7 @@ final class SpatialDescriptor {
         let area = boundingBox.size.width * boundingBox.size.height
         let estimatedDistance = sizeToDistanceBasic(area: Float(area))
         
-        print("📏 Size-based depth estimation: \(String(format: "%.1f", estimatedDistance))m (fallback method)")
+                    print("Size-based depth estimation: \(String(format: "%.1f", estimatedDistance))m (fallback method)")
         
         return categorizeDistance(estimatedDistance)
     }
@@ -963,15 +963,15 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
         
         // Add initialization diagnostics
         if let objectDetector = objectDetector {
-            print("✅ Object detector initialized successfully")
+            print("Object detector initialized successfully")
         } else {
-            print("❌ Object detector initialization failed - object detection will be disabled")
+                          print("Object detector initialization failed - object detection will be disabled")
         }
         
         if let sceneDescriber = sceneDescriber {
-            print("✅ Scene describer initialized successfully")
+            print("Scene describer initialized successfully")
         } else {
-            print("❌ Scene describer initialization failed - scene description will be disabled")
+                          print("Scene describer initialization failed - scene description will be disabled")
         }
         
         // Monitor depth settings changes
@@ -1010,23 +1010,23 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
         // Start LiDAR session if available
         if ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) {
             lidarManager.startSession()
-            print("📡 Started LiDAR depth session")
+            print("Started LiDAR depth session")
         }
         
         // Start ARKit world tracking session if available
         if ARWorldTrackingConfiguration.isSupported {
             arkitManager.startWorldSession()
-            print("🔍 Started ARKit depth session")
+            print("Started ARKit depth session")
         }
         
         // Start face tracking session if available (for TrueDepth)
         if ARFaceTrackingConfiguration.isSupported {
             arkitManager.startFaceSession()
-            print("📱 Started TrueDepth session")
+            print("Started TrueDepth session")
         }
         
         isDepthSessionActive = true
-        print("🎯 Depth sessions activated for enhanced distance measurement")
+                    print("Depth sessions activated for enhanced distance measurement")
     }
     
     /// Stop AR depth sessions
@@ -1037,7 +1037,7 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
         arkitManager.stopSessions()
         isDepthSessionActive = false
         
-        print("🔇 Depth sessions deactivated")
+                    print("Depth sessions deactivated")
     }
     
     /// Clean up resources when the view model is deallocated
@@ -1055,7 +1055,7 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
     /// - Note: This method is designed to be called from the camera capture callback
     func processSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        print("🧠 ML pipeline received frame at \(Date())")
+                    print("ML pipeline received frame at \(Date())")
         // Process the pixel buffer with orientation support
         Task {
             await processPixelBufferWithOrientation(pixelBuffer)
@@ -1161,18 +1161,18 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
                         }
                         
                         self.spatialDescriptions = depthEnhancedDescriptions
-                        print("🎯 Using comprehensive depth estimation for \(depthEnhancedDescriptions.count) objects")
+                        print("Using comprehensive depth estimation for \(depthEnhancedDescriptions.count) objects")
                     } else {
                         self.spatialDescriptions = SpatialDescriptor.enhanceWithSpatialContext(detectedObjects)
-                        print("📦 Using standard spatial descriptions for \(detectedObjects.count) objects")
+                        print("Using standard spatial descriptions for \(detectedObjects.count) objects")
                     }
                     self.spatialSummary = SpatialDescriptor.formatSpatialDescription(self.spatialDescriptions)
                     
                     // Speak detected objects with distance information (YOLO objects only)
                     self.speakObjectDetection(self.spatialSummary)
                     
-                    print("📦 Updated bounding boxes with \(detectedObjects.count) new detections")
-                    print("🗺️ Spatial summary: \(self.spatialSummary)")
+                    print("Updated bounding boxes with \(detectedObjects.count) new detections")
+                                          print("Spatial summary: \(self.spatialSummary)")
                 } else {
                     // No new detections - check if we should clear stale detections
                     let timeSinceLastDetection = currentTime.timeIntervalSince(self.lastObjectDetectionTime)
@@ -1182,11 +1182,11 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
                             self.detectedObjects = []
                             self.spatialDescriptions = []
                             self.spatialSummary = "No objects detected"
-                            print("🕐 Cleared stale bounding boxes and spatial descriptions after \(self.objectDetectionTimeout)s timeout")
+                            print("Cleared stale bounding boxes and spatial descriptions after \(self.objectDetectionTimeout)s timeout")
                         }
                     } else {
                         // Keep existing detections visible (spatial descriptions remain unchanged)
-                        print("🔄 Keeping \(self.detectedObjects.count) existing bounding boxes and spatial descriptions visible")
+                        print("Keeping \(self.detectedObjects.count) existing bounding boxes and spatial descriptions visible")
                     }
                 }
             } else {
@@ -1195,7 +1195,7 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
                     self.detectedObjects = []
                     self.spatialDescriptions = []
                     self.spatialSummary = "Object detection disabled"
-                    print("🚫 Cleared bounding boxes and spatial descriptions - object detection disabled")
+                    print("Cleared bounding boxes and spatial descriptions - object detection disabled")
                 }
             }
             
@@ -1211,7 +1211,7 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
                 // Scene description is disabled - clear any existing label
                 if self.sceneLabel != nil {
                     self.sceneLabel = nil
-                    print("🚫 Cleared scene label - scene description disabled")
+                    print("Cleared scene label - scene description disabled")
                 }
             }
             self.isProcessing = false
@@ -1230,10 +1230,10 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
         }
         
         // Add comprehensive diagnostics
-        print("🔍 Running object detection at \(Date())")
-        print("📊 Pixel buffer info: \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer))")
-        print("🎯 Detection sensitivity: \(Int(CameraSettingsManager.shared.detectionSensitivity * 100))%")
-        print("⚙️ Object detection enabled: \(settings.enableObjectDetection)")
+                    print("Running object detection at \(Date())")
+                  print("Pixel buffer info: \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer))")
+                  print("Detection sensitivity: \(Int(CameraSettingsManager.shared.detectionSensitivity * 100))%")
+                  print("Object detection enabled: \(settings.enableObjectDetection)")
         
         do {
             let results = try await objectDetector.detectObjects(from: pixelBuffer, orientation: orientation)
@@ -1241,13 +1241,13 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
             
             // Log detailed results for debugging
             if results.isEmpty {
-                print("⚠️ No objects detected - this could indicate:")
+                print("No objects detected - this could indicate:")
                 print("  - Confidence threshold too high")
                 print("  - Model not recognizing objects in scene")
                 print("  - Image quality issues")
                 print("  - Model loading problems")
             } else {
-                print("✅ Successfully detected \(results.count) objects:")
+                print("Successfully detected \(results.count) objects:")
                 for (index, object) in results.enumerated() {
                     let topLabel = object.labels.first
                     print("  \(index + 1). \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
@@ -1257,7 +1257,7 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
             return results
         } catch {
             print("ERROR: Object detection error: \(error)")
-            print("🔧 Error details: \(error.localizedDescription)")
+            print("Error details: \(error.localizedDescription)")
             await MainActor.run {
                 self.errorMessage = "Object detection failed: \(error.localizedDescription)"
             }
@@ -1343,7 +1343,7 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
         // Start speaking
         speechSynthesizer.speak(utterance)
         
-        print("🗣️ Speaking: \(text)")
+                    print("Speaking: \(text)")
     }
 }
 

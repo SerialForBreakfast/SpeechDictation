@@ -59,12 +59,12 @@ final class AudioSessionManager: ObservableObject {
                 let session = AVAudioSession.sharedInstance()
                 try session.setActive(false, options: .notifyOthersOnDeactivation)
                 self.currentConfiguration = .none
-                print("🔇 Audio session reset")
+                print("Audio session reset")
             } catch {
-                print("⚠️ Error resetting audio session: \(error)")
+                print("Error resetting audio session: \(error)")
             }
             #else
-            print("🔇 Audio session reset (macOS - no-op)")
+            print("Audio session reset (macOS - no-op)")
             #endif
         }
     }
@@ -79,7 +79,7 @@ final class AudioSessionManager: ObservableObject {
             #if os(iOS)
             // Prevent concurrent configuration attempts
             guard !self.isConfiguring else {
-                print("⚠️ Audio session configuration already in progress, skipping")
+                print("Audio session configuration already in progress, skipping")
                 return false
             }
             
@@ -91,7 +91,7 @@ final class AudioSessionManager: ObservableObject {
                 
                 // Only reconfigure if the configuration has changed
                 guard self.currentConfiguration != configuration else {
-                    print("ℹ️ Audio session already configured for \(configuration)")
+                    print("Audio session already configured for \(configuration)")
                     return true
                 }
                 
@@ -118,11 +118,11 @@ final class AudioSessionManager: ObservableObject {
                 try session.setActive(true, options: .notifyOthersOnDeactivation)
                 
                 self.currentConfiguration = configuration
-                print("✅ Audio session configured for \(configuration)")
+                print("Audio session configured for \(configuration)")
                 return true
                 
             } catch {
-                print("❌ Audio session configuration failed for \(configuration): \(error)")
+                print("Audio session configuration failed for \(configuration): \(error)")
                 
                 // Try fallback configuration
                 do {
@@ -130,16 +130,16 @@ final class AudioSessionManager: ObservableObject {
                     try session.setCategory(.playAndRecord, mode: .default, options: [])
                     try session.setActive(true, options: .notifyOthersOnDeactivation)
                     self.currentConfiguration = configuration
-                    print("✅ Audio session configured with fallback settings")
+                    print("Audio session configured with fallback settings")
                     return true
                 } catch {
-                    print("❌ Audio session fallback configuration also failed: \(error)")
+                    print("Audio session fallback configuration also failed: \(error)")
                     return false
                 }
             }
             #else
             // macOS fallback
-            print("ℹ️ Audio session configuration not available on macOS")
+            print("Audio session configuration not available on macOS")
             return true
             #endif
         }
@@ -156,11 +156,11 @@ final class AudioSessionManager: ObservableObject {
         // Try measurement mode first for better speech recognition
         do {
             try session.setCategory(.playAndRecord, mode: .measurement, options: options)
-            print("🎤 Audio session configured for speech recognition with measurement mode")
+            print("Audio session configured for speech recognition with measurement mode")
         } catch {
-            print("⚠️ Measurement mode failed, trying default mode: \(error)")
+            print("Measurement mode failed, trying default mode: \(error)")
             try session.setCategory(.playAndRecord, mode: .default, options: options)
-            print("🎤 Audio session configured for speech recognition with default mode")
+            print("Audio session configured for speech recognition with default mode")
         }
         #endif
     }
@@ -175,11 +175,11 @@ final class AudioSessionManager: ObservableObject {
         // Try measurement mode first for better quality
         do {
             try session.setCategory(.playAndRecord, mode: .measurement, options: options)
-            print("🎙️ Audio session configured for recording with measurement mode")
+            print("Audio session configured for recording with measurement mode")
         } catch {
-            print("⚠️ Measurement mode failed, trying default mode: \(error)")
+            print("Measurement mode failed, trying default mode: \(error)")
             try session.setCategory(.playAndRecord, mode: .default, options: options)
-            print("🎙️ Audio session configured for recording with default mode")
+            print("Audio session configured for recording with default mode")
         }
         #endif
     }
@@ -191,14 +191,14 @@ final class AudioSessionManager: ObservableObject {
         #else
         let options: AVAudioSession.CategoryOptions = [.allowBluetooth, .defaultToSpeaker]
         try session.setCategory(.playAndRecord, mode: .default, options: options)
-        print("📊 Audio session configured for level monitoring")
+        print("Audio session configured for level monitoring")
         #endif
     }
     
     /// Configures audio session for playback
     private func configureForPlayback(_ session: AVAudioSession) throws {
         try session.setCategory(.playback, mode: .default, options: [])
-        print("🔊 Audio session configured for playback")
+        print("Audio session configured for playback")
     }
     #endif
 } 
