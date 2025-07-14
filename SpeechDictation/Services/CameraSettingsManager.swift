@@ -45,6 +45,14 @@ final class CameraSettingsManager: ObservableObject {
         }
     }
     
+    @Published var enableAutofocus: Bool {
+        didSet {
+            UserDefaults.standard.set(enableAutofocus, forKey: Keys.enableAutofocus)
+            // Notify camera manager to reconfigure focus settings
+            NotificationCenter.default.post(name: .autofocusSettingChanged, object: nil)
+        }
+    }
+    
     // MARK: - Private Keys
     private enum Keys {
         static let sceneUpdateFrequency = "camera.sceneUpdateFrequency"
@@ -53,6 +61,7 @@ final class CameraSettingsManager: ObservableObject {
         static let detectionSensitivity = "camera.detectionSensitivity"
         static let enableDepthBasedDistance = "camera.enableDepthBasedDistance"
         static let enableAudioDescriptions = "camera.enableAudioDescriptions"
+        static let enableAutofocus = "camera.enableAutofocus"
     }
     
     // MARK: - Initialization
@@ -67,6 +76,7 @@ final class CameraSettingsManager: ObservableObject {
         self.detectionSensitivity = UserDefaults.standard.double(forKey: Keys.detectionSensitivity)
         self.enableDepthBasedDistance = UserDefaults.standard.bool(forKey: Keys.enableDepthBasedDistance)
         self.enableAudioDescriptions = UserDefaults.standard.bool(forKey: Keys.enableAudioDescriptions)
+        self.enableAutofocus = UserDefaults.standard.bool(forKey: Keys.enableAutofocus)
         
         // Set defaults if no values are stored
         if sceneUpdateFrequency == 0 {
@@ -87,6 +97,9 @@ final class CameraSettingsManager: ObservableObject {
         if UserDefaults.standard.object(forKey: Keys.enableAudioDescriptions) == nil {
             enableAudioDescriptions = false // Default to false to avoid unexpected speech
         }
+        if UserDefaults.standard.object(forKey: Keys.enableAutofocus) == nil {
+            enableAutofocus = true // Default to true for automatic focus
+        }
     }
     
     // MARK: - Reset Functionality
@@ -103,6 +116,7 @@ final class CameraSettingsManager: ObservableObject {
         self.detectionSensitivity = 0.5
         self.enableDepthBasedDistance = false
         self.enableAudioDescriptions = false
+        self.enableAutofocus = true
         
         print("Camera settings reset to defaults")
     }
@@ -117,5 +131,11 @@ final class CameraSettingsManager: ObservableObject {
         static let detectionSensitivity: Double = 0.5
         static let enableDepthBasedDistance: Bool = false
         static let enableAudioDescriptions: Bool = false
+        static let enableAutofocus: Bool = true
     }
+}
+
+// MARK: - Notification Names
+extension Notification.Name {
+    static let autofocusSettingChanged = Notification.Name("autofocusSettingChanged")
 } 

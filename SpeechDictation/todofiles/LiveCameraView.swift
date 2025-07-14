@@ -36,11 +36,13 @@ final class LiveCameraView: NSObject, ObservableObject {
         configureSession()
         startOrientationMonitoring()
         startFrameMonitoring()
+        startAutofocusMonitoring()
     }
     
     deinit {
         stopOrientationMonitoring()
         stopFrameMonitoring()
+        stopAutofocusMonitoring()
     }
 
     /// Set a handler to process CMSampleBuffer frames.
@@ -162,6 +164,26 @@ final class LiveCameraView: NSObject, ObservableObject {
         UIDevice.current.endGeneratingDeviceOrientationNotifications()
     }
     
+    /// Start monitoring autofocus setting changes
+    private func startAutofocusMonitoring() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(autofocusSettingChanged),
+            name: .autofocusSettingChanged,
+            object: nil
+        )
+    }
+    
+    /// Stop monitoring autofocus setting changes
+    private func stopAutofocusMonitoring() {
+        NotificationCenter.default.removeObserver(self, name: .autofocusSettingChanged, object: nil)
+    }
+    
+    /// Handle autofocus setting changes
+    @objc private func autofocusSettingChanged() {
+        reconfigureFocus()
+    }
+    
     /// Handle orientation changes
     @objc private func orientationChanged() {
         let newOrientation = UIDevice.current.orientation
@@ -252,26 +274,48 @@ final class LiveCameraView: NSObject, ObservableObject {
             }
         }
     }
+    
+    /// Reconfigures camera focus settings when autofocus setting changes
+    func reconfigureFocus() {
+        sessionQueue.async {
+            guard let camera = AVCaptureDevice.default(for: .video) else { return }
+            self.configureCameraFocus(camera)
+        }
+    }
 
     /// Sets the focus and exposure point of the camera to a specified point.
     /// - Parameter point: The point in the view's coordinate system to focus on.
     func focus(at point: CGPoint) {
         guard let camera = AVCaptureDevice.default(for: .video), let previewLayer = self.previewLayer else { return }
         
+        // Convert the tap point to camera coordinates, accounting for device orientation
         let cameraPoint = previewLayer.captureDevicePointConverted(fromLayerPoint: point)
+        
+        // Ensure the point is within valid bounds (0.0 to 1.0)
+        let clampedPoint = CGPoint(
+            x: max(0.0, min(1.0, cameraPoint.x)),
+            y: max(0.0, min(1.0, cameraPoint.y))
+        )
         
         sessionQueue.async {
             do {
                 try camera.lockForConfiguration()
                 
-                if camera.isFocusPointOfInterestSupported {
-                    camera.focusPointOfInterest = cameraPoint
-                    camera.focusMode = .autoFocus
-                }
-                
-                if camera.isExposurePointOfInterestSupported {
-                    camera.exposurePointOfInterest = cameraPoint
-                    camera.exposureMode = .autoExpose
+                // Check if autofocus is disabled - only allow tap-to-focus in this case
+                let settings = CameraSettingsManager.shared
+                if !settings.enableAutofocus {
+                    if camera.isFocusPointOfInterestSupported {
+                        camera.focusPointOfInterest = clampedPoint
+                        camera.focusMode = .autoFocus
+                        print("Tap-to-focus activated at point: \(clampedPoint)")
+                    }
+                    
+                    if camera.isExposurePointOfInterestSupported {
+                        camera.exposurePointOfInterest = clampedPoint
+                        camera.exposureMode = .autoExpose
+                    }
+                } else {
+                    print("Tap-to-focus ignored - autofocus is enabled")
                 }
                 
                 camera.unlockForConfiguration()
@@ -288,13 +332,24 @@ final class LiveCameraView: NSObject, ObservableObject {
         do {
             try camera.lockForConfiguration()
             
-            // Enable continuous autofocus for sharp images
-            if camera.isFocusModeSupported(.continuousAutoFocus) {
-                camera.focusMode = .continuousAutoFocus
-                print("Continuous autofocus enabled")
-            } else if camera.isFocusModeSupported(.autoFocus) {
-                camera.focusMode = .autoFocus
-                print("Auto focus enabled")
+            // Check autofocus setting from CameraSettingsManager
+            let settings = CameraSettingsManager.shared
+            
+            if settings.enableAutofocus {
+                // Enable continuous autofocus for sharp images
+                if camera.isFocusModeSupported(.continuousAutoFocus) {
+                    camera.focusMode = .continuousAutoFocus
+                    print("Continuous autofocus enabled")
+                } else if camera.isFocusModeSupported(.autoFocus) {
+                    camera.focusMode = .autoFocus
+                    print("Auto focus enabled")
+                }
+            } else {
+                // Disable autofocus for manual tap-to-focus
+                if camera.isFocusModeSupported(.locked) {
+                    camera.focusMode = .locked
+                    print("Autofocus disabled - tap to focus enabled")
+                }
             }
             
             // Enable continuous auto exposure for proper lighting
