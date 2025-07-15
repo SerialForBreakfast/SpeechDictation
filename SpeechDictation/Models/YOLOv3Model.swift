@@ -10,6 +10,10 @@ import Combine
 final class YOLOv3Model: ObjectDetectionModel {
     private let model: VNCoreMLModel
     
+    // State tracking for logging
+    private var lastDetectionCount: Int = -1
+    private var lastDetectionState: String = ""
+    
     /// Initialize the YOLOv3Model with the YOLOv3Tiny CoreML model
     /// - Note: This initializer is failable and returns nil if the model cannot be loaded
     init?() {
@@ -52,31 +56,33 @@ final class YOLOv3Model: ObjectDetectionModel {
                     result as? VNRecognizedObjectObservation
                 } ?? []
                 
-                print("YOLOv3 raw detection results: \(detectedObjects.count) objects")
-                
-                // Log ALL detected objects regardless of confidence for diagnostics
-                for (index, object) in detectedObjects.enumerated() {
-                    let topLabel = object.labels.first
-                    let confidence = topLabel?.confidence ?? 0
-                    print("  Raw detection \(index + 1): \(topLabel?.identifier ?? "Unknown") - \(Int(confidence * 100))%")
-                }
-                
                 // Get configurable confidence threshold from settings
                 let confidenceThreshold = Float(CameraSettingsManager.shared.detectionSensitivity)
                 
                 // TEMPORARY: Lower threshold for testing
                 let testThreshold = min(confidenceThreshold, 0.1) // Use 10% for testing
-                print("Using confidence threshold: \(Int(testThreshold * 100))% (original: \(Int(confidenceThreshold * 100))%)")
                 
                 // Filter by configurable confidence threshold for high-confidence detection
                 let filteredObjects = detectedObjects.filter { $0.confidence > testThreshold }
                 
-                print("YOLOv3 detected \(filteredObjects.count) objects with >\(Int(testThreshold * 100))% confidence")
+                // Only log when detection state changes
+                let currentDetectionCount = filteredObjects.count
+                let currentDetectionState = currentDetectionCount == 0 ? "no_objects" : "\(currentDetectionCount)_objects"
                 
-                // Debug: Log filtered objects
-                for (index, object) in filteredObjects.enumerated() {
-                    let topLabel = object.labels.first
-                    print("  Filtered \(index + 1): \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
+                if currentDetectionCount != self.lastDetectionCount || currentDetectionState != self.lastDetectionState {
+                    if currentDetectionCount == 0 {
+                        print("No objects detected")
+                    } else {
+                        print("YOLOv3 detected \(currentDetectionCount) objects with >\(Int(testThreshold * 100))% confidence")
+                        // Log detected objects
+                        for (index, object) in filteredObjects.enumerated() {
+                            let topLabel = object.labels.first
+                            print("  \(index + 1). \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
+                        }
+                    }
+                    
+                    self.lastDetectionCount = currentDetectionCount
+                    self.lastDetectionState = currentDetectionState
                 }
                 
                 continuation.resume(returning: filteredObjects)

@@ -286,7 +286,12 @@ final class LiveCameraView: NSObject, ObservableObject {
     /// Sets the focus and exposure point of the camera to a specified point.
     /// - Parameter point: The point in the view's coordinate system to focus on.
     func focus(at point: CGPoint) {
-        guard let camera = AVCaptureDevice.default(for: .video), let previewLayer = self.previewLayer else { return }
+        print("Focus requested at point: \(point)")
+        
+        guard let camera = AVCaptureDevice.default(for: .video), let previewLayer = self.previewLayer else { 
+            print("ERROR: Cannot focus - camera or preview layer not available")
+            return 
+        }
         
         // Convert the tap point to camera coordinates, accounting for device orientation
         let cameraPoint = previewLayer.captureDevicePointConverted(fromLayerPoint: point)
@@ -297,30 +302,33 @@ final class LiveCameraView: NSObject, ObservableObject {
             y: max(0.0, min(1.0, cameraPoint.y))
         )
         
+        print("Camera point: \(cameraPoint), clamped: \(clampedPoint)")
+        
         sessionQueue.async {
             do {
                 try camera.lockForConfiguration()
                 
-                // Check if autofocus is disabled - only allow tap-to-focus in this case
-                let settings = CameraSettingsManager.shared
-                if !settings.enableAutofocus {
-                    if camera.isFocusPointOfInterestSupported {
-                        camera.focusPointOfInterest = clampedPoint
-                        camera.focusMode = .autoFocus
-                        print("Tap-to-focus activated at point: \(clampedPoint)")
-                    }
-                    
-                    if camera.isExposurePointOfInterestSupported {
-                        camera.exposurePointOfInterest = clampedPoint
-                        camera.exposureMode = .autoExpose
-                    }
+                // Always allow tap-to-focus regardless of autofocus setting
+                if camera.isFocusPointOfInterestSupported {
+                    camera.focusPointOfInterest = clampedPoint
+                    camera.focusMode = .autoFocus
+                    print("Focus point set to: \(clampedPoint)")
                 } else {
-                    print("Tap-to-focus ignored - autofocus is enabled")
+                    print("WARNING: Focus point of interest not supported")
+                }
+                
+                if camera.isExposurePointOfInterestSupported {
+                    camera.exposurePointOfInterest = clampedPoint
+                    camera.exposureMode = .autoExpose
+                    print("Exposure point set to: \(clampedPoint)")
+                } else {
+                    print("WARNING: Exposure point of interest not supported")
                 }
                 
                 camera.unlockForConfiguration()
+                print("Focus configuration completed successfully")
             } catch {
-                print("Failed to set focus point: \(error)")
+                print("ERROR: Failed to set focus point: \(error)")
             }
         }
     }
@@ -392,8 +400,6 @@ extension LiveCameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
             self.frameCount += 1
         }
         self.latestSampleBuffer = sampleBuffer
-        // Log every frame delivered to the ML pipeline
-                    print("Frame delivered to ML pipeline at \(Date())")
         // Process the sample buffer
         sampleBufferHandler?(sampleBuffer)
     }
@@ -401,7 +407,6 @@ extension LiveCameraView: AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         frameMonitoringQueue.async {
             self.droppedFrameCount += 1
-                            print("Frame dropped: \(self.droppedFrameCount) total dropped frames")
         }
     }
 }
@@ -465,6 +470,7 @@ struct CameraPreview: UIViewRepresentable {
 
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
             let location = gesture.location(in: gesture.view)
+            print("Tap detected at location: \(location)")
             onTap(location)
         }
     }

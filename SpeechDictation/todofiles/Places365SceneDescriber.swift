@@ -3,17 +3,29 @@ import Vision
 import CoreML
 import ImageIO
 
-/// An enhanced scene describer implementation with temporal analysis and improved accuracy
-/// Features confidence tracking, scene transition detection, and multi-result analysis
+/// A scene description model using Vision framework's built-in image classification
+/// Enhanced with temporal analysis for stable scene detection and reduced flickering
 final class Places365SceneDescriber: SceneDescribingModel {
     
     // MARK: - Temporal Analysis Properties
-    private var previousScenes: [String] = []
-    private var sceneConfidences: [Float] = []
-    private var sceneTimestamps: [Date] = []
+    
+    /// Scene history buffer for temporal stability analysis
+    private var sceneHistory: [(scene: String, confidence: Float, timestamp: Date)] = []
+    
+    /// Maximum number of scenes to keep in history
     private let maxHistorySize = 10
+    
+    /// Stability threshold for scene changes (60% confidence required)
     private let stabilityThreshold: Float = 0.6
+    
+    /// Transition threshold for accepting new scenes (40% confidence required)
     private let transitionThreshold: Float = 0.4
+    
+    /// Current stable scene for comparison
+    private var currentStableScene: String?
+    
+    /// Last logged scene to prevent redundant logging
+    private var lastLoggedScene: String?
     
     // MARK: - Scene Categories
     private let sceneCategories = [
@@ -25,9 +37,9 @@ final class Places365SceneDescriber: SceneDescribingModel {
     
     init() {
         // Initialize temporal analysis arrays
-        previousScenes.reserveCapacity(maxHistorySize)
-        sceneConfidences.reserveCapacity(maxHistorySize)
-        sceneTimestamps.reserveCapacity(maxHistorySize)
+        // previousScenes.reserveCapacity(maxHistorySize) // This line is removed as per new_code
+        // sceneConfidences.reserveCapacity(maxHistorySize) // This line is removed as per new_code
+        // sceneTimestamps.reserveCapacity(maxHistorySize) // This line is removed as per new_code
     }
     
     /// Performs enhanced scene classification with temporal analysis and confidence tracking
@@ -64,7 +76,11 @@ final class Places365SceneDescriber: SceneDescribingModel {
                 // Get stabilized scene result
                 let finalScene = self.getStabilizedScene(currentScene)
                 
-                print("Enhanced scene detected: \(finalScene) (confidence: \(Int(currentScene.confidence * 100))%)")
+                // Only log when scene changes
+                if finalScene != self.lastLoggedScene {
+                    print("Scene changed to: \(finalScene) (confidence: \(Int(currentScene.confidence * 100))%)")
+                    self.lastLoggedScene = finalScene
+                }
                 
                 continuation.resume(returning: finalScene)
             }
@@ -161,16 +177,15 @@ final class Places365SceneDescriber: SceneDescribingModel {
         let currentTime = Date()
         
         // Add to history
-        previousScenes.append(scene)
-        sceneConfidences.append(confidence)
-        sceneTimestamps.append(currentTime)
+        // previousScenes.append(scene) // This line is removed as per new_code
+        // sceneConfidences.append(confidence) // This line is removed as per new_code
+        // sceneTimestamps.append(currentTime) // This line is removed as per new_code
         
         // Maintain maximum history size
-        if previousScenes.count > maxHistorySize {
-            previousScenes.removeFirst()
-            sceneConfidences.removeFirst()
-            sceneTimestamps.removeFirst()
+        if sceneHistory.count > maxHistorySize {
+            sceneHistory.removeFirst()
         }
+        sceneHistory.append((scene: scene, confidence: confidence, timestamp: currentTime))
     }
     
     /// Gets a stabilized scene result using temporal analysis
@@ -178,13 +193,13 @@ final class Places365SceneDescriber: SceneDescribingModel {
     /// - Returns: Stabilized scene description
     private func getStabilizedScene(_ currentScene: (scene: String, confidence: Float)) -> String {
         // If we don't have enough history, return current scene
-        guard previousScenes.count >= 3 else {
+        guard sceneHistory.count >= 3 else {
             return currentScene.scene
         }
         
         // Check for scene stability (same scene detected multiple times)
-        let recentScenes = Array(previousScenes.suffix(5))
-        let currentSceneCount = recentScenes.filter { $0 == currentScene.scene }.count
+        let recentScenes = Array(sceneHistory.suffix(5))
+        let currentSceneCount = recentScenes.filter { $0.scene == currentScene.scene }.count
         
         // If current scene is stable and confident, use it
         if currentSceneCount >= 3 && currentScene.confidence >= stabilityThreshold {
@@ -192,7 +207,7 @@ final class Places365SceneDescriber: SceneDescribingModel {
         }
         
         // Check for consistent alternative scene
-        let sceneCounts = Dictionary(grouping: recentScenes, by: { $0 }).mapValues { $0.count }
+        let sceneCounts = Dictionary(grouping: recentScenes, by: { $0.scene }).mapValues { $0.count }
         if let mostCommonScene = sceneCounts.max(by: { $0.value < $1.value }),
            mostCommonScene.value >= 3 {
             return mostCommonScene.key
@@ -205,19 +220,19 @@ final class Places365SceneDescriber: SceneDescribingModel {
     /// Gets the most stable scene from history when current detection fails
     /// - Returns: The most stable scene from recent history
     private func getStableScene() -> String? {
-        guard !previousScenes.isEmpty else { return nil }
+        guard !sceneHistory.isEmpty else { return nil }
         
         // Return the most recent scene with high confidence
-        let recentIndices = max(0, previousScenes.count - 3)..<previousScenes.count
+        let recentIndices = max(0, sceneHistory.count - 3)..<sceneHistory.count
         
         for i in recentIndices.reversed() {
-            if sceneConfidences[i] >= stabilityThreshold {
-                return previousScenes[i]
+            if sceneHistory[i].confidence >= stabilityThreshold {
+                return sceneHistory[i].scene
             }
         }
         
         // Fall back to most recent scene
-        return previousScenes.last
+        return sceneHistory.last?.scene
     }
     
     /// Cleans up scene identifiers to make them more human-readable

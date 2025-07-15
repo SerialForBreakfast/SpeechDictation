@@ -1051,12 +1051,18 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
     // MARK: - Sample Buffer Processing
     
     /// Processes a sample buffer from the camera feed
-    /// - Parameter sampleBuffer: The camera sample buffer to process
-    /// - Note: This method is designed to be called from the camera capture callback
+    /// - Parameter sampleBuffer: The sample buffer containing image data
     func processSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-                    print("ML pipeline received frame at \(Date())")
-        // Process the pixel buffer with orientation support
+        // Skip processing if already processing
+        guard !isProcessing else { return }
+        
+        // Extract pixel buffer from sample buffer
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+            print("ERROR: Failed to extract pixel buffer from sample buffer")
+            return
+        }
+        
+        // Process the pixel buffer asynchronously
         Task {
             await processPixelBufferWithOrientation(pixelBuffer)
         }
@@ -1130,49 +1136,23 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
                     // Enhance with spatial descriptions (with depth when enabled)
                     // Note: Depth processing uses comprehensive depth estimation including LiDAR, ARKit, and ML models
                     if settings.enableDepthBasedDistance {
-                        // Use comprehensive depth estimation with all available technologies
-                        var depthEnhancedDescriptions: [SpatialDescriptor.SpatialObjectDescription] = []
-                        
-                        for detection in detectedObjects {
-                            guard let topLabel = detection.labels.first else { continue }
-                            
-                            let boundingBox = detection.boundingBox
-                            let horizontalPosition = SpatialDescriptor.determineHorizontalPosition(from: boundingBox)
-                            let verticalPosition = SpatialDescriptor.determineVerticalPosition(from: boundingBox)
-                            let objectSize = SpatialDescriptor.determineObjectSize(from: boundingBox)
-                            
-                            // Use comprehensive depth estimation
-                            let depthDistance = SpatialDescriptor.estimateSimplifiedDepth(
-                                for: boundingBox,
-                                pixelBuffer: pixelBuffer
-                            )
-                            
-                            let description = SpatialDescriptor.SpatialObjectDescription(
-                                identifier: topLabel.identifier,
-                                confidence: detection.confidence,
-                                horizontalPosition: horizontalPosition,
-                                verticalPosition: verticalPosition,
-                                objectSize: objectSize,
-                                boundingBox: boundingBox,
-                                depthBasedDistance: depthDistance
-                            )
-                            
-                            depthEnhancedDescriptions.append(description)
+                        // Process depth estimation outside MainActor block
+                        Task {
+                            let depthDescriptions = await SpatialDescriptor.enhanceWithDepthContext(detectedObjects, pixelBuffer: pixelBuffer, useDepthEstimation: true)
+                            await MainActor.run {
+                                self.spatialDescriptions = depthDescriptions
+                                self.spatialSummary = SpatialDescriptor.formatSpatialDescription(self.spatialDescriptions)
+                                self.speakObjectDetection(self.spatialSummary)
+                            }
                         }
-                        
-                        self.spatialDescriptions = depthEnhancedDescriptions
-                        print("Using comprehensive depth estimation for \(depthEnhancedDescriptions.count) objects")
                     } else {
                         self.spatialDescriptions = SpatialDescriptor.enhanceWithSpatialContext(detectedObjects)
-                        print("Using standard spatial descriptions for \(detectedObjects.count) objects")
+                        self.spatialSummary = SpatialDescriptor.formatSpatialDescription(self.spatialDescriptions)
+                        
+                        // Speak detected objects with distance information (YOLO objects only)
+                        self.speakObjectDetection(self.spatialSummary)
                     }
-                    self.spatialSummary = SpatialDescriptor.formatSpatialDescription(self.spatialDescriptions)
                     
-                    // Speak detected objects with distance information (YOLO objects only)
-                    self.speakObjectDetection(self.spatialSummary)
-                    
-                    print("Updated bounding boxes with \(detectedObjects.count) new detections")
-                                          print("Spatial summary: \(self.spatialSummary)")
                 } else {
                     // No new detections - check if we should clear stale detections
                     let timeSinceLastDetection = currentTime.timeIntervalSince(self.lastObjectDetectionTime)
@@ -1182,11 +1162,7 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
                             self.detectedObjects = []
                             self.spatialDescriptions = []
                             self.spatialSummary = "No objects detected"
-                            print("Cleared stale bounding boxes and spatial descriptions after \(self.objectDetectionTimeout)s timeout")
                         }
-                    } else {
-                        // Keep existing detections visible (spatial descriptions remain unchanged)
-                        print("Keeping \(self.detectedObjects.count) existing bounding boxes and spatial descriptions visible")
                     }
                 }
             } else {
@@ -1229,35 +1205,16 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
             return [] 
         }
         
-        // Add comprehensive diagnostics
-                    print("Running object detection at \(Date())")
-                  print("Pixel buffer info: \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer))")
-                  print("Detection sensitivity: \(Int(CameraSettingsManager.shared.detectionSensitivity * 100))%")
-                  print("Object detection enabled: \(settings.enableObjectDetection)")
-        
         do {
             let results = try await objectDetector.detectObjects(from: pixelBuffer, orientation: orientation)
-            print("Object detection returned \(results.count) objects at \(Date())")
             
-            // Log detailed results for debugging
             if results.isEmpty {
-                print("No objects detected - this could indicate:")
-                print("  - Confidence threshold too high")
-                print("  - Model not recognizing objects in scene")
-                print("  - Image quality issues")
-                print("  - Model loading problems")
-            } else {
-                print("Successfully detected \(results.count) objects:")
-                for (index, object) in results.enumerated() {
-                    let topLabel = object.labels.first
-                    print("  \(index + 1). \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
-                }
+                print("No objects detected")
             }
             
             return results
         } catch {
             print("ERROR: Object detection error: \(error)")
-            print("Error details: \(error.localizedDescription)")
             await MainActor.run {
                 self.errorMessage = "Object detection failed: \(error.localizedDescription)"
             }
@@ -1342,8 +1299,6 @@ final class CameraSceneDescriptionViewModel: ObservableObject {
         
         // Start speaking
         speechSynthesizer.speak(utterance)
-        
-                    print("Speaking: \(text)")
     }
 }
 
