@@ -1,8 +1,6 @@
 import Foundation
 import Vision
 import CoreML
-
-// Import CameraSettingsManager for configurable detection sensitivity
 import Combine
 
 /// A concrete implementation of `ObjectDetectionModel` using the YOLOv3Tiny CoreML model.
@@ -12,16 +10,28 @@ import Combine
 final class YOLOv3Model: ObjectDetectionModel {
     private let model: VNCoreMLModel
     
+    // State tracking for logging
+    private var lastDetectionCount: Int = -1
+    private var lastDetectionState: String = ""
+    
     /// Initialize the YOLOv3Model with the YOLOv3Tiny CoreML model
     /// - Note: This initializer is failable and returns nil if the model cannot be loaded
     init?() {
         do {
             let config = MLModelConfiguration()
             config.computeUnits = .all // Use both CPU and GPU for better performance
-            let mlModel = try YOLOv3Tiny(configuration: config)
-            self.model = try VNCoreMLModel(for: mlModel.model)
+            
+            // Load the YOLOv3Tiny model from the bundle
+            guard let modelURL = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") else {
+                print("ERROR: YOLOv3Tiny model not found in bundle")
+                return nil
+            }
+            
+            let mlModel = try MLModel(contentsOf: modelURL, configuration: config)
+            self.model = try VNCoreMLModel(for: mlModel)
+            print("YOLOv3Tiny model loaded successfully")
         } catch {
-            print("🚨 YOLOv3Model initialization failed: \(error)")
+            print("ERROR: YOLOv3Model initialization failed: \(error)")
             return nil
         }
     }
@@ -36,7 +46,7 @@ final class YOLOv3Model: ObjectDetectionModel {
         return try await withCheckedThrowingContinuation { continuation in
             let request = VNCoreMLRequest(model: model) { request, error in
                 if let error = error {
-                    print("🚨 YOLOv3 object detection failed: \(error)")
+                    print("ERROR: YOLOv3 object detection failed: \(error)")
                     continuation.resume(throwing: error)
                     return
                 }
@@ -49,15 +59,30 @@ final class YOLOv3Model: ObjectDetectionModel {
                 // Get configurable confidence threshold from settings
                 let confidenceThreshold = Float(CameraSettingsManager.shared.detectionSensitivity)
                 
+                // TEMPORARY: Lower threshold for testing
+                let testThreshold = min(confidenceThreshold, 0.1) // Use 10% for testing
+                
                 // Filter by configurable confidence threshold for high-confidence detection
-                let filteredObjects = detectedObjects.filter { $0.confidence > confidenceThreshold }
+                let filteredObjects = detectedObjects.filter { $0.confidence > testThreshold }
                 
-                print("📊 YOLOv3 detected \(filteredObjects.count) objects with >\(Int(confidenceThreshold * 100))% confidence")
+                // Only log when detection state changes
+                let currentDetectionCount = filteredObjects.count
+                let currentDetectionState = currentDetectionCount == 0 ? "no_objects" : "\(currentDetectionCount)_objects"
                 
-                // Debug: Log detected objects (show all high-confidence objects, not limited to 3)
-                for (index, object) in filteredObjects.enumerated() {
-                    let topLabel = object.labels.first
-                    print("  \(index + 1). \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
+                if currentDetectionCount != self.lastDetectionCount || currentDetectionState != self.lastDetectionState {
+                    if currentDetectionCount == 0 {
+                        print("No objects detected")
+                    } else {
+                        print("YOLOv3 detected \(currentDetectionCount) objects with >\(Int(testThreshold * 100))% confidence")
+                        // Log detected objects
+                        for (index, object) in filteredObjects.enumerated() {
+                            let topLabel = object.labels.first
+                            print("  \(index + 1). \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
+                        }
+                    }
+                    
+                    self.lastDetectionCount = currentDetectionCount
+                    self.lastDetectionState = currentDetectionState
                 }
                 
                 continuation.resume(returning: filteredObjects)
@@ -73,7 +98,7 @@ final class YOLOv3Model: ObjectDetectionModel {
                 do {
                     try handler.perform([request])
                 } catch {
-                    print("🚨 YOLOv3 request handler failed: \(error)")
+                    print("YOLOv3 request handler failed: \(error)")
                     continuation.resume(throwing: error)
                 }
             }

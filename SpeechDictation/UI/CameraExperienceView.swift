@@ -193,6 +193,11 @@ struct CameraSettingsView: View {
                         .accessibilityHint("Enables spoken descriptions of detected objects and scenes")
                 }
                 
+                Section("Camera Controls") {
+                    Toggle("Autofocus", isOn: $settings.enableAutofocus)
+                        .accessibilityHint("When enabled, camera automatically focuses. When disabled, tap the screen to focus manually")
+                }
+                
                 Section("Detection Sensitivity") {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Confidence Threshold")
@@ -325,7 +330,7 @@ struct CameraSettingsView: View {
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
         
-        print("🔄 Camera settings reset by user")
+                    print("Camera settings reset by user")
     }
 }
 

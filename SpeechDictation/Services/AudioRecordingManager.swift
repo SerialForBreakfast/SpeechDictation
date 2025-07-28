@@ -145,27 +145,53 @@ class AudioRecordingManager: ObservableObject {
     // MARK: - Audio Session Setup
     
     #if os(iOS)
+    /// Configures the audio session for recording with iPad-specific optimizations
+    /// Handles device-specific audio configuration and provides robust fallbacks
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
+            
+            // Check if session is already active before trying to deactivate
+            if session.isOtherAudioPlaying {
+                print("Other audio is playing, will configure without deactivation")
+            } else {
+                // Only deactivate if not already inactive
+                if session.category != .playAndRecord {
+                    try session.setActive(false, options: .notifyOthersOnDeactivation)
+                }
+            }
             
             #if targetEnvironment(simulator)
             // Use simpler configuration for simulator
             try session.setCategory(.playAndRecord, mode: .default, options: [])
             #else
-            // Use full configuration for real device
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            // Device-specific configuration with iPad optimizations
+            let options: AVAudioSession.CategoryOptions = [.defaultToSpeaker, .allowBluetooth]
+            
+            // Try measurement mode first for better speech recognition
+            do {
+                try session.setCategory(.playAndRecord, mode: .measurement, options: options)
+                print("Audio session configured with measurement mode")
+            } catch {
+                print("Measurement mode failed, trying default mode: \(error)")
+                // Fallback to default mode if measurement fails
+                try session.setCategory(.playAndRecord, mode: .default, options: options)
+                print("Audio session configured with default mode")
+            }
             #endif
             
-            try session.setActive(true)
+            // Activate session with proper options
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
             print("Audio session configured for recording")
+            
         } catch {
             print("Error setting up audio session: \(error)")
             // Try a simpler configuration as fallback
             do {
                 let session = AVAudioSession.sharedInstance()
+                // Don't try to deactivate again if it failed before
                 try session.setCategory(.playAndRecord, mode: .default, options: [])
-                try session.setActive(true)
+                try session.setActive(true, options: .notifyOthersOnDeactivation)
                 print("Audio session configured with fallback settings")
             } catch {
                 print("Failed to configure audio session even with fallback: \(error)")

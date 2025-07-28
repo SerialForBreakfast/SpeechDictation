@@ -1,0 +1,123 @@
+name: PR Summary with Copilot
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  generate-summary:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate PR Summary
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { context } = require('@actions/github');
+            
+            // Get PR details
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const baseSha = pr.base.sha;
+            const headSha = pr.head.sha;
+            
+            // Get the diff
+            const diff = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: baseSha,
+              head: headSha
+            });
+            
+            // Get files changed
+            const files = diff.data.files || [];
+            const filesList = files.map(file => `- ${file.filename} (+${file.additions}/-${file.deletions})`).join('\n');
+            
+            // Generate summary comment
+            const summaryComment = `## 🤖 AI-Generated PR Summary
+            
+            ### Files Changed (${files.length} files)
+            ${filesList}
+            
+            ### Statistics
+            - **Additions:** ${diff.data.ahead_by} commits ahead
+            - **Files modified:** ${files.length}
+            - **Total changes:** +${files.reduce((acc, f) => acc + f.additions, 0)} / -${files.reduce((acc, f) => acc + f.deletions, 0)}
+            
+            ### Key Changes
+            ${files.map(file => {
+              const ext = file.filename.split('.').pop();
+              let category = '📄 Other';
+              if (['swift', 'kt', 'java', 'js', 'ts', 'py'].includes(ext)) category = '💻 Code';
+              if (['md', 'txt', 'rst'].includes(ext)) category = '📚 Documentation';
+              if (['yml', 'yaml', 'json', 'xml'].includes(ext)) category = '⚙️ Configuration';
+              if (['png', 'jpg', 'svg', 'gif'].includes(ext)) category = '🎨 Assets';
+              return \`\${category} \${file.filename}\`;
+            }).join('\\n')}
+            
+            ### Impact Analysis
+            ${files.some(f => f.filename.includes('test')) ? '✅ Includes test changes' : '⚠️ No test files modified'}
+            ${files.some(f => f.filename.includes('.md')) ? '📖 Documentation updated' : ''}
+            ${files.some(f => f.filename.includes('package.json') || f.filename.includes('.xcodeproj')) ? '📦 Dependencies or project configuration changed' : ''}
+            
+            ---
+            *Generated automatically by GitHub Actions*`;
+            
+            // Post comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: summaryComment
+            });
+
+      - name: Add PR Labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { context } = require('@actions/github');
+            const pr = context.payload.pull_request;
+            
+            // Get files changed
+            const diff = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: pr.base.sha,
+              head: pr.head.sha
+            });
+            
+            const files = diff.data.files || [];
+            const labels = [];
+            
+            // Auto-assign labels based on files changed
+            if (files.some(f => f.filename.includes('test'))) labels.push('testing');
+            if (files.some(f => f.filename.includes('.md'))) labels.push('documentation');
+            if (files.some(f => f.filename.includes('.swift'))) labels.push('swift');
+            if (files.some(f => f.filename.includes('UI') || f.filename.includes('View'))) labels.push('ui');
+            if (files.some(f => f.filename.includes('Service') || f.filename.includes('Manager'))) labels.push('backend');
+            if (files.some(f => f.filename.includes('.yml') || f.filename.includes('.yaml'))) labels.push('ci/cd');
+            
+            // Add size label
+            const totalChanges = files.reduce((acc, f) => acc + f.additions + f.deletions, 0);
+            if (totalChanges < 50) labels.push('size/small');
+            else if (totalChanges < 200) labels.push('size/medium');
+            else labels.push('size/large');
+            
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: labels
+              });
+            } 

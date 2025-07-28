@@ -22,15 +22,20 @@ struct CameraSceneDescriptionView: View {
     var body: some View {
         ZStack {
             // Camera preview background
-            CameraPreview(session: cameraManager.session, cameraManager: cameraManager)
-                .edgesIgnoringSafeArea(.all)
-                .onAppear {
-                    cameraManager.setSampleBufferHandler(viewModel.processSampleBuffer)
-                    cameraManager.startSession()
+            CameraPreview(session: cameraManager.session, cameraManager: cameraManager) { location in
+                cameraManager.focus(at: location)
+                if let sampleBuffer = cameraManager.latestSampleBuffer {
+                    viewModel.processSampleBuffer(sampleBuffer)
                 }
-                .onDisappear {
-                    cameraManager.stopSession()
-                }
+            }
+            .edgesIgnoringSafeArea(.all)
+            .onAppear {
+                cameraManager.setSampleBufferHandler(viewModel.processSampleBuffer)
+                cameraManager.startSession()
+            }
+            .onDisappear {
+                cameraManager.stopSession()
+            }
 
             // Object detection bounding boxes
             ForEach(viewModel.detectedObjects, id: \.uuid) { object in
@@ -54,6 +59,18 @@ struct CameraSceneDescriptionView: View {
                     }
                     
                     Spacer()
+                    
+                    // Flashlight toggle button
+                    Button(action: { cameraManager.toggleFlashlight() }) {
+                        Image(systemName: cameraManager.isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(cameraManager.isFlashlightOn ? .yellow : .white)
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
+                            .accessibilityLabel(cameraManager.isFlashlightOn ? "Turn flashlight off" : "Turn flashlight on")
+                            .accessibilityHint("Toggles the device flashlight for low light situations")
+                    }
+                    .padding(.trailing, 8)
                     
                     Button(action: { showingSettings = true }) {
                         Image(systemName: "gear.circle.fill")
@@ -127,7 +144,7 @@ struct CameraSceneDescriptionView: View {
             // Error overlay
             if let error = viewModel.errorMessage {
                 VStack {
-                    Text("⚠️ \(error)")
+                    Text("\(error)")
                         .font(.subheadline)
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)

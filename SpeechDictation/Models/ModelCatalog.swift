@@ -231,7 +231,7 @@ final class ModelCatalog: ObservableObject {
             self.cacheCatalog(appleModels)
             self.refreshModelStates()
             
-            print("📱 Model catalog refreshed: \(appleModels.count) Apple models available")
+            print("Model catalog refreshed: \(appleModels.count) Apple models available")
         }
     }
     
@@ -591,7 +591,7 @@ final class ModelCatalog: ObservableObject {
         do {
             try fileManager.createDirectory(at: modelsDirectory, withIntermediateDirectories: true)
         } catch {
-            print("❌ Failed to create models directory: \(error)")
+            print("Failed to create models directory: \(error)")
         }
     }
     
@@ -606,9 +606,9 @@ final class ModelCatalog: ObservableObject {
             try data.write(to: cacheURL)
             
             userDefaults.set(Date(), forKey: CacheKeys.lastUpdateTime)
-            print("📱 Cached Apple models catalog: \(models.count) models")
+            print("Cached Apple models catalog: \(models.count) models")
         } catch {
-            print("❌ Failed to cache Apple models catalog: \(error)")
+            print("Failed to cache Apple models catalog: \(error)")
         }
     }
     
@@ -627,9 +627,9 @@ final class ModelCatalog: ObservableObject {
             self.availableModels = models.sorted { $0.name < $1.name }
             self.lastUpdateTime = userDefaults.object(forKey: CacheKeys.lastUpdateTime) as? Date
             
-            print("📱 Loaded cached catalog: \(models.count) models")
+            print("Loaded cached catalog: \(models.count) models")
         } catch {
-            print("❌ Failed to load cached catalog: \(error)")
+            print("Failed to load cached catalog: \(error)")
         }
     }
     

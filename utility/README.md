@@ -46,10 +46,10 @@ This folder contains automation scripts for building, testing, and validating th
 **Optimized for fast iteration during development.**
 
 **Features:**
-- ⚡ **Fast Execution** - Minimal output, quick feedback
-- ⚡ **Simulator Focused** - Uses iPhone 15 simulator by default
-- ⚡ **Development Optimized** - Skips UI tests for speed (can be enabled)
-- ⚡ **Quick Summary** - Essential status information only
+- **Fast Execution** - Minimal output, quick feedback
+- **Simulator Focused** - Uses iPhone 15 simulator by default
+- **Development Optimized** - Skips UI tests for speed (can be enabled)
+- **Quick Summary** - Essential status information only
 
 **Usage:**
 ```bash

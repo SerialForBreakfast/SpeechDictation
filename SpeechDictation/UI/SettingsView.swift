@@ -153,20 +153,20 @@ struct DepthBasedDistanceView: View {
         if ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) {
             sources.append("LiDAR")
             hasLiDAR = true
-            print("📡 LiDAR scanner detected")
+            print("LiDAR scanner detected")
         }
         
         // Check ARKit availability (iPhone 6s+, iOS 11+)
         if ARWorldTrackingConfiguration.isSupported {
             sources.append("ARKit")
             hasARKit = true
-            print("🔍 ARKit world tracking supported")
+            print("ARKit world tracking supported")
         }
         
         // Check TrueDepth camera availability (Face ID devices)
         if ARFaceTrackingConfiguration.isSupported {
             sources.append("TrueDepth")
-            print("📱 TrueDepth camera detected")
+            print("TrueDepth camera detected")
         }
         
         // Check for ML model availability (Depth Anything V2 from ModelCatalog)
@@ -178,7 +178,7 @@ struct DepthBasedDistanceView: View {
         sources.append("Fallback")
         
         availableDepthSources = sources
-        print("🎯 Detected \(sources.count) depth estimation sources: \(sources.joined(separator: ", "))")
+                    print("Detected \(sources.count) depth estimation sources: \(sources.joined(separator: ", "))")
     }
 }
 
