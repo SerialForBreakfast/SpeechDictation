@@ -966,3 +966,76 @@ private func configureCameraFocus(_ camera: AVCaptureDevice) {
 4.  **Emoji Removal**:
     *   `utility/strip_emojis.sh`: Corrected the script to be compatible with macOS by using `perl` instead of `grep -P` for emoji detection.
     *   Ran the script to remove all emojis from the codebase. 
+
+### GitHub Copilot PR Summary Integration - COMPLETED
+
+**Summary**: Added comprehensive GitHub Copilot integration for automated PR summaries, smart labeling, and enhanced code review workflows.
+
+**Changes Made**:
+
+1. **PR Template Enhancement**:
+   - `.github/pull_request_template.md`: Created comprehensive PR template optimized for Copilot
+   - **Copilot Prompts**: Added specific prompts for summary and change list generation
+   - **Structured Sections**: Organized template with clear sections for type, testing, and checklist
+   - **Emoji Categories**: Added visual categorization for different types of changes
+
+2. **Automated PR Summary Workflow**:
+   - `.github/workflows/pr-summary.yml`: Created GitHub Actions workflow for intelligent PR analysis
+   - **File Analysis**: Automatically analyzes changed files and categorizes them
+   - **Statistics Generation**: Provides addition/deletion counts and impact metrics
+   - **Smart Labeling**: Auto-assigns labels based on file patterns and change scope
+   - **Size Classification**: Automatically tags PRs as small/medium/large based on changes
+
+3. **Copilot Instructions**:
+   - `.github/copilot-instructions.md`: Comprehensive guidelines for project-specific PR summaries
+   - **Project Context**: Swift iOS app with speech recognition and camera integration
+   - **Pattern Recognition**: Guidelines for identifying Swift, UI, camera, and speech code changes
+   - **Impact Assessment**: Framework for evaluating breaking changes and user impact
+   - **Example Templates**: Specific format examples tailored to this project
+
+**Features Implemented**:
+
+**Automated Analysis**:
+- Files changed categorization (Code, Documentation, Configuration, Assets)
+- Impact analysis (tests, documentation, dependencies)
+- Statistics dashboard (additions, deletions, file count)
+- Smart labeling based on file patterns
+
+**Label Automation**:
+- `swift` - Swift code changes
+- `ui` - SwiftUI/UI modifications  
+- `camera` - Camera/Vision/ML changes
+- `speech` - Speech recognition updates
+- `testing` - Test file changes
+- `documentation` - Markdown updates
+- `ci/cd` - Workflow changes
+- `size/*` - Change magnitude classification
+
+**Copilot Integration Points**:
+- PR template with Copilot prompts
+- Automated comment generation
+- Context-aware summaries
+- Project-specific guidelines
+
+**Technical Implementation**:
+```yaml
+# Auto-generate PR summary comment
+- name: Generate PR Summary
+  uses: actions/github-script@v7
+  # Analyzes diff, categorizes files, generates insights
+```
+
+**Benefits**:
+- **Developer Productivity**: Automated PR summaries save time on documentation
+- **Code Review Quality**: Consistent, comprehensive PR information
+- **Project Visibility**: Clear categorization and impact analysis
+- **Maintenance**: Standardized PR format across all contributions
+- **AI Enhancement**: Leverages Copilot for intelligent content generation
+
+**Usage**:
+1. **Create PR**: Template automatically provides structure with Copilot prompts
+2. **Auto-Analysis**: GitHub Actions analyzes changes and posts summary comment
+3. **Smart Labels**: Relevant labels automatically applied based on file patterns
+4. **Enhanced Review**: Reviewers get comprehensive change overview
+
+**Build Status**: ✅ All GitHub workflows configured and ready for use 

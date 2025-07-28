@@ -223,6 +223,42 @@ The SpeechDictation app has evolved from a basic speech recognition tool into a 
 
 ## HIGH PRIORITY TASKS (Current Focus)
 
+### TASK-026: Secure On-Device Audio Recording, Transcription, and Storage
+**Status**: PLANNED  
+**Priority**: HIGH  
+**Effort**: 12-16 hours  
+**Target**: August 2025
+
+**User Story:**
+As a user, I want to record and transcribe private conversations (such as medical visits or meetings) securely on my device, so I can review or share them later with full control over my data.
+
+**Acceptance Criteria:**
+- [ ] Audio recordings are initiated with user consent and appropriate legal disclaimers.
+- [ ] Audio files are stored using `.completeFileProtection` in `CacheManager.swift`.
+- [ ] Transcriptions are generated using `SpeechRecognizer.swift` with `requiresOnDeviceRecognition = true`.
+- [ ] Transcripts are saved via `TimingDataManager.swift` alongside their corresponding audio files.
+- [ ] All UI changes (record, pause, stop, view, delete) are integrated in `ContentView.swift`.
+- [ ] Face ID/passcode lock for accessing recordings is implemented using `LocalAuthentication`.
+- [ ] Optional iCloud sync toggle is added to `SettingsView.swift`.
+
+**Subtasks:**
+- [ ] Implement consent banner and onboarding flow in `SettingsView.swift` or dedicated `OnboardingView.swift`.
+- [ ] Update `AudioRecordingManager.swift` to ensure `.completeFileProtection` is used.
+- [ ] Ensure transcripts and timing data are bundled and stored in an identifiable metadata format.
+- [ ] Add a new section to `ContentView.swift` to list completed recordings and allow deletion/playback.
+- [ ] Integrate `LocalAuthentication` for optional access control (biometric/passcode) to recordings list.
+- [ ] Update Info.plist: Ensure `NSMicrophoneUsageDescription`, `NSFaceIDUsageDescription`, and `UIBackgroundModes` (`audio`) are present.
+- [ ] Add toggles in `SettingsView.swift` for Face ID access lock and iCloud backup (optional).
+- [ ] Update `SpeechRecognizer+Authorization.swift` to handle and guide permission requests gracefully.
+- [ ] Create unit tests in `SpeechDictationTests.swift` to validate secure storage, permissions, and transcription accuracy.
+
+**Technical References:**
+- Storage Path: `FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)`
+- Audio Storage/Playback: `AudioRecordingManager.swift`, `AudioPlaybackManager.swift`
+- Transcription Engine: `SpeechRecognizer.swift` + `SpeechRecognizer+Timing.swift`
+- Transcript Persistence: `TimingDataManager.swift`
+- Metadata Bundling: Pair `audioFileName.m4a` with `audioFileName.json` for transcript data
+
 ### TASK-021: Export Performance & Reliability - IN PROGRESS
 **Status**: IN PROGRESS
 **Priority**: HIGH
