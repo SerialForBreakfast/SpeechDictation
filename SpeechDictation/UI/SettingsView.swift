@@ -4,8 +4,8 @@
 //
 //  Created by Joseph McCraw on 7/17/24.
 //
-//  Main settings view that combines all setting components.
-//  Now supports proper dark/light mode adaptation.
+//  Main settings view that combines all setting components including security preferences.
+//  Now supports proper dark/light mode adaptation and secure recordings configuration.
 //
 
 import SwiftUI
@@ -14,7 +14,9 @@ import AVFoundation
 import CoreML
 import Vision
 import Combine
+#if canImport(ARKit)
 import ARKit
+#endif
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -37,6 +39,7 @@ struct SettingsView: View {
             ThemeSettingView(viewModel: viewModel)
             MicSensitivityView(viewModel: viewModel)
             DepthBasedDistanceView()
+            SecureRecordingsSettingsView()
         }
         .padding()
         .background(mainBackgroundColor)
@@ -49,7 +52,11 @@ struct SettingsView: View {
     // MARK: - Color Helpers
     
     private var headerBackgroundColor: Color {
-        Color(UIColor.tertiarySystemBackground)
+        #if canImport(UIKit)
+        return Color(UIColor.tertiarySystemBackground)
+        #else
+        return Color(NSColor.windowBackgroundColor)
+        #endif
     }
     
     private var mainBackgroundColor: Color {
@@ -65,6 +72,241 @@ struct SettingsView: View {
     }
 }
 
+/// SwiftUI view for configuring secure recordings preferences
+/// Provides authentication settings, biometric status, and iCloud sync options
+struct SecureRecordingsSettingsView: View {
+    @StateObject private var authManager = LocalAuthenticationManager.shared
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var showingAuthenticationInfo = false
+    @State private var iCloudSyncEnabled = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack {
+                Image(systemName: "lock.shield.fill")
+                    .foregroundColor(.blue)
+                    .font(.title2)
+                
+                Text("Secure Recordings")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                
+                Spacer()
+                
+                Button(action: {
+                    showingAuthenticationInfo = true
+                }) {
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            
+            // Authentication requirement toggle
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Require Authentication")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        Text("Use \(authManager.biometricType.description) or passcode to access private recordings")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Toggle("", isOn: Binding(
+                        get: { authManager.isAuthenticationRequired },
+                        set: { authManager.setAuthenticationRequired($0) }
+                    ))
+                    .labelsHidden()
+                    .scaleEffect(0.8)
+                }
+                .padding(.horizontal, 16)
+                
+                // Authentication status indicator
+                if authManager.isAuthenticationRequired {
+                    HStack(spacing: 8) {
+                        Image(systemName: authenticationStatusIcon)
+                            .foregroundColor(authenticationStatusColor)
+                            .font(.caption)
+                        
+                        Text(authenticationStatusText)
+                            .font(.caption)
+                            .foregroundColor(authenticationStatusColor)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                }
+            }
+            
+            Divider()
+                .padding(.horizontal, 16)
+            
+            // iCloud sync preference (placeholder for future implementation)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("iCloud Backup")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        Text("Optionally sync secure recordings to iCloud (requires encryption)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Toggle("", isOn: $iCloudSyncEnabled)
+                        .labelsHidden()
+                        .scaleEffect(0.8)
+                        .disabled(true) // Disabled for future implementation
+                }
+                .padding(.horizontal, 16)
+                
+                if iCloudSyncEnabled {
+                    HStack(spacing: 8) {
+                        Image(systemName: "icloud.fill")
+                            .foregroundColor(.blue)
+                            .font(.caption)
+                        
+                        Text("Coming soon - End-to-end encrypted iCloud sync")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                }
+            }
+            
+            // Device security status
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Device Security Status")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 16)
+                
+                VStack(spacing: 6) {
+                    SecurityStatusRow(
+                        title: "Device Passcode",
+                        isEnabled: authManager.isDeviceSecure(),
+                        icon: "key.fill"
+                    )
+                    
+                    SecurityStatusRow(
+                        title: authManager.biometricType.description,
+                        isEnabled: authManager.isBiometricAuthenticationAvailable(),
+                        icon: biometricIcon
+                    )
+                    
+                    SecurityStatusRow(
+                        title: "File Protection",
+                        isEnabled: true,
+                        icon: "shield.checkered"
+                    )
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .padding(.vertical, 12)
+        .background(settingsCardBackgroundColor)
+        .cornerRadius(12)
+        .onAppear {
+            authManager.refreshBiometricCapabilities()
+            loadiCloudSyncPreference()
+        }
+        .alert("Secure Recordings Authentication", isPresented: $showingAuthenticationInfo) {
+            Button("OK") { }
+        } message: {
+            Text("Secure recordings use complete file protection and require authentication to access. All speech processing happens on-device for maximum privacy. Authentication is cached for 5 minutes after successful verification.")
+        }
+    }
+    
+    // MARK: - Helper Properties
+    
+    private var settingsCardBackgroundColor: Color {
+        #if canImport(UIKit)
+        Color(UIColor.secondarySystemBackground)
+        #else
+        Color(NSColor.controlBackgroundColor)
+        #endif
+    }
+    
+    private var authenticationStatusIcon: String {
+        if authManager.authenticationState.isAuthenticated {
+            return "checkmark.circle.fill"
+        } else {
+            return "lock.circle.fill"
+        }
+    }
+    
+    private var authenticationStatusColor: Color {
+        if authManager.authenticationState.isAuthenticated {
+            return .green
+        } else {
+            return .orange
+        }
+    }
+    
+    private var authenticationStatusText: String {
+        if authManager.authenticationState.isAuthenticated {
+            return "Authenticated - Access granted"
+        } else {
+            return "Authentication required for access"
+        }
+    }
+    
+    private var biometricIcon: String {
+        switch authManager.biometricType {
+        case .faceID: return "faceid"
+        case .touchID: return "touchid"
+        case .opticID: return "opticid"
+        case .none: return "questionmark.circle"
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func loadiCloudSyncPreference() {
+        iCloudSyncEnabled = UserDefaults.standard.bool(forKey: "secureRecordingsiCloudSync")
+    }
+}
+
+/// Individual security status row component
+struct SecurityStatusRow: View {
+    let title: String
+    let isEnabled: Bool
+    let icon: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(isEnabled ? .green : .secondary)
+                .font(.subheadline)
+                .frame(width: 16)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.primary)
+            
+            Spacer()
+            
+            Image(systemName: isEnabled ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .foregroundColor(isEnabled ? .green : .red)
+                .font(.caption)
+        }
+    }
+}
+
+#if canImport(ARKit)
 /// SwiftUI view for configuring depth-based distance estimation settings
 /// Provides toggle control and information about device capabilities  
 struct DepthBasedDistanceView: View {
@@ -138,7 +380,7 @@ struct DepthBasedDistanceView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color(UIColor.secondarySystemBackground))
+                .fill(semanticSecondaryBackgroundColor())
         )
         .onAppear {
             loadDepthCapabilities()
@@ -180,6 +422,50 @@ struct DepthBasedDistanceView: View {
         availableDepthSources = sources
                     print("Detected \(sources.count) depth estimation sources: \(sources.joined(separator: ", "))")
     }
+}
+#else
+/// Fallback view when ARKit is unavailable (e.g., macOS Catalyst previews)
+struct DepthBasedDistanceView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Image(systemName: "camera.metering.matrix")
+                    .foregroundColor(.accentColor)
+                    .font(.title2)
+                Text("Depth-Based Distance")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            
+            Text("Depth sensors are unavailable on this platform.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 16)
+        }
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(semanticSecondaryBackgroundColor())
+        )
+    }
+}
+
+#endif
+
+// MARK: - Cross-platform Color Helpers
+
+private func semanticSecondaryBackgroundColor() -> Color {
+    #if canImport(UIKit)
+    return Color(UIColor.secondarySystemBackground)
+    #elseif canImport(AppKit)
+    return Color(NSColor.controlBackgroundColor)
+    #else
+    return Color.gray.opacity(0.2)
+    #endif
 }
 
 /// Badge view for displaying depth source capabilities

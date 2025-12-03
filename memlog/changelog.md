@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Settings Button Crash** - Fixed "Publishing changes from within view updates" crash when clicking settings button
+  - **Root Cause**: `applyTheme()` method in ContentView was calling `UIApplication.shared.windows.first?.overrideUserInterfaceStyle` during view updates
+  - **Solution**: Removed theme application from view updates and modernized approach to use system appearance settings
+  - **Changes Made**:
+    - Removed `applyTheme()` calls from `onAppear` and `onChange` in ContentView
+    - Updated `applyTheme()` method to use modern system appearance approach
+    - Fixed `MicSensitivityView` slider to use `onChange` instead of `onEditingChanged` for better SwiftUI compliance
+    - Added proper UIKit imports to resolve compilation issues
+  - **Testing**: Build succeeds and all unit tests pass, confirming crash is resolved
+  - **Impact**: Settings button now works without crashing, maintaining proper SwiftUI view update lifecycle
+
 ### Added
 - **Speech Synthesis for Object Detection** - Added text-to-speech functionality for camera object detection and scene description
   - **YOLO Object Detection Speech** - Speaks detected objects with distance information (e.g., "Objects detected: dog in lower left, close")

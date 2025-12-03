@@ -215,6 +215,41 @@ select_simulator() {
     fi
 }
 
+create_fresh_simulator() {
+    log "INFO" "Attempting to create a fresh simulator from installed runtimes..." >&2
+    
+    local device_line runtime_line device_type runtime_id runtime_os
+    
+    device_line=$(xcrun simctl list devicetypes 2>/dev/null | grep -E "iPhone" | grep -vi "unavailable" | tail -1 || true)
+    runtime_line=$(xcrun simctl list runtimes 2>/dev/null | grep -E "iOS [0-9.]+ \(" | grep -vi "unavailable" | tail -1 || true)
+    
+    if [[ -z "$device_line" || -z "$runtime_line" ]]; then
+        log "ERROR" "Unable to locate compatible device types or runtimes. Ensure iOS simulator runtimes are installed via Xcode." >&2
+        return 1
+    fi
+    
+    device_type=$(echo "$device_line" | sed -E 's/.*\((com\.apple\.CoreSimulator\.SimDeviceType\.[^)]+)\).*/\1/')
+    runtime_id=$(echo "$runtime_line" | sed -E 's/.*(com\.apple\.CoreSimulator\.SimRuntime\.[^)]+)\).*/\1/')
+    runtime_os=$(echo "$runtime_line" | sed -E 's/.*iOS ([0-9.]+).*/\1/')
+    
+    if [[ -z "$device_type" || -z "$runtime_id" ]]; then
+        log "ERROR" "Parsed simulator identifiers were empty. Device line: $device_line Runtime line: $runtime_line" >&2
+        return 1
+    fi
+    
+    local simulator_name="SpeechDictation Auto iOS $runtime_os"
+    local new_uuid
+    if new_uuid=$(xcrun simctl create "$simulator_name" "$device_type" "$runtime_id" 2>/dev/null); then
+        new_uuid=$(echo "$new_uuid" | tr -d '[:space:]')
+        log "INFO" "Created simulator: $simulator_name UUID: $new_uuid" >&2
+        echo "$simulator_name|$runtime_os|$new_uuid"
+        return 0
+    else
+        log "ERROR" "Failed to create simulator with type $device_type and runtime $runtime_id" >&2
+        return 1
+    fi
+}
+
 # Fast simulator status check
 get_simulator_status() {
     local simulator_uuid="$1"
@@ -337,8 +372,13 @@ check_prerequisites() {
                 # Pre-boot cached simulator
                 boot_simulator_fast "$SIMULATOR_UUID"
             else
-            local simulator_info=$(select_simulator)
-            if [[ $? -eq 0 ]]; then
+            local simulator_info
+            simulator_info=$(select_simulator)
+            if [[ $? -ne 0 || -z "$simulator_info" ]]; then
+                log "WARN" "Automatic simulator selection failed, attempting to create a new simulator..."
+                simulator_info=$(create_fresh_simulator)
+            fi
+            if [[ -n "$simulator_info" ]]; then
                 IFS='|' read -r SIMULATOR_NAME SIMULATOR_OS SIMULATOR_UUID <<< "$simulator_info"
                 export SIMULATOR_NAME
                 export SIMULATOR_OS
@@ -351,11 +391,11 @@ check_prerequisites() {
                     # Save newly selected simulator to cache
                     save_simulator_cache
                 else
-                    log "ERROR" "No simulator UUID found after selection."
+                    log "ERROR" "No simulator UUID found after selection or creation."
                     exit 1
                 fi
             else
-                log "ERROR" "Failed to select simulator"
+                log "ERROR" "Failed to select or create a simulator. Install an iOS simulator runtime via Xcode > Settings > Platforms."
                 exit 1
             fi
             fi

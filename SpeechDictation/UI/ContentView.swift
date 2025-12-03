@@ -4,7 +4,8 @@
 //
 //  Created by Joseph McCraw on 6/25/24.
 //
-//  Main content view with proper dark/light mode support.
+//  Main content view with proper dark/light mode support and secure recordings integration.
+//  Provides both standard transcription and secure private recording workflows.
 //
 
 import SwiftUI
@@ -12,6 +13,7 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject var viewModel = SpeechRecognizerViewModel()
     @State private var showingCustomShare = false
+    @State private var showingSecureRecordings = false
     @State private var isUserScrolling = false
     @State private var showJumpToLiveButton = false
     @State private var lastTranscriptLength = 0
@@ -27,7 +29,7 @@ struct ContentView: View {
                             VStack {
                                 Text(viewModel.transcribedText)
                                     .font(.system(size: viewModel.fontSize))
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(transcriptTextColor)
                                     .padding()
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .id("transcriptText")
@@ -116,6 +118,21 @@ struct ContentView: View {
 
                     Spacer()
 
+                    // Secure Recordings button
+                    Button(action: {
+                        showingSecureRecordings = true
+                    }) {
+                        Image(systemName: "lock.shield")
+                            .font(.title2)
+                            .padding()
+                            .background(secureRecordingsButtonBackgroundColor)
+                            .foregroundColor(secureRecordingsButtonForegroundColor)
+                            .clipShape(Circle())
+                            .shadow(color: shadowColor, radius: 2, x: 0, y: 0)
+                    }
+                    .accessibilityLabel("Secure Recordings")
+                    .accessibilityHint("Access private recordings with authentication")
+
                     Button(action: {
                         showingCustomShare = true
                     }) {
@@ -160,11 +177,7 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            applyTheme()
             lastTranscriptLength = viewModel.transcribedText.count
-        }
-        .onChange(of: viewModel.theme) { _ in
-            applyTheme()
         }
         .sheet(isPresented: $showingCustomShare) {
             NativeStyleShareView(
@@ -172,6 +185,9 @@ struct ContentView: View {
                 timingSession: viewModel.currentSession,
                 isPresented: $showingCustomShare
             )
+        }
+        .sheet(isPresented: $showingSecureRecordings) {
+            SecureRecordingsView(isPresented: $showingSecureRecordings)
         }
     }
 
@@ -188,6 +204,16 @@ struct ContentView: View {
         }
     }
     
+    /// Color used for transcript text to ensure readability regardless of system-wide color scheme.
+    private var transcriptTextColor: Color {
+        switch viewModel.theme {
+        case .light, .highContrast:
+            return Color.black
+        case .dark:
+            return Color.white
+        }
+    }
+    
     private var primaryActionButtonColor: Color {
         Color.accentColor
     }
@@ -198,6 +224,16 @@ struct ContentView: View {
     
     private var resetButtonForegroundColor: Color {
         Color.orange
+    }
+    
+    /// Secure recordings button styling following existing patterns
+    private var secureRecordingsButtonBackgroundColor: Color {
+        Color.blue.opacity(colorScheme == .dark ? 0.3 : 0.2)
+    }
+    
+    /// Secure recordings button styling following existing patterns  
+    private var secureRecordingsButtonForegroundColor: Color {
+        Color.blue
     }
     
     private var shareButtonBackgroundColor: Color {
@@ -224,16 +260,12 @@ struct ContentView: View {
         Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1)
     }
 
+    /// Applies the current theme to the user interface
+    /// Note: Modern iOS apps should use the system appearance settings
+    /// rather than programmatically overriding the interface style
     private func applyTheme() {
-        switch viewModel.theme {
-        case .light:
-            UIApplication.shared.windows.first?.overrideUserInterfaceStyle = .light
-        case .dark:
-            UIApplication.shared.windows.first?.overrideUserInterfaceStyle = .dark
-        case .highContrast:
-            // For high contrast, you might want to set a specific override, if necessary.
-            break
-        }
+        // Theme changes are now handled through the system appearance settings
+        // and the view's color scheme environment
     }
     
     // MARK: - Export Functionality

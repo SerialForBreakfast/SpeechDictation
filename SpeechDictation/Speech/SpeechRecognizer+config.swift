@@ -12,45 +12,14 @@ extension SpeechRecognizer {
     /// Configures the audio session for speech recognition with iPad-specific optimizations
     /// Coordinates with other audio components to prevent session conflicts
     func configureAudioSession() {
-        let audioSession = AVAudioSession.sharedInstance()
-        do {
-            // Check if session is already active before trying to deactivate
-            if audioSession.isOtherAudioPlaying {
-                print("Other audio is playing, will configure without deactivation")
-            } else {
-                // Only deactivate if not already inactive
-                if audioSession.category != .playAndRecord {
-                    try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
-                }
-            }
-            
-            #if targetEnvironment(simulator)
-            // Use simpler configuration for simulator
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [])
-            #else
-            // Device-specific configuration with iPad optimizations
-            let options: AVAudioSession.CategoryOptions = [.allowBluetooth, .defaultToSpeaker]
-            
-            // Try measurement mode first for better speech recognition
-            do {
-                try audioSession.setCategory(.playAndRecord, mode: .measurement, options: options)
-                print("Audio session configured for speech recognition with measurement mode")
-            } catch {
-                print("Measurement mode failed, trying default mode: \(error)")
-                // Fallback to default mode if measurement fails
-                try audioSession.setCategory(.playAndRecord, mode: .default, options: options)
-                print("Audio session configured for speech recognition with default mode")
-            }
-            #endif
-            
-            // Activate session with proper options
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            print("Audio session configured for speech recognition")
-            
-        } catch {
-            print("Error setting up audio session for speech recognition: \(error)")
+        // Concurrency: SpeechRecognizer.init is synchronous, so we must block until the session
+        // finishes configuring to avoid race conditions before transcription starts.
+        let success = AudioSessionManager.shared.configureForSpeechRecognitionSync()
+        guard success else {
+            print("Warning: Failed to configure audio session for speech recognition")
             // Final fallback with minimal configuration
             do {
+                let audioSession = AVAudioSession.sharedInstance()
                 // Don't try to deactivate again if it failed before
                 try audioSession.setCategory(.playAndRecord, mode: .default, options: [])
                 try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
@@ -58,6 +27,7 @@ extension SpeechRecognizer {
             } catch {
                 print("Critical error: Unable to configure audio session for speech recognition: \(error)")
             }
+            return
         }
     }
     
