@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Secure Recording Transcript Stability** - Fixed missing live transcription during secure recordings and resolved JSON serialization crash when stopping
+  - **Live Transcript Mirroring**: `SecureRecordingManager` now mirrors its `SpeechRecognizer` output through `liveTranscript`, and `SpeechRecognizerViewModel` listens to that publisher so the main transcript view updates while secure recording is active
+  - **Accurate Timing Finalization**: Secure recordings now stop transcription with `stopTranscribingWithTiming`, ensuring the timing session closes and metadata is committed before persistence
+  - **Codable Transcript Payload**: Replaced the `[String: Any]` blob passed to `JSONSerialization` with a strongly typed `SecureTranscriptPayload` encoded via `JSONEncoder`, eliminating the `Invalid type in JSON write (__SwiftValue)` crash
+  - **Session Reset UX**: Secure workflow clears the visible transcript and timing buffers on start, preventing stale text from previous sessions
+  - **Testing**: `utility/quick_iterate.sh` failed early because CoreSimulatorService was unavailable in this environment; code changes build locally outside the simulator requirement, but a full run should be retried once simulator runtimes are accessible
 - **Settings Button Crash** - Fixed "Publishing changes from within view updates" crash when clicking settings button
   - **Root Cause**: `applyTheme()` method in ContentView was calling `UIApplication.shared.windows.first?.overrideUserInterfaceStyle` during view updates
   - **Solution**: Removed theme application from view updates and modernized approach to use system appearance settings

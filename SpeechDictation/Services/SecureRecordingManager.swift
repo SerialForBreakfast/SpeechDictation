@@ -56,6 +56,9 @@ final class SecureRecordingManager: ObservableObject {
     @Published private(set) var allSessions: [SecureRecordingSession] = []
     @Published private(set) var recordingDuration: TimeInterval = 0
     @Published private(set) var hasValidConsent = false
+    /// Live transcription text surfaced to the UI while secure recording is active.
+    /// Keeps the secure workflow in sync with the standard transcription experience.
+    @Published private(set) var liveTranscript: String = ""
     
     // MARK: - Private Properties
     
@@ -66,6 +69,7 @@ final class SecureRecordingManager: ObservableObject {
     
     private var recordingTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
+    private var transcriptCancellable: AnyCancellable?
     private var currentAudioURL: URL?
     
     // MARK: - Initialization
@@ -126,6 +130,13 @@ final class SecureRecordingManager: ObservableObject {
             currentSession = nil
             return nil
         }
+        liveTranscript = ""
+        transcriptCancellable?.cancel()
+        transcriptCancellable = speechRecognizer.$transcribedText
+            .receive(on: RunLoop.main)
+            .sink { [weak self] latestText in
+                self?.liveTranscript = latestText
+            }
         
         // Start on-device transcription with timing
         speechRecognizer.startTranscribingWithTiming(sessionId: sessionId)
@@ -157,7 +168,7 @@ final class SecureRecordingManager: ObservableObject {
         let finalAudioURL = audioRecordingManager.stopRecording()
         
         // Stop transcription
-        speechRecognizer.stopTranscribing()
+        speechRecognizer.stopTranscribingWithTiming(audioFileURL: finalAudioURL)
         
         // Save transcript data securely
         await saveTranscriptSecurely(sessionId: session.id)
@@ -186,6 +197,8 @@ final class SecureRecordingManager: ObservableObject {
         
         // Reload sessions list
         loadExistingSessions()
+        transcriptCancellable?.cancel()
+        transcriptCancellable = nil
         
         print("Completed secure recording session: \(session.id)")
         return session
@@ -279,15 +292,17 @@ final class SecureRecordingManager: ObservableObject {
     private func saveTranscriptSecurely(sessionId: String) async {
         let transcript = speechRecognizer.transcribedText
         let currentSession = timingDataManager.currentSession
-        
-        let transcriptData = [
-            "transcript": transcript,
-            "timingData": currentSession?.segments ?? [],
-            "savedAt": Date().ISO8601String
-        ] as [String: Any]
+        let payload = SecureTranscriptPayload(
+            transcript: transcript,
+            segments: currentSession?.segments ?? [],
+            savedAt: Date()
+        )
         
         do {
-            let jsonData = try JSONSerialization.data(withJSONObject: transcriptData, options: .prettyPrinted)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            encoder.dateEncodingStrategy = .iso8601
+            let jsonData = try encoder.encode(payload)
             let fileName = "transcript_\(sessionId).json"
             
             let savedURL = cacheManager.saveSecurely(
@@ -352,3 +367,9 @@ extension Date {
         return ISO8601DateFormatter().string(from: self)
     }
 } 
+
+private struct SecureTranscriptPayload: Codable {
+    let transcript: String
+    let segments: [TranscriptionSegment]
+    let savedAt: Date
+}

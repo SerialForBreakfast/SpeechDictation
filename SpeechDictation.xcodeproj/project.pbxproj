@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		181C4C6BED7E47AAA4642AA3 /* SecureRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 181C4C6BED7E47AAA4642AA4 /* SecureRecordingTests.swift */; };
 		4420D05F2C2E4E2500263CF6 /* WaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4420D05E2C2E4E2500263CF6 /* WaveformView.swift */; };
 		4420D0612C2F6A8C00263CF6 /* CacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4420D0602C2F6A8C00263CF6 /* CacheManager.swift */; };
 		443B0CA32E2366BD00D292B9 /* LiveCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0C9F2E2366BD00D292B9 /* LiveCameraView.swift */; };
@@ -32,9 +33,9 @@
 		44E6EBD52C2B99D300BBF2F3 /* SpeechDictationApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBD42C2B99D300BBF2F3 /* SpeechDictationApp.swift */; };
 		44E6EBD72C2B99D300BBF2F3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBD62C2B99D300BBF2F3 /* ContentView.swift */; };
 		44E6EBD82C2B99D400BBF2F4 /* EntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBD72C2B99D400BBF2F4 /* EntryView.swift */; };
+		44E6EBD92C2B99D500BBF2F3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 44E6EBD82C2B99D500BBF2F3 /* Assets.xcassets */; };
 		44E6EBD92C2B99D500BBF2F5 /* CameraPermissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBD82C2B99D500BBF2F5 /* CameraPermissionsView.swift */; };
 		44E6EBDA2C2B99D600BBF2F6 /* CameraExperienceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBD92C2B99D600BBF2F6 /* CameraExperienceView.swift */; };
-		44E6EBD92C2B99D500BBF2F3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 44E6EBD82C2B99D500BBF2F3 /* Assets.xcassets */; };
 		44E6EBDC2C2B99D500BBF2F3 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 44E6EBDB2C2B99D500BBF2F3 /* Preview Assets.xcassets */; };
 		44E6EBE62C2B99D500BBF2F3 /* SpeechDictationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBE52C2B99D500BBF2F3 /* SpeechDictationTests.swift */; };
 		44E6EBF02C2B99D500BBF2F3 /* SpeechDictationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E6EBEF2C2B99D500BBF2F3 /* SpeechDictationUITests.swift */; };
@@ -50,15 +51,14 @@
 		4500003F2C60005000AAA116 /* MicSensitivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4500003E2C60005000AAA115 /* MicSensitivityView.swift */; };
 		450000422C60007000AAA119 /* TimingDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 450000412C60007000AAA118 /* TimingDataManager.swift */; };
 		450000432C60008000AAA120 /* AudioRecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 450000422C60008000AAA119 /* AudioRecordingManager.swift */; };
-		450001002C60008000AAA131 /* CameraSettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 450000FF2C60008000AAA130 /* CameraSettingsManager.swift */; };
 		450000442C60009000AAA121 /* AudioPlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 450000432C60009000AAA120 /* AudioPlaybackManager.swift */; };
 		450000452C60010000AAA122 /* SpeechRecognizer+Timing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 450000442C60010000AAA121 /* SpeechRecognizer+Timing.swift */; };
+		450001002C60008000AAA131 /* CameraSettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 450000FF2C60008000AAA130 /* CameraSettingsManager.swift */; };
+		83AFD655C028498D8E6ADE1F /* SecureRecordingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83AFD655C028498D8E6ADE20 /* SecureRecordingsView.swift */; };
+		CE446A7C990C4714AC59E6C1 /* SecureRecordingBusinessLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE446A7C990C4714AC59E6C2 /* SecureRecordingBusinessLogicTests.swift */; };
 		F12F961D9ACF4AB98793429D /* LocalAuthenticationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12F961D9ACF4AB98793429E /* LocalAuthenticationManager.swift */; };
 		F12F961D9ACF4AB987934300 /* AudioSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12F961D9ACF4AB987934301 /* AudioSessionManager.swift */; };
 		FA295D6C5DAA414DB909AF65 /* SecureRecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA295D6C5DAA414DB909AF66 /* SecureRecordingManager.swift */; };
-		83AFD655C028498D8E6ADE1F /* SecureRecordingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83AFD655C028498D8E6ADE20 /* SecureRecordingsView.swift */; };
-		181C4C6BED7E47AAA4642AA3 /* SecureRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 181C4C6BED7E47AAA4642AA4 /* SecureRecordingTests.swift */; };
-		CE446A7C990C4714AC59E6C1 /* SecureRecordingBusinessLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE446A7C990C4714AC59E6C2 /* SecureRecordingBusinessLogicTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -79,6 +79,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		181C4C6BED7E47AAA4642AA4 /* SecureRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureRecordingTests.swift; sourceTree = "<group>"; };
 		4420D05E2C2E4E2500263CF6 /* WaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformView.swift; sourceTree = "<group>"; };
 		4420D0602C2F6A8C00263CF6 /* CacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheManager.swift; sourceTree = "<group>"; };
 		443B0C9D2E2366BD00D292B9 /* CameraSceneDescriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSceneDescriptionView.swift; sourceTree = "<group>"; };
@@ -105,9 +106,9 @@
 		44E6EBD42C2B99D300BBF2F3 /* SpeechDictationApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechDictationApp.swift; sourceTree = "<group>"; };
 		44E6EBD62C2B99D300BBF2F3 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		44E6EBD72C2B99D400BBF2F4 /* EntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryView.swift; sourceTree = "<group>"; };
+		44E6EBD82C2B99D500BBF2F3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		44E6EBD82C2B99D500BBF2F5 /* CameraPermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPermissionsView.swift; sourceTree = "<group>"; };
 		44E6EBD92C2B99D600BBF2F6 /* CameraExperienceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraExperienceView.swift; sourceTree = "<group>"; };
-		44E6EBD82C2B99D500BBF2F3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		44E6EBDB2C2B99D500BBF2F3 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		44E6EBE12C2B99D500BBF2F3 /* SpeechDictationTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SpeechDictationTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		44E6EBE52C2B99D500BBF2F3 /* SpeechDictationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechDictationTests.swift; sourceTree = "<group>"; };
@@ -126,15 +127,14 @@
 		4500003E2C60005000AAA115 /* MicSensitivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicSensitivityView.swift; sourceTree = "<group>"; };
 		450000412C60007000AAA118 /* TimingDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimingDataManager.swift; sourceTree = "<group>"; };
 		450000422C60008000AAA119 /* AudioRecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecordingManager.swift; sourceTree = "<group>"; };
-		450000FF2C60008000AAA130 /* CameraSettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSettingsManager.swift; sourceTree = "<group>"; };
 		450000432C60009000AAA120 /* AudioPlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlaybackManager.swift; sourceTree = "<group>"; };
 		450000442C60010000AAA121 /* SpeechRecognizer+Timing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpeechRecognizer+Timing.swift"; sourceTree = "<group>"; };
+		450000FF2C60008000AAA130 /* CameraSettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSettingsManager.swift; sourceTree = "<group>"; };
+		83AFD655C028498D8E6ADE20 /* SecureRecordingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureRecordingsView.swift; sourceTree = "<group>"; };
+		CE446A7C990C4714AC59E6C2 /* SecureRecordingBusinessLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureRecordingBusinessLogicTests.swift; sourceTree = "<group>"; };
 		F12F961D9ACF4AB98793429E /* LocalAuthenticationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAuthenticationManager.swift; sourceTree = "<group>"; };
 		F12F961D9ACF4AB987934301 /* AudioSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionManager.swift; sourceTree = "<group>"; };
 		FA295D6C5DAA414DB909AF66 /* SecureRecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureRecordingManager.swift; sourceTree = "<group>"; };
-		83AFD655C028498D8E6ADE20 /* SecureRecordingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureRecordingsView.swift; sourceTree = "<group>"; };
-		181C4C6BED7E47AAA4642AA4 /* SecureRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureRecordingTests.swift; sourceTree = "<group>"; };
-		CE446A7C990C4714AC59E6C2 /* SecureRecordingBusinessLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureRecordingBusinessLogicTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -663,7 +663,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -696,7 +696,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -718,7 +718,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = RWZ25NGH8K;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ShowBlender.SpeechDictationTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -737,7 +737,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = RWZ25NGH8K;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ShowBlender.SpeechDictationTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -755,7 +755,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = RWZ25NGH8K;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ShowBlender.SpeechDictationUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -773,7 +773,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = RWZ25NGH8K;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ShowBlender.SpeechDictationUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";

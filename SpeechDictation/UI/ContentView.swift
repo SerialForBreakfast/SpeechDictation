@@ -9,6 +9,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct ContentView: View {
     @ObservedObject var viewModel = SpeechRecognizerViewModel()
@@ -83,84 +86,11 @@ struct ContentView: View {
                     }
                 }
 
-                HStack {
-                    Button(action: {
-                        if self.viewModel.isRecording {
-                            self.viewModel.stopTranscribing()
-                        } else {
-                            self.viewModel.startTranscribing()
-                        }
-                    }) {
-                        Text(viewModel.isRecording ? "Stop Listening" : "Start Listening")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .padding()
-                            .background(primaryActionButtonColor)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                            .shadow(color: shadowColor, radius: 2, x: 0, y: 0)
-                    }
-
-                    // Reset button - clears text without stopping recording
-                    Button(action: {
-                        self.viewModel.resetTranscribedText()
-                    }) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.title2)
-                            .padding()
-                            .background(resetButtonBackgroundColor)
-                            .foregroundColor(resetButtonForegroundColor)
-                            .clipShape(Circle())
-                            .shadow(color: shadowColor, radius: 2, x: 0, y: 0)
-                    }
-                    .disabled(viewModel.transcribedText.isEmpty)
-                    .opacity(viewModel.transcribedText.isEmpty ? 0.5 : 1.0)
-
-                    Spacer()
-
-                    // Secure Recordings button
-                    Button(action: {
-                        showingSecureRecordings = true
-                    }) {
-                        Image(systemName: "lock.shield")
-                            .font(.title2)
-                            .padding()
-                            .background(secureRecordingsButtonBackgroundColor)
-                            .foregroundColor(secureRecordingsButtonForegroundColor)
-                            .clipShape(Circle())
-                            .shadow(color: shadowColor, radius: 2, x: 0, y: 0)
-                    }
-                    .accessibilityLabel("Secure Recordings")
-                    .accessibilityHint("Access private recordings with authentication")
-
-                    Button(action: {
-                        showingCustomShare = true
-                    }) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.title2)
-                            .padding()
-                            .background(shareButtonBackgroundColor)
-                            .foregroundColor(shareButtonForegroundColor)
-                            .clipShape(Circle())
-                            .shadow(color: shadowColor, radius: 2, x: 0, y: 0)
-                    }
-                    .disabled(!canExport)
-                    .opacity(canExport ? 1.0 : 0.5)
-                    .padding(.trailing, 10)
-
-                    Button(action: {
-                        self.viewModel.showSettings.toggle()
-                    }) {
-                        Image(systemName: "gear")
-                            .font(.title2)
-                            .padding()
-                            .background(settingsButtonBackgroundColor)
-                            .foregroundColor(settingsButtonForegroundColor)
-                            .clipShape(Circle())
-                            .shadow(color: shadowColor, radius: 2, x: 0, y: 0)
-                    }
+                VStack(spacing: 12) {
+                    startControls
+                    utilityControls
                 }
-                .padding()
+                .padding(.horizontal)
             }
             .padding()
 
@@ -214,8 +144,137 @@ struct ContentView: View {
         }
     }
     
-    private var primaryActionButtonColor: Color {
-        Color.accentColor
+    private var startControls: some View {
+        HStack(spacing: 12) {
+            startListeningButton
+            startRecordingButton
+        }
+    }
+    
+    private var utilityControls: some View {
+        ViewThatFits {
+            HStack(spacing: 12) {
+                utilityButtons
+            }
+            VStack(spacing: 12) {
+                utilityButtons
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var utilityButtons: some View {
+        utilityButton(
+            title: "Reset Text",
+            systemImage: "arrow.clockwise",
+            action: viewModel.resetTranscribedText,
+            isDisabled: viewModel.transcribedText.isEmpty
+        )
+        
+        utilityButton(
+            title: "Secure Recordings",
+            systemImage: "lock.shield",
+            action: { showingSecureRecordings = true }
+        )
+        
+        utilityButton(
+            title: "Share",
+            systemImage: "square.and.arrow.up",
+            action: { showingCustomShare = true },
+            isDisabled: !canExport
+        )
+        
+        utilityButton(
+            title: "Settings",
+            systemImage: "gearshape",
+            action: { viewModel.showSettings.toggle() }
+        )
+    }
+    
+    private var startListeningButton: some View {
+        actionButton(
+            title: viewModel.isRecording ? "Stop" : "Transcribe",
+            systemImage: viewModel.isRecording ? "pause.circle.fill" : "waveform",
+            background: Color.accentColor,
+            action: {
+                if viewModel.isRecording {
+                    viewModel.stopTranscribing()
+                } else {
+                    viewModel.startTranscribing()
+                }
+            }
+        )
+        .disabled(viewModel.isSecureRecordingActive)
+        .opacity(viewModel.isSecureRecordingActive ? 0.6 : 1.0)
+    }
+    
+    private var startRecordingButton: some View {
+        actionButton(
+            title: viewModel.isSecureRecordingActive ? "Stop" : "Record",
+            systemImage: viewModel.isSecureRecordingActive ? "stop.circle.fill" : "mic.fill.badge.plus",
+            background: Color.orange,
+            action: {
+                viewModel.toggleSecureRecording()
+            }
+        )
+        .disabled(viewModel.isRecording)
+        .opacity(viewModel.isRecording ? 0.6 : 1.0)
+    }
+    
+    private func actionButton(
+        title: String,
+        systemImage: String,
+        background: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.system(.title3, design: .default).weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(.white)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(background)
+        )
+        .shadow(color: shadowColor.opacity(0.5), radius: 4, x: 0, y: 2)
+    }
+    
+    private func utilityButton(
+        title: String,
+        systemImage: String,
+        action: @escaping () -> Void,
+        isDisabled: Bool = false
+    ) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.system(.subheadline, design: .default).weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.9)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(.primary)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(secondaryButtonBackgroundColor)
+        )
+        .shadow(color: shadowColor.opacity(0.25), radius: 2, x: 0, y: 1)
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.5 : 1.0)
+    }
+    
+    private var secondaryButtonBackgroundColor: Color {
+        #if canImport(UIKit)
+        return Color(UIColor.secondarySystemBackground)
+        #else
+        return Color.gray.opacity(0.2)
+        #endif
     }
     
     private var resetButtonBackgroundColor: Color {
@@ -224,32 +283,6 @@ struct ContentView: View {
     
     private var resetButtonForegroundColor: Color {
         Color.orange
-    }
-    
-    /// Secure recordings button styling following existing patterns
-    private var secureRecordingsButtonBackgroundColor: Color {
-        Color.blue.opacity(colorScheme == .dark ? 0.3 : 0.2)
-    }
-    
-    /// Secure recordings button styling following existing patterns  
-    private var secureRecordingsButtonForegroundColor: Color {
-        Color.blue
-    }
-    
-    private var shareButtonBackgroundColor: Color {
-        Color.green.opacity(colorScheme == .dark ? 0.3 : 0.2)
-    }
-    
-    private var shareButtonForegroundColor: Color {
-        Color.green
-    }
-    
-    private var settingsButtonBackgroundColor: Color {
-        Color(UIColor.tertiarySystemFill)
-    }
-    
-    private var settingsButtonForegroundColor: Color {
-        Color.primary
     }
     
     private var overlayBackgroundColor: Color {
