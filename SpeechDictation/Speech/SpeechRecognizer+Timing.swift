@@ -129,6 +129,7 @@ extension SpeechRecognizer {
     ///   - sessionStartTime: Start time of the recording session
     private func processTimingData(result: SFSpeechRecognitionResult, sessionStartTime: Date) {
         let transcription = result.bestTranscription
+        var newSegments: [TranscriptionSegment] = []
         
         // Process each segment with timing information
         for segment in transcription.segments {
@@ -137,15 +138,18 @@ extension SpeechRecognizer {
             let confidence = segment.confidence
             let text = segment.substring
             
-            // Add segment to timing data manager on main queue since TimingDataManager is @MainActor
-            DispatchQueue.main.async {
-                TimingDataManager.shared.addSegment(
-                    text: text,
-                    startTime: startTime,
-                    endTime: endTime,
-                    confidence: confidence
-                )
-            }
+            let newSegment = TranscriptionSegment(
+                text: text,
+                startTime: startTime,
+                endTime: endTime,
+                confidence: confidence
+            )
+            newSegments.append(newSegment)
+        }
+        
+        // Update timing data manager on main queue since TimingDataManager is @MainActor
+        DispatchQueue.main.async {
+            TimingDataManager.shared.updateSegments(newSegments)
         }
     }
     

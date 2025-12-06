@@ -188,10 +188,12 @@ struct SecureRecordingsView: View {
             // Recordings list
             List {
                 ForEach(secureRecordingManager.getAllSessions()) { session in
-                    SecureRecordingRow(
-                        session: session,
-                        onDelete: { sessionToDelete = session; showingDeleteConfirmation = true }
-                    )
+                    NavigationLink(destination: SecurePlaybackView(session: session)) {
+                        SecureRecordingRow(
+                            session: session,
+                            onDelete: { sessionToDelete = session; showingDeleteConfirmation = true }
+                        )
+                    }
                 }
             }
             .listStyle(PlainListStyle())

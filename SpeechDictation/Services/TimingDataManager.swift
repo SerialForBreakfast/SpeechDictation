@@ -84,22 +84,11 @@ class TimingDataManager: ObservableObject {
     
     // MARK: - Segment Management
     
-    /// Adds a new transcription segment with timing data
-    /// - Parameters:
-    ///   - text: Transcribed text
-    ///   - startTime: Start time in seconds from session start
-    ///   - endTime: End time in seconds from session start
-    ///   - confidence: Speech recognition confidence (0.0 - 1.0)
+    /// Replaces all segments with the provided list
+    /// - Parameter newSegments: The new list of segments
     @MainActor
-    func addSegment(text: String, startTime: TimeInterval, endTime: TimeInterval, confidence: Float) {
-        let segment = TranscriptionSegment(
-            text: text,
-            startTime: startTime,
-            endTime: endTime,
-            confidence: confidence
-        )
-        
-        segments.append(segment)
+    func updateSegments(_ newSegments: [TranscriptionSegment]) {
+        segments = newSegments
         
         // Update current session
         if var session = currentSession {
@@ -115,7 +104,7 @@ class TimingDataManager: ObservableObject {
             currentSession = session
         }
         
-        print("Added segment: \(text) (\(startTime)s - \(endTime)s)")
+        print("Updated segments: count=\(segments.count)")
     }
     
     /// Gets the segment at a specific time position
