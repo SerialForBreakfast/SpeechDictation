@@ -130,16 +130,22 @@ final class SecureRecordingManager: ObservableObject {
             currentSession = nil
             return nil
         }
-        liveTranscript = ""
+        
+        // Connect audio buffer stream to speech recognizer
+        audioRecordingManager.audioBufferHandler = { [weak self] buffer in
+            self?.speechRecognizer.appendAudioBuffer(buffer)
+        }
+        
+        liveTranscript = AttributedString("")
         transcriptCancellable?.cancel()
         transcriptCancellable = speechRecognizer.$transcribedText
             .receive(on: RunLoop.main)
             .sink { [weak self] latestText in
-                self?.liveTranscript = latestText
+                self?.liveTranscript = AttributedString(latestText)
             }
         
-        // Start on-device transcription with timing
-        speechRecognizer.startTranscribingWithTiming(sessionId: sessionId)
+        // Start on-device transcription with timing using external audio source
+        speechRecognizer.startTranscribingWithTiming(sessionId: sessionId, isExternalAudioSource: true)
         
         // Update state
         isRecording = true
@@ -163,6 +169,9 @@ final class SecureRecordingManager: ObservableObject {
         
         // Stop recording timer
         stopRecordingTimer()
+        
+        // Clear audio buffer handler
+        audioRecordingManager.audioBufferHandler = nil
         
         // Stop audio recording
         let finalAudioURL = audioRecordingManager.stopRecording()

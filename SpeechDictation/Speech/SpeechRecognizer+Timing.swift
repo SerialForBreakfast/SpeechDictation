@@ -14,9 +14,11 @@ import AVFoundation
 extension SpeechRecognizer {
     
     /// Starts transcription with timing data capture
-    /// - Parameter sessionId: Optional session ID for timing data management
-    func startTranscribingWithTiming(sessionId: String? = nil) {
-        print("Starting transcription with timing data...")
+    /// - Parameters:
+    ///   - sessionId: Optional session ID for timing data management
+    ///   - isExternalAudioSource: Whether audio is provided externally (e.g. from recording manager)
+    func startTranscribingWithTiming(sessionId: String? = nil, isExternalAudioSource: Bool = false) {
+        print("Starting transcription with timing data... (external source: \(isExternalAudioSource))")
         
         // Start timing data session on main queue since TimingDataManager is @MainActor
         DispatchQueue.main.async {
@@ -30,18 +32,15 @@ extension SpeechRecognizer {
             engine.inputNode.removeTap(onBus: 0)
         }
 
-        audioEngine = AVAudioEngine()
+        if !isExternalAudioSource {
+            audioEngine = AVAudioEngine()
+        }
         
         speechRecognizer = SFSpeechRecognizer()
         request = SFSpeechAudioBufferRecognitionRequest()
         
         guard let request = request else {
             print("Unable to create a SFSpeechAudioBufferRecognitionRequest object")
-            return
-        }
-        
-        guard let inputNode = audioEngine?.inputNode else {
-            print("Audio engine has no input node")
             return
         }
         
@@ -68,7 +67,15 @@ extension SpeechRecognizer {
             }
         }
         
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        if isExternalAudioSource {
+            print("Using external audio source for timing transcription - skipping local engine setup")
+            return
+        }
+        
+        guard let inputNode = audioEngine?.inputNode else {
+            print("Audio engine has no input node")
+            return
+        }
         
         // Validate the format is supported before installing tap
         guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else {

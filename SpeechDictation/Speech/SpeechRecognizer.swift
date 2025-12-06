@@ -30,8 +30,8 @@ class SpeechRecognizer: ObservableObject {
         startLevelMonitoring()
     }
     
-    func startTranscribing() {
-        print("Starting transcription...")
+    func startTranscribing(isExternalAudioSource: Bool = false) {
+        print("Starting transcription... (external source: \(isExternalAudioSource))")
         // If a monitoring engine is already running, stop and reset it before starting a
         // fresh engine configured for speech recognition.
         if let engine = audioEngine {
@@ -39,18 +39,15 @@ class SpeechRecognizer: ObservableObject {
             engine.inputNode.removeTap(onBus: 0)
         }
 
-        audioEngine = AVAudioEngine()
+        if !isExternalAudioSource {
+            audioEngine = AVAudioEngine()
+        }
         
         speechRecognizer = SFSpeechRecognizer()
         request = SFSpeechAudioBufferRecognitionRequest()
         
         guard let request = request else {
             print("Unable to create a SFSpeechAudioBufferRecognitionRequest object")
-            return
-        }
-        
-        guard let inputNode = audioEngine?.inputNode else {
-            print("Audio engine has no input node")
             return
         }
         
@@ -71,6 +68,16 @@ class SpeechRecognizer: ObservableObject {
                 print("Recognition error: \(error)")
                 self.stopTranscribing()
             }
+        }
+        
+        if isExternalAudioSource {
+            print("Using external audio source - skipping local engine setup")
+            return
+        }
+        
+        guard let inputNode = audioEngine?.inputNode else {
+            print("Audio engine has no input node")
+            return
         }
         
         // Use the native format from the input node for better compatibility
@@ -103,6 +110,13 @@ class SpeechRecognizer: ObservableObject {
         }
         
         adjustVolume()
+    }
+    
+    /// Appends an external audio buffer to the recognition request
+    /// - Parameter buffer: The audio buffer to process
+    func appendAudioBuffer(_ buffer: AVAudioPCMBuffer) {
+        processAudioBuffer(buffer: buffer)
+        request?.append(buffer)
     }
     
     /// Processes a PCM buffer to store samples for waveform visualisation **and** update `currentLevel`.

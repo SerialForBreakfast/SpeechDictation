@@ -65,6 +65,9 @@ class AudioRecordingManager: ObservableObject {
     private var recordingTimer: Timer?
     private let recordingQueue = DispatchQueue(label: "audioRecordingQueue", qos: .userInitiated)
     
+    /// Handler for broadcasting audio buffers to other consumers (e.g. SpeechRecognizer)
+    var audioBufferHandler: ((AVAudioPCMBuffer) -> Void)?
+    
     // AudioQualitySettings is defined in TimingData.swift
     private var qualitySettings: AudioQualitySettings = .standardQuality
     private let documentsDirectory: URL
@@ -322,6 +325,9 @@ class AudioRecordingManager: ObservableObject {
     // MARK: - Audio Processing
     
     private func processAudioBuffer(_ buffer: AVAudioPCMBuffer) {
+        // Broadcast buffer to listeners (e.g. SpeechRecognizer)
+        audioBufferHandler?(buffer)
+        
         guard let audioFile = audioFile else { return }
         
         do {
