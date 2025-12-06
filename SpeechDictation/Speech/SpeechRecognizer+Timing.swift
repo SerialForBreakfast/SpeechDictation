@@ -77,6 +77,9 @@ extension SpeechRecognizer {
             return
         }
         
+        // Use the native format from the input node for better compatibility
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        
         // Validate the format is supported before installing tap
         guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else {
             print("Invalid recording format detected: sampleRate=\(recordingFormat.sampleRate), channels=\(recordingFormat.channelCount)")
