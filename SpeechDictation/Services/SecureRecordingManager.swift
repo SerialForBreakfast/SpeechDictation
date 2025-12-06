@@ -58,7 +58,7 @@ final class SecureRecordingManager: ObservableObject {
     @Published private(set) var hasValidConsent = false
     /// Live transcription text surfaced to the UI while secure recording is active.
     /// Keeps the secure workflow in sync with the standard transcription experience.
-    @Published private(set) var liveTranscript: String = ""
+    @Published private(set) var liveTranscript: AttributedString = AttributedString("")
     
     // MARK: - Private Properties
     
@@ -72,6 +72,41 @@ final class SecureRecordingManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var transcriptCancellable: AnyCancellable?
     private var currentAudioURL: URL?
+    /// Track previous segments to determine "stable" vs "changing" text
+    private var previousSegments: [TranscriptionSegment] = []
+    
+    /// Deduplicate timing segments:
+    /// - trims whitespace
+    /// - drops empty texts
+    /// - skips consecutive segments with identical text and (nearly) identical start times
+    private func deduplicateSegments(_ segments: [TranscriptionSegment]) -> [TranscriptionSegment] {
+        var result: [TranscriptionSegment] = []
+        let epsilon: TimeInterval = 0.0005 // tolerance for floating point startTime equality
+        
+        for seg in segments {
+            let text = seg.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { continue }
+            
+            if let last = result.last {
+                let sameText = last.text == text
+                let sameStart = abs(last.startTime - seg.startTime) < epsilon
+                if sameText && sameStart {
+                    // skip duplicate segment
+                    continue
+                }
+            }
+            
+            // Keep segment but with trimmed text
+            let cleaned = TranscriptionSegment(
+                text: text,
+                startTime: seg.startTime,
+                endTime: seg.endTime,
+                confidence: seg.confidence
+            )
+            result.append(cleaned)
+        }
+        return result
+    }
     
     // MARK: - Initialization
     
@@ -132,16 +167,26 @@ final class SecureRecordingManager: ObservableObject {
             return nil
         }
         
-        // Subscribe to timing segments and build transcript deterministically (no duplication)
+        // Subscribe to timing segments and build transcript with styling
         transcriptCancellable?.cancel()
-        liveTranscript = ""
+        liveTranscript = AttributedString("")
+        previousSegments = []
+        
         transcriptCancellable = timingDataManager.$segments
             .receive(on: RunLoop.main)
             .sink { [weak self] segments in
                 guard let self = self else { return }
-                // Build a clean transcript from finalized segments
-                let cleaned = self.buildNormalizedTranscript(from: segments)
-                self.liveTranscript = cleaned
+                
+                // 1. Deduplicate/clean the new segments
+                let deduped = self.deduplicateSegments(segments)
+                
+                // 2. Build AttributedString with stability logic
+                // If a segment matches (text & relative position) what we saw last time, it's "stable".
+                // If it's new or changed, it's "processing" (italic).
+                let styled = self.buildStyledTranscript(from: deduped, previous: self.previousSegments)
+                
+                self.liveTranscript = styled
+                self.previousSegments = deduped
             }
         
         // Start on-device transcription with timing
@@ -317,16 +362,17 @@ final class SecureRecordingManager: ObservableObject {
     }
     
     private func saveTranscriptSecurely(sessionId: String) async {
-        // Final cleanup: rebuild transcript from timing segments to remove duplicates/empties
-        let segments = timingDataManager.currentSession?.segments ?? []
-        let transcript = buildNormalizedTranscript(from: segments)
+        // Final cleanup: rebuild transcript from deduplicated timing segments to remove duplicates/empties
+        let rawSegments = timingDataManager.currentSession?.segments ?? []
+        let dedupedSegments = deduplicateSegments(rawSegments)
+        let transcript = buildNormalizedTranscript(from: dedupedSegments)
         let currentSession = timingDataManager.currentSession
         
         print("Saving transcript: \(transcript.count) chars, \(currentSession?.segments.count ?? 0) segments")
         
         let payload = SecureTranscriptPayload(
             transcript: transcript,
-            segments: currentSession?.segments ?? [],
+            segments: dedupedSegments,
             savedAt: Date()
         )
         
@@ -351,6 +397,62 @@ final class SecureRecordingManager: ObservableObject {
         } catch {
             print("Error serializing transcript data: \(error)")
         }
+    }
+
+    /// Builds an AttributedString with visual cues for stable vs processing text.
+    /// - Parameters:
+    ///   - segments: The current list of cleaned/deduplicated segments.
+    ///   - previous: The previous list of segments.
+    /// - Returns: AttributedString with stable text in normal font and changing text in italic.
+    private func buildStyledTranscript(from segments: [TranscriptionSegment], previous: [TranscriptionSegment]) -> AttributedString {
+        var fullString = AttributedString("")
+        
+        // Find the "common prefix" index where segments match exactly
+        var mismatchIndex = 0
+        let minCount = min(segments.count, previous.count)
+        
+        while mismatchIndex < minCount {
+            let current = segments[mismatchIndex]
+            let prev = previous[mismatchIndex]
+            
+            // Check for equality (text, start, end)
+            // Using small epsilon for time comparison
+            let sameText = current.text == prev.text
+            let sameStart = abs(current.startTime - prev.startTime) < 0.001
+            let sameEnd = abs(current.endTime - prev.endTime) < 0.001
+            
+            if sameText && sameStart && sameEnd {
+                mismatchIndex += 1
+            } else {
+                break
+            }
+        }
+        
+        // Build the string
+        for (index, segment) in segments.enumerated() {
+            let cleanText = segment.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !cleanText.isEmpty else { continue }
+            
+            var attrSegment = AttributedString(cleanText)
+            
+            // Apply styling
+            if index < mismatchIndex {
+                // Stable -> Normal (Black/Primary)
+                // No specific font attribute needed, defaults to body/primary
+            } else {
+                // Changing/New -> Italic (Gray/Secondary)
+                attrSegment.font = .body.italic()
+                attrSegment.foregroundColor = .secondary
+            }
+            
+            // Add space if not first
+            if !fullString.characters.isEmpty {
+                fullString.append(AttributedString(" "))
+            }
+            fullString.append(attrSegment)
+        }
+        
+        return fullString
     }
 
     /// Builds a normalized transcript string from timing segments:
@@ -406,7 +508,7 @@ final class SecureRecordingManager: ObservableObject {
     /// Loads secure playback resources for a completed session.
     /// - Parameter session: Secure session to load.
     /// - Returns: Audio URL + transcript payload if available.
-    nonisolated func loadPlaybackResources(for session: SecureRecordingSession) -> SecurePlaybackResources? {
+    func loadPlaybackResources(for session: SecureRecordingSession) -> SecurePlaybackResources? {
         guard session.isCompleted else {
             print("Secure playback unavailable for incomplete session: \(session.id)")
             return nil
@@ -441,10 +543,14 @@ final class SecureRecordingManager: ObservableObject {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             let payload = try decoder.decode(SecureTranscriptPayload.self, from: transcriptData)
+            
+            // Deduplicate and clean transcript for playback
+            let dedupedSegments = deduplicateSegments(payload.segments)
+            let cleanedTranscript = buildNormalizedTranscript(from: dedupedSegments)
             return SecurePlaybackResources(
                 audioURL: audioURL,
-                transcript: payload.transcript,
-                segments: payload.segments
+                transcript: cleanedTranscript,
+                segments: dedupedSegments
             )
         } catch {
             print("Failed to decode secure transcript for session \(session.id): \(error)")

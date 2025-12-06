@@ -107,11 +107,11 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            lastTranscriptLength = viewModel.transcribedText.count
+            lastTranscriptLength = viewModel.transcribedText.characters.count
         }
         .sheet(isPresented: $showingCustomShare) {
             NativeStyleShareView(
-                text: viewModel.transcribedText,
+                text: String(viewModel.transcribedText.characters),
                 timingSession: viewModel.currentSession,
                 isPresented: $showingCustomShare
             )
@@ -168,7 +168,7 @@ struct ContentView: View {
             title: "Reset Text",
             systemImage: "arrow.clockwise",
             action: viewModel.resetTranscribedText,
-            isDisabled: viewModel.transcribedText.isEmpty
+            isDisabled: viewModel.transcribedText.characters.isEmpty
         )
         
         utilityButton(
@@ -305,7 +305,7 @@ struct ContentView: View {
     
     /// Checks if export functionality is available (text is not empty)
     private var canExport: Bool {
-        !viewModel.transcribedText.isEmpty
+        !viewModel.transcribedText.characters.isEmpty
     }
     
     // MARK: - Intelligent Autoscroll Functionality
@@ -314,9 +314,10 @@ struct ContentView: View {
     /// - Parameters:
     ///   - newText: The updated transcript text
     ///   - scrollToBottom: Closure to scroll to bottom
-    private func handleTranscriptChange(newText: String, scrollToBottom: @escaping () -> Void) {
-        let hasNewContent = newText.count > lastTranscriptLength
-        lastTranscriptLength = newText.count
+    private func handleTranscriptChange(newText: AttributedString, scrollToBottom: @escaping () -> Void) {
+        let currentLength = newText.characters.count
+        let hasNewContent = currentLength > lastTranscriptLength
+        lastTranscriptLength = currentLength
         
         // Only auto-scroll if:
         // 1. There's new content (transcript is growing)
@@ -368,7 +369,7 @@ struct ContentView: View {
                 // This will be handled by the ScrollViewReader in the next transcript update
                 if viewModel.isRecording {
                     // Trigger a small change to force scroll
-                    lastTranscriptLength = viewModel.transcribedText.count - 1
+                    lastTranscriptLength = viewModel.transcribedText.characters.count - 1
                 }
             }
         }

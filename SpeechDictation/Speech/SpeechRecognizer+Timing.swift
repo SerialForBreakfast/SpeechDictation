@@ -17,6 +17,7 @@ extension SpeechRecognizer {
     /// - Parameter sessionId: Optional session ID for timing data management
     func startTranscribingWithTiming(sessionId: String? = nil) {
         print("Starting transcription with timing data...")
+        lastProcessedSegmentCount = 0
         
         // Start timing data session on main queue since TimingDataManager is @MainActor
         DispatchQueue.main.async {
@@ -157,23 +158,25 @@ extension SpeechRecognizer {
     private func processTimingData(result: SFSpeechRecognitionResult, sessionStartTime: Date) {
         let transcription = result.bestTranscription
         
-        // Process each segment with timing information
-        for segment in transcription.segments {
-            let startTime = segment.timestamp
-            let endTime = segment.timestamp + segment.duration
-            let confidence = segment.confidence
-            let text = segment.substring
-            
-            // Add segment to timing data manager on main queue since TimingDataManager is @MainActor
-            DispatchQueue.main.async {
-                TimingDataManager.shared.addSegment(
-                    text: text,
-                    startTime: startTime,
-                    endTime: endTime,
-                    confidence: confidence
-                )
-            }
+        // Convert SFTranscriptionSegments to our internal TranscriptionSegment model
+        let newSegments = transcription.segments.map { segment in
+            TranscriptionSegment(
+                text: segment.substring,
+                startTime: segment.timestamp,
+                endTime: segment.timestamp + segment.duration,
+                confidence: segment.confidence
+            )
         }
+        
+        // Update TimingDataManager with the complete list of current segments
+        // This ensures updates/corrections from the speech engine are reflected correctly
+        // instead of just appending new segments.
+        DispatchQueue.main.async {
+            TimingDataManager.shared.setSegments(newSegments)
+        }
+        
+        // Update our counter (used for other logic if needed, but not for segments anymore)
+        lastProcessedSegmentCount = transcription.segments.count
     }
     
     /// Gets the current session from timing data manager

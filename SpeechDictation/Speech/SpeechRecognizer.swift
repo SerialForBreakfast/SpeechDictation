@@ -23,6 +23,7 @@ class SpeechRecognizer: ObservableObject {
     var displayLink: CADisplayLink?
     var playerNode: AVAudioPlayerNode?
     var mixerNode: AVAudioMixerNode?
+    var lastProcessedSegmentCount: Int = 0
     
     init() {
         requestAuthorization()
@@ -32,6 +33,7 @@ class SpeechRecognizer: ObservableObject {
     
     func startTranscribing() {
         print("Starting transcription...")
+        lastProcessedSegmentCount = 0
         // If a monitoring engine is already running, stop and reset it before starting a
         // fresh engine configured for speech recognition.
         if let engine = audioEngine {

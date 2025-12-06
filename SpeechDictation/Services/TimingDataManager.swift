@@ -100,8 +100,21 @@ class TimingDataManager: ObservableObject {
         )
         
         segments.append(segment)
+        updateCurrentSession()
         
-        // Update current session
+        print("Added segment: \(text) (\(startTime)s - \(endTime)s)")
+    }
+    
+    /// Replaces all segments for the current session.
+    /// Useful for synching with speech recognizers that update partial results.
+    /// - Parameter newSegments: The new list of segments.
+    @MainActor
+    func setSegments(_ newSegments: [TranscriptionSegment]) {
+        segments = newSegments
+        updateCurrentSession()
+    }
+    
+    private func updateCurrentSession() {
         if var session = currentSession {
             session = AudioRecordingSession(
                 sessionId: session.sessionId,
@@ -114,8 +127,6 @@ class TimingDataManager: ObservableObject {
             )
             currentSession = session
         }
-        
-        print("Added segment: \(text) (\(startTime)s - \(endTime)s)")
     }
     
     /// Gets the segment at a specific time position

@@ -21,7 +21,7 @@ private enum SettingsKey {
 /// and it coordinates MainActor services such as `SecureRecordingManager`.
 @MainActor
 class SpeechRecognizerViewModel: ObservableObject {
-    @Published var transcribedText: String = ""
+    @Published var transcribedText: AttributedString = AttributedString("")
     @Published var fontSize: CGFloat = 24
     @Published var theme: Theme = .light
     @Published var isRecording: Bool = false
@@ -83,6 +83,7 @@ class SpeechRecognizerViewModel: ObservableObject {
 
         // 2 --- LINK SPEECH RECOGNIZER PUBLISHERS ---
         self.speechRecognizer.$transcribedText
+            .map { AttributedString($0) }
             .assign(to: \.transcribedText, on: self)
             .store(in: &cancellables)
 
@@ -257,7 +258,7 @@ class SpeechRecognizerViewModel: ObservableObject {
     /// Resets the transcribed text to an empty string without stopping recording
     /// This allows users to clear the current text while maintaining the recording session
     func resetTranscribedText() {
-        transcribedText = ""
+        transcribedText = AttributedString("")
         // Clear timing data for current session
         segments.removeAll()
         currentSession = nil

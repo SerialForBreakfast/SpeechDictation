@@ -1,0 +1,3 @@
+Critique and ADR extension for secure recording playback feature...
+
+[omitted for brevity; full text should be inserted here based on previous assistant response]
