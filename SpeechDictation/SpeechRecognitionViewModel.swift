@@ -16,11 +16,16 @@ private enum SettingsKey {
     static let audioQuality = "audioQuality"
 }
 
+/// Root view model for live transcription and secure recording workflows.
+/// Annotated with @MainActor because its published properties drive SwiftUI views
+/// and it coordinates MainActor services such as `SecureRecordingManager`.
+@MainActor
 class SpeechRecognizerViewModel: ObservableObject {
     @Published var transcribedText: String = ""
     @Published var fontSize: CGFloat = 24
     @Published var theme: Theme = .light
     @Published var isRecording: Bool = false
+    @Published var isSecureRecordingActive: Bool = false
     @Published var volume: Float = 10.0
     @Published var currentLevel: Float = 0.0
     @Published var showSettings: Bool = false
@@ -43,14 +48,19 @@ class SpeechRecognizerViewModel: ObservableObject {
     private var audioRecordingManager: AudioRecordingManager
     private var timingDataManager: TimingDataManager
     private var audioPlaybackManager: AudioPlaybackManager
+    private var secureRecordingManager: SecureRecordingManager
     private var cancellables = Set<AnyCancellable>()
     private var persistenceCancellables = Set<AnyCancellable>()
 
-    init(speechRecognizer: SpeechRecognizer = SpeechRecognizer()) {
+    init(
+        speechRecognizer: SpeechRecognizer = SpeechRecognizer(),
+        secureRecordingManager: SecureRecordingManager = SecureRecordingManager.shared
+    ) {
         self.speechRecognizer = speechRecognizer
         self.audioRecordingManager = AudioRecordingManager.shared
         self.timingDataManager = TimingDataManager.shared
         self.audioPlaybackManager = AudioPlaybackManager.shared
+        self.secureRecordingManager = secureRecordingManager
 
         // 1 --- LOAD PERSISTED VALUES ---
         let defaults = UserDefaults.standard
@@ -113,6 +123,23 @@ class SpeechRecognizerViewModel: ObservableObject {
         
         self.audioPlaybackManager.$currentSegment
             .assign(to: \.currentSegment, on: self)
+            .store(in: &cancellables)
+        
+        // Mirror secure recording state and transcript output
+        self.secureRecordingManager.$isRecording
+            .receive(on: RunLoop.main)
+            .sink { [weak self] isRecording in
+                self?.isSecureRecordingActive = isRecording
+            }
+            .store(in: &cancellables)
+        
+        self.secureRecordingManager.$liveTranscript
+            .receive(on: RunLoop.main)
+            .sink { [weak self] secureText in
+                guard let self = self else { return }
+                guard self.secureRecordingManager.isRecording else { return }
+                self.transcribedText = secureText
+            }
             .store(in: &cancellables)
 
         // 3 --- PERSIST SETTINGS WHEN THEY CHANGE ---
@@ -181,6 +208,45 @@ class SpeechRecognizerViewModel: ObservableObject {
         audioRecordingManager.resumeRecording()
         speechRecognizer.startTranscribingWithTiming()
         isRecording = true
+    }
+
+    /// Toggles secure recording workflow that captures audio + transcription with protection.
+    func toggleSecureRecording() {
+        Task { @MainActor in
+            if isSecureRecordingActive {
+                await stopSecureRecordingWorkflow()
+            } else {
+                await startSecureRecordingWorkflow()
+            }
+        }
+    }
+
+    private func startSecureRecordingWorkflow() async {
+        guard !isRecording else {
+            print("Cannot start secure recording while live transcription is active")
+            return
+        }
+
+        let result = await secureRecordingManager.startSecureRecording(
+            title: "",
+            hasConsent: true
+        )
+        
+        guard result != nil else {
+            print("Secure recording failed to start")
+            return
+        }
+
+        transcribedText = ""
+        segments.removeAll()
+        currentSession = nil
+        recordingDuration = 0
+        print("Started secure recording workflow")
+    }
+
+    private func stopSecureRecordingWorkflow() async {
+        _ = await secureRecordingManager.stopSecureRecording()
+        print("Stopped secure recording workflow")
     }
 
     func adjustVolume() {
@@ -293,4 +359,5 @@ class SpeechRecognizerViewModel: ObservableObject {
     func getFormattedPlaybackDuration() -> String {
         return audioPlaybackManager.getFormattedDuration()
     }
+
 }

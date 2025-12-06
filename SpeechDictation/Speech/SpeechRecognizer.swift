@@ -55,6 +55,9 @@ class SpeechRecognizer: ObservableObject {
         }
         
         request.shouldReportPartialResults = true
+        // SECURITY: Enforce on-device recognition for privacy and security
+        // This ensures all speech processing happens locally on the device
+        request.requiresOnDeviceRecognition = true
         
         recognitionTask = speechRecognizer?.recognitionTask(with: request) { result, error in
             if let result = result {

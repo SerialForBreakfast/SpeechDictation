@@ -10,6 +10,9 @@
 
 import SwiftUI
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct MicSensitivityView: View {
     @ObservedObject var viewModel: SpeechRecognizerViewModel
@@ -22,9 +25,10 @@ struct MicSensitivityView: View {
                 .foregroundColor(.primary)
             
             HStack {
-                Slider(value: $viewModel.volume, in: 0...100, step: 1, onEditingChanged: { _ in
-                    viewModel.adjustVolume()
-                })
+                Slider(value: $viewModel.volume, in: 0...100, step: 1)
+                    .onChange(of: viewModel.volume) { _ in
+                        viewModel.adjustVolume()
+                    }
                 .accentColor(.accentColor)
                 
                 VUMeterView(level: viewModel.currentLevel)

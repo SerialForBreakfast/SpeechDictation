@@ -4,6 +4,9 @@
 //
 //  Created by AI Assistant on 12/19/24.
 //
+//  Enhanced audio recording manager with secure storage capabilities for private recordings.
+//  Supports both standard recording and secure recording with complete file protection.
+//
 
 import Foundation
 import AVFoundation
@@ -38,8 +41,15 @@ struct AudioQualitySettings: Codable {
     )
 }
 
+/// Recording mode for different security requirements
+enum RecordingMode {
+    case standard    // Standard documents directory storage
+    case secure      // Secure storage with complete file protection
+}
+
 /// Service responsible for high-quality audio recording and storage
 /// Handles audio capture, compression, and file management with configurable quality settings
+/// Supports both standard and secure recording modes for different privacy requirements
 /// Uses AudioQualitySettings from TimingData.swift for quality configuration
 class AudioRecordingManager: ObservableObject {
     static let shared = AudioRecordingManager()
@@ -47,6 +57,7 @@ class AudioRecordingManager: ObservableObject {
     @Published private(set) var isRecording = false
     @Published private(set) var recordingDuration: TimeInterval = 0
     @Published private(set) var currentAudioFileURL: URL?
+    @Published private(set) var currentRecordingMode: RecordingMode = .standard
     
     private var audioEngine: AVAudioEngine?
     private var audioFile: AVAudioFile?
@@ -69,15 +80,35 @@ class AudioRecordingManager: ObservableObject {
     /// - Parameter quality: Audio quality settings (defaults to standard quality)
     /// - Returns: URL to the audio file being recorded, or nil if failed
     func startRecording(quality: AudioQualitySettings = .standardQuality) -> URL? {
+        return startRecording(mode: .standard, quality: quality, sessionId: nil)
+    }
+    
+    /// Starts secure audio recording with complete file protection
+    /// - Parameters:
+    ///   - quality: Audio quality settings (defaults to standard quality)
+    ///   - sessionId: Optional session identifier for grouping recordings
+    /// - Returns: URL to the securely stored audio file being recorded, or nil if failed
+    func startSecureRecording(quality: AudioQualitySettings = .standardQuality, sessionId: String? = nil) -> URL? {
+        return startRecording(mode: .secure, quality: quality, sessionId: sessionId)
+    }
+    
+    /// Starts audio recording with specified mode and quality
+    /// - Parameters:
+    ///   - mode: Recording mode (standard or secure)
+    ///   - quality: Audio quality settings
+    ///   - sessionId: Optional session identifier for secure recordings
+    /// - Returns: URL to the audio file being recorded, or nil if failed
+    private func startRecording(mode: RecordingMode, quality: AudioQualitySettings, sessionId: String?) -> URL? {
         guard !isRecording else {
             print("Already recording")
             return nil
         }
         
         qualitySettings = quality
+        currentRecordingMode = mode
         
         do {
-            try setupAudioEngine()
+            try setupAudioEngine(mode: mode, sessionId: sessionId)
             try startAudioCapture()
             
             isRecording = true
@@ -86,14 +117,15 @@ class AudioRecordingManager: ObservableObject {
             
             startRecordingTimer()
             
-            print("Started audio recording with quality: \(quality.sampleRate)Hz, \(quality.bitDepth)bit")
+            let modeDescription = mode == .secure ? "secure" : "standard"
+            print("Started \(modeDescription) audio recording with quality: \(quality.sampleRate)Hz, \(quality.bitDepth)bit")
             return currentAudioFileURL
         } catch {
             print("Failed to start recording: \(error)")
             return nil
         }
     }
-    
+
     /// Stops the current audio recording
     /// - Returns: URL to the recorded audio file, or nil if no recording was active
     func stopRecording() -> URL? {
@@ -106,11 +138,18 @@ class AudioRecordingManager: ObservableObject {
         
         do {
             try stopAudioCapture()
+            
+            // For secure recordings, ensure file protection is properly applied
+            if currentRecordingMode == .secure, let fileURL = currentAudioFileURL {
+                validateSecureFileProtection(at: fileURL)
+            }
+            
             isRecording = false
             
             let audioFileURL = currentAudioFileURL
             currentAudioFileURL = nil
             recordingStartTime = nil
+            currentRecordingMode = .standard
             
             print("Stopped audio recording")
             return audioFileURL
@@ -148,44 +187,11 @@ class AudioRecordingManager: ObservableObject {
     /// Configures the audio session for recording with iPad-specific optimizations
     /// Handles device-specific audio configuration and provides robust fallbacks
     private func setupAudioSession() {
-        do {
-            let session = AVAudioSession.sharedInstance()
-            
-            // Check if session is already active before trying to deactivate
-            if session.isOtherAudioPlaying {
-                print("Other audio is playing, will configure without deactivation")
-            } else {
-                // Only deactivate if not already inactive
-                if session.category != .playAndRecord {
-                    try session.setActive(false, options: .notifyOthersOnDeactivation)
-                }
-            }
-            
-            #if targetEnvironment(simulator)
-            // Use simpler configuration for simulator
-            try session.setCategory(.playAndRecord, mode: .default, options: [])
-            #else
-            // Device-specific configuration with iPad optimizations
-            let options: AVAudioSession.CategoryOptions = [.defaultToSpeaker, .allowBluetooth]
-            
-            // Try measurement mode first for better speech recognition
-            do {
-                try session.setCategory(.playAndRecord, mode: .measurement, options: options)
-                print("Audio session configured with measurement mode")
-            } catch {
-                print("Measurement mode failed, trying default mode: \(error)")
-                // Fallback to default mode if measurement fails
-                try session.setCategory(.playAndRecord, mode: .default, options: options)
-                print("Audio session configured with default mode")
-            }
-            #endif
-            
-            // Activate session with proper options
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-            print("Audio session configured for recording")
-            
-        } catch {
-            print("Error setting up audio session: \(error)")
+        // Concurrency: Called from a synchronous initializer, so we must block until configuration completes
+        // to avoid a race where recording begins before the audio session is ready.
+        let success = AudioSessionManager.shared.configureForRecordingSync()
+        guard success else {
+            print("Warning: Failed to configure audio session for recording via manager")
             // Try a simpler configuration as fallback
             do {
                 let session = AVAudioSession.sharedInstance()
@@ -196,6 +202,7 @@ class AudioRecordingManager: ObservableObject {
             } catch {
                 print("Failed to configure audio session even with fallback: \(error)")
             }
+            return
         }
     }
     #else
@@ -205,7 +212,7 @@ class AudioRecordingManager: ObservableObject {
     }
     #endif
     
-    private func setupAudioEngine() throws {
+    private func setupAudioEngine(mode: RecordingMode, sessionId: String?) throws {
         audioEngine = AVAudioEngine()
         
         guard let inputNode = audioEngine?.inputNode else {
@@ -231,7 +238,13 @@ class AudioRecordingManager: ObservableObject {
         
         // Create audio file for recording
         let fileName = "recording_\(formattedTimestamp()).m4a"
-        let audioFileURL = documentsDirectory.appendingPathComponent(fileName)
+        let audioFileURL: URL
+        
+        if mode == .secure {
+            audioFileURL = CacheManager.shared.getSecureFileURL(fileName: fileName, sessionId: sessionId)
+        } else {
+            audioFileURL = documentsDirectory.appendingPathComponent(fileName)
+        }
         
         do {
             audioFile = try AVAudioFile(
@@ -250,6 +263,20 @@ class AudioRecordingManager: ObservableObject {
                 commonFormat: .pcmFormatFloat32,
                 interleaved: false
             )
+        }
+        
+        // For secure recordings, apply complete file protection immediately
+        if mode == .secure {
+            do {
+                try FileManager.default.setAttributes(
+                    [.protectionKey: FileProtectionType.complete],
+                    ofItemAtPath: audioFileURL.path
+                )
+                print("Applied complete file protection to: \(audioFileURL.lastPathComponent)")
+            } catch {
+                print("Warning: Failed to apply file protection to audio file: \(error)")
+                // Continue recording even if protection fails, but log the issue
+            }
         }
         
         currentAudioFileURL = audioFileURL
@@ -410,6 +437,19 @@ class AudioRecordingManager: ObservableObject {
             return String(format: "%d:%02d:%02d", hours, minutes, seconds)
         } else {
             return String(format: "%02d:%02d", minutes, seconds)
+        }
+    }
+    
+    // MARK: - Secure File Protection
+    
+    private func validateSecureFileProtection(at url: URL) {
+        do {
+            try CacheManager.shared.validateFileProtection(at: url)
+            print("Secure file protection validated: \(url.lastPathComponent)")
+        } catch {
+            print("Error validating secure file protection: \(error)")
+            // Optionally, you might want to delete the file if protection fails
+            // try? FileManager.default.removeItem(at: url)
         }
     }
 }

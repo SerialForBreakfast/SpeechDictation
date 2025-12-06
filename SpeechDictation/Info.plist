@@ -10,6 +10,12 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Speech Dictation uses the camera to provide live object detection and scene description for accessibility and content creation features.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Speech Dictation uses the microphone to convert your speech to text with real-time transcription.</string>
+	<string>Speech Dictation uses the microphone to convert your speech to text with real-time transcription and secure private recording.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Speech Dictation uses Face ID to securely protect your private recordings and ensure only you can access sensitive transcribed content.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 </dict>
 </plist>

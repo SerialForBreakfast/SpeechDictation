@@ -46,6 +46,9 @@ extension SpeechRecognizer {
         }
         
         request.shouldReportPartialResults = true
+        // SECURITY: Enforce on-device recognition for privacy and security
+        // This ensures all speech processing happens locally on the device
+        request.requiresOnDeviceRecognition = true
         
         // Store session start time for timing calculations
         let sessionStartTime = Date()
