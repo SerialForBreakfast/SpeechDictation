@@ -12,7 +12,8 @@ import AVFoundation
 struct SecurePlaybackView: View {
     let session: SecureRecordingSession
     @StateObject private var playbackManager = AudioPlaybackManager.shared
-    @StateObject private var cacheManager = CacheManager.shared
+    // Removed StateObject wrapper since CacheManager is not ObservableObject
+    private var cacheManager = CacheManager.shared
     @State private var segments: [TranscriptionSegment] = []
     @State private var audioURL: URL?
     @State private var isSliderEditing = false
