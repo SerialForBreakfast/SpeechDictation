@@ -161,7 +161,7 @@ struct SecurePlaybackView: View {
                     audioFileURL: audioURL,
                     segments: payload.segments,
                     totalDuration: session.duration,
-                    wordCount: 0 
+                    wordCount: payload.segments.reduce(0) { $0 + $1.text.components(separatedBy: " ").count }
                 )
                 
                 playbackManager.loadAudioForPlayback(audioURL: audioURL, session: audioSession)
