@@ -10,7 +10,7 @@ import Speech
 
 /// Represents a single transcribed segment with precise timing information
 struct TranscriptionSegment: Codable, Identifiable {
-    let id = UUID()
+    var id = UUID()
     let text: String
     let startTime: TimeInterval
     let endTime: TimeInterval
@@ -52,7 +52,7 @@ struct TranscriptionSegment: Codable, Identifiable {
 
 /// Represents a complete audio recording session with timing data
 struct AudioRecordingSession: Codable, Identifiable {
-    let id = UUID()
+    var id = UUID()
     let sessionId: String
     let startTime: Date
     let endTime: Date?
