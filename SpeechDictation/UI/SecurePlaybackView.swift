@@ -18,6 +18,10 @@ struct SecurePlaybackView: View {
     @State private var audioURL: URL?
     @State private var isSliderEditing = false
     
+    init(session: SecureRecordingSession) {
+        self.session = session
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             // Transcript View
