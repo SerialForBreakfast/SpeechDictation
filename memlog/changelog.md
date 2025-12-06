@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **GitHub PR Summary Workflow Crash** - Resolved `SyntaxError: Identifier 'context' has already been declared` in `actions/github-script`
+  - Removed redundant `require('@actions/github')` destructuring inside `.github/workflows/pr-summary.yml` so the script uses the `context` object that GitHub already injects
+  - Change applies to both the summary-comment and auto-label steps, restoring the automation run
 - **Secure Recording Transcript Stability** - Fixed missing live transcription during secure recordings and resolved JSON serialization crash when stopping
   - **Live Transcript Mirroring**: `SecureRecordingManager` now mirrors its `SpeechRecognizer` output through `liveTranscript`, and `SpeechRecognizerViewModel` listens to that publisher so the main transcript view updates while secure recording is active
   - **Accurate Timing Finalization**: Secure recordings now stop transcription with `stopTranscribingWithTiming`, ensuring the timing session closes and metadata is committed before persistence

@@ -22,8 +22,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { context } = require('@actions/github');
-            
             // Get PR details
             const pr = context.payload.pull_request;
             const prNumber = pr.number;
@@ -85,7 +83,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { context } = require('@actions/github');
             const pr = context.payload.pull_request;
             
             // Get files changed
