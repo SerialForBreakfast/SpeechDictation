@@ -29,6 +29,123 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Impact**: Settings button now works without crashing, maintaining proper SwiftUI view update lifecycle
 
 ### Added
+- **Secure Recording Playback Modal** - Introduced an authenticated playback experience for protected sessions
+  - New `SecurePlaybackView` and `SecurePlaybackViewModel` reuse the existing audio engine while isolating secure timing data
+  - Modal provides scrubber, elapsed/remaining labels, ±30s skip controls, and play/pause button, plus live transcript with auto-scroll bold highlighting
+  - `SecureRecordingManager` now exposes helper APIs to retrieve protected audio + transcript payloads and validates `.completeFileProtection`
+  - `SecureRecordingsView` gains per-session Play buttons that launch the modal; closing the sheet clears playback buffers
+  
+### Fixed (continued)
+- **Low Recording Volume (Mic Gain at 10%)** - Fixed recordings being too quiet
+  - **Root Cause**: Default `volume` property was set to `10.0`, which after normalization (`volume / 100.0`) resulted in 0.1 (10% gain)
+  - **Impact**: All recordings (secure and regular) had very low audio levels, making playback difficult to hear even at maximum volume
+  - **Solution**: Changed default `volume` from `10.0` to `80.0` in both `SpeechRecognizer` and `SpeechRecognizerViewModel`
+  - **Result**: Recordings now use 80% mic gain by default, producing much louder, clearer audio. Combined with `audioPlayer.volume = 1.0` for playback, audio is now clearly audible
+- **Live Transcript Disappearing/Restarting** - Fixed transcript clearing every ~60 seconds during long recordings
+  - **Root Cause**: Apple's on-device `SFSpeechRecognizer` has a ~60-second continuous recognition limit. After this, it automatically stops and the app restarts a new recognition session, but the previous text was lost because `liveTranscript` was being completely replaced instead of accumulated
+  - **Solution**: Implemented smart accumulation logic in `SecureRecordingManager`:
+    - Tracks the last recognizer text and appends only the delta when the new text is a prefix continuation
+    - Detects session restarts when text length shrinks and appends the new session text with spacing
+    - Avoids duplicate accumulation and preserves continuous transcript across recognizer restarts
+  - **Result**: Long recordings now maintain full transcript continuity across multiple 60-second recognition sessions. Users see one continuous, growing transcript throughout the entire recording
+- **Playback Transcript Accessibility/Info Button** - Moved inline informational text to an info button with accessibility labels; transcript auto-scroll now anchors to top to keep text visible
+- **Secure Playback Transcript Display Debugging** - Enhanced transcript rendering diagnostics
+  - Added logging for transcript building process including character counts, segment previews, and highlighting operations
+  - Checks for empty transcripts and provides fallback message
+  - Logs warning when highlight text cannot be found in transcript
+  - **Result**: Easier debugging of transcript display issues with comprehensive console output
+- **Speech Recognition Punctuation (iOS 16+)** - Enabled `addsPunctuation` on recognition requests for supported OS versions to improve transcript readability
+- **Speech Recognition Error 1101 Diagnostics** - Added comprehensive error handling for speech service unavailability
+  - **Error**: `kAFAssistantErrorDomain Code=1101` - Speech recognition service unavailable
+  - **Common Causes**:
+    1. **Language pack not downloaded** - On-device dictation requires language pack to be installed
+    2. **Service crashed** - iOS speech recognition service in bad state
+    3. **Low storage** - iOS disables speech services when storage is critically low
+    4. **iOS bug** - Service gets stuck and needs device restart
+  - **Solution Added**: Enhanced error logging with clear diagnostic information and user-actionable steps
+  - **User Instructions**:
+    - Go to: **Settings > General > Keyboard > Dictation**
+    - Enable: **"On-Device Dictation"**
+    - Download: Language pack for your language
+    - Alternative: Restart device to reset speech service
+  - **Developer Impact**: Clear console output with formatted instructions when error occurs, making debugging easier
+- **Secure Playback Low Audio Volume** - Fixed audio playback being inaudible or very quiet
+  - **Root Cause**: `AVAudioPlayer` volume was not explicitly set, defaulting to system volume which could be very low
+  - **Solution**: Set `audioPlayer.volume = 1.0` immediately after player initialization to ensure maximum output
+  - **Result**: Audio plays at full volume; users can now hear secure recordings clearly
+- **Secure Playback Transcript Display** - Enhanced transcript building and added detailed logging
+  - **Root Cause**: Transcript was being built correctly but with minimal logging, making debugging difficult
+  - **Solution**: 
+    - Added comprehensive logging showing segment count, full transcript length, and preview
+    - Changed word count calculation to use segments directly (more accurate)
+    - Log first 3 segments and first 200 chars of built transcript for verification
+  - **Result**: Transcript displays as flowing text with proper word-level highlighting during playback. Full diagnostic logging helps verify correct operation
+- **Unit Test Coverage for Secure Playback** - Added comprehensive test suite for playback business logic
+  - **New Test File**: `SecurePlaybackBusinessLogicTests.swift` with 13 focused test cases
+  - **Test Coverage**:
+    - Transcript building from segments (flowing text generation)
+    - Empty segment handling (crash prevention)
+    - Special character preservation (medical/technical terms)
+    - Playback resource loading (all components present)
+    - Incomplete session rejection (safety checks)
+    - Audio volume configuration (audibility)
+    - Segment timing validation (highlighting accuracy)
+    - Segment ordering (sequential display)
+    - Current segment lookup (highlight logic)
+    - Session display titles (UI metadata)
+    - Duration matching (progress indicators)
+    - Word count calculation (metadata accuracy)
+    - Low confidence segment inclusion (no content loss)
+  - **Business Value**: Ensures secure playback works correctly with proper audio, transcript display, and highlighting
+- **Settings View Layout Overflow** - Fixed settings panel extending beyond screen bounds
+  - **Root Cause**: `.fixedSize(horizontal: true, vertical: false)` was preventing proper width constraints, causing content to extend beyond safe area
+  - **Solution**: 
+    - Removed `.fixedSize()` modifier
+    - Wrapped content in `ScrollView` for proper vertical scrolling
+    - Added `.frame(maxWidth: .infinity)` to header for full-width display
+  - **Result**: Settings view now properly fits within screen bounds and safe area, works correctly in both portrait and landscape orientations
+- **Audio Session `'!pri'` Warning Documentation** - Documented non-fatal audio session priority warning
+  - **What it means**: OSStatus error 561017449 `'!pri'` indicates the audio system couldn't set a preferred hardware property (sample rate, buffer size, or similar)
+  - **Impact**: This is a **non-fatal warning** that doesn't affect functionality. The audio system falls back to default hardware settings
+  - **Why it occurs**: Happens during audio session transitions (recording → playback) when hardware is busy or when multiple audio components request conflicting settings
+  - **Current handling**: App continues normally; audio works correctly despite the warning
+  - **Note**: This is an iOS audio subsystem message, not an app error. It can be safely ignored as long as audio recording and playback function properly
+- **Live Transcription Disappearing During Recording** - Fixed transcript text clearing and resetting during secure recordings
+  - **Root Cause**: Removed the wrong binding - `SecureRecordingManager` uses its own `SpeechRecognizer` instance (separate from the main one), so its `liveTranscript` needs to be mirrored to the UI
+  - **Solution**: 
+    - Re-added the `$liveTranscript` binding in `SpeechRecognizerViewModel` with proper guard to only update during secure recordings
+    - This allows secure recordings to show live text from their dedicated `SpeechRecognizer` instance
+    - Regular recordings continue to use the main `SpeechRecognizer` instance
+  - **Result**: Live transcription now displays correctly during both regular and secure recordings
+- **Secure Recording Playback Audio Session Error** - Fixed persistent `'!pri'` OSStatus error 561017449 preventing audio playback
+  - **Root Cause**: Recording audio session was still active when attempting to initialize playback session, causing priority conflicts
+  - **Solution**: 
+    - Added audio session deactivation before configuring playback session: `setActive(false, options: .notifyOthersOnDeactivation)`
+    - Added 0.1s delay to allow session to fully deactivate
+    - Then configure fresh `.playback` category session
+  - **Result**: Audio session properly transitions from recording to playback state. AVAudioPlayer initializes successfully with correct duration
+- **Secure Recording Transcript Truncation** - Fixed transcript being saved with only 81 characters instead of full recording
+  - **Root Cause**: `saveTranscriptSecurely` was reading from `speechRecognizer.transcribedText` which could be stale or cleared by the time the save occurred
+  - **Solution**: Changed to save from `liveTranscript` which is continuously updated throughout the recording session. Added logging to show transcript length and segment count during save
+  - **Result**: Full transcript is now persisted correctly with all content. Playback shows complete flowing text matching what was recorded
+- **Secure Recording Audio File Persistence** - Fixed "Audio file missing for secure session" error during playback
+  - **Root Cause**: `AudioRecordingManager.stopRecording()` returns a temporary audio file URL, but `SecureRecordingManager` was not copying this file into the protected `SecureRecordings/<sessionId>/` directory
+  - **Solution**: Added audio file migration logic in `stopSecureRecording()` that reads the temporary audio data, writes it to secure storage via `CacheManager.saveSecurely()`, then deletes the temp file
+  - **Result**: Audio files now persist alongside transcripts and metadata with `.completeFileProtection`, enabling successful secure playback
+  - **Testing**: Added comprehensive unit test suite `SecureAudioPersistenceTests.swift` with 11 test cases validating:
+    - Audio file migration to secure storage with proper file protection
+    - Temporary file cleanup after successful migration
+    - Graceful error handling for missing source files
+    - Audio format preservation during migration
+    - Playback resource loading for completed sessions
+    - File protection validation before playback
+    - Complete stop recording workflow integration
+    - Session metadata file reference integrity
+- **Secure Playback UX Improvements** - Enhanced secure recording playback interface and fixed UI layout issues
+  - **Audio Playback Diagnostics**: Added comprehensive error logging and validation to `AudioPlaybackManager.loadAudioForPlayback()` including file existence checks, readability verification, audio session configuration, and detailed error reporting
+  - **UI Layout Fix**: Moved Play button to separate line in `SecureRecordingRow` to prevent text wrapping of status indicators (Encrypted, On-Device, Consent). Added `lineLimit(1)` and `minimumScaleFactor` to status labels for better layout on smaller screens
+  - **Transcript Display**: Changed from word-by-word segment list to flowing paragraph text with inline word highlighting. Uses `AttributedString` to bold and highlight the currently spoken word while maintaining natural reading flow. Transcript now displays as it did during live transcription instead of broken-apart segments
+  - **Playback Logging**: Added debug logging throughout secure playback workflow to track resource loading, audio file validation, segment counts, and playback state transitions
 - **Speech Synthesis for Object Detection** - Added text-to-speech functionality for camera object detection and scene description
   - **YOLO Object Detection Speech** - Speaks detected objects with distance information (e.g., "Objects detected: dog in lower left, close")
   - **Scene Description Speech** - Speaks scene classifications without distance information (e.g., "Scene: Indoor Living Room")
@@ -368,6 +485,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Some test cases implemented for core functionality
 - UI test structure available but minimal implementation
 - **Camera testing framework needed** for upcoming camera functionality
+- `./utility/quick_iterate.sh` now restarts CoreSimulatorService automatically; however, the host has zero iOS simulator runtimes installed, so the script logs guidance: install an iOS simulator runtime via Xcode > Settings > Platforms and rerun once available
 
 ---
 

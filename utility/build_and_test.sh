@@ -167,8 +167,14 @@ trap 'handle_error $LINENO' ERR
 select_simulator() {
     log "INFO" "Selecting best available simulator..." >&2
     
+    local simctl_output
+    if ! simctl_output=$(xcrun simctl list devices available 2>/dev/null); then
+        restart_coresimulator_service
+        simctl_output=$(xcrun simctl list devices available 2>/dev/null || true)
+    fi
+    
     # Always write awk output to a file and read from it
-    xcrun simctl list devices available | awk '
+    echo "$simctl_output" | awk '
         BEGIN { current_ios=""; best_ios=""; }
         /^-- iOS [0-9.]+ --/ {
             line = $0;
@@ -248,6 +254,30 @@ create_fresh_simulator() {
         log "ERROR" "Failed to create simulator with type $device_type and runtime $runtime_id" >&2
         return 1
     fi
+}
+
+ensure_simulator_runtime_available() {
+    local available_runtime
+    available_runtime=$(xcrun simctl list runtimes 2>/dev/null | grep -E "iOS [0-9.]+ \(" | grep -vi "unavailable" || true)
+    
+    if [[ -n "$available_runtime" ]]; then
+        return 0
+    fi
+    
+    log "WARN" "No available iOS simulator runtimes detected. Attempting to download the latest runtime..."
+    
+    {
+        echo "Xcode needs to download an iOS Simulator runtime."
+        echo "Open Xcode > Settings > Platforms and install at least one iOS simulator runtime."
+        echo "Once installed, re-run this script."
+    } >> "$REPORT_FILE"
+    exit 1
+}
+
+restart_coresimulator_service() {
+    log "WARN" "CoreSimulatorService appears unresponsive. Attempting to restart it..." >&2
+    killall -9 "com.apple.CoreSimulator.CoreSimulatorService" >/dev/null 2>&1 || true
+    sleep 2
 }
 
 # Fast simulator status check

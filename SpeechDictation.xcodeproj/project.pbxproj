@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		181C4C6BED7E47AAA4642AA3 /* SecureRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 181C4C6BED7E47AAA4642AA4 /* SecureRecordingTests.swift */; };
+		181C4C6BED7E47AAA4642AA5 /* SecureAudioPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 181C4C6BED7E47AAA4642AA6 /* SecureAudioPersistenceTests.swift */; };
+		181C4C6BED7E47AAA4642AA7 /* SecurePlaybackBusinessLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 181C4C6BED7E47AAA4642AA8 /* SecurePlaybackBusinessLogicTests.swift */; };
 		4420D05F2C2E4E2500263CF6 /* WaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4420D05E2C2E4E2500263CF6 /* WaveformView.swift */; };
 		4420D0612C2F6A8C00263CF6 /* CacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4420D0602C2F6A8C00263CF6 /* CacheManager.swift */; };
 		443B0CA32E2366BD00D292B9 /* LiveCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0C9F2E2366BD00D292B9 /* LiveCameraView.swift */; };
@@ -25,6 +27,7 @@
 		443B0CB92E236A4C00D292B9 /* TimingData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CB72E236A4C00D292B9 /* TimingData.swift */; };
 		443B0CBA2E236A4C00D292B9 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CB62E236A4C00D292B9 /* Theme.swift */; };
 		443B0CBD2E236A7D00D292B9 /* YOLOv3Tiny.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CBB2E236A7D00D292B9 /* YOLOv3Tiny.mlmodel */; };
+		44B427782EE4B2DD00934762 /* SecurePlaybackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44B427772EE4B2DD00934762 /* SecurePlaybackView.swift */; };
 		44CE0E822C3096880060C2FF /* SpeechRecognizer+Authorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CE0E812C30967D0060C2FF /* SpeechRecognizer+Authorization.swift */; };
 		44CE0E842C30977B0060C2FF /* SpeechRecognizer+config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CE0E832C30977B0060C2FF /* SpeechRecognizer+config.swift */; };
 		44CE0E862C30986E0060C2FF /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CE0E852C30986E0060C2FF /* DownloadManager.swift */; };
@@ -80,6 +83,8 @@
 
 /* Begin PBXFileReference section */
 		181C4C6BED7E47AAA4642AA4 /* SecureRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureRecordingTests.swift; sourceTree = "<group>"; };
+		181C4C6BED7E47AAA4642AA6 /* SecureAudioPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureAudioPersistenceTests.swift; sourceTree = "<group>"; };
+		181C4C6BED7E47AAA4642AA8 /* SecurePlaybackBusinessLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurePlaybackBusinessLogicTests.swift; sourceTree = "<group>"; };
 		4420D05E2C2E4E2500263CF6 /* WaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformView.swift; sourceTree = "<group>"; };
 		4420D0602C2F6A8C00263CF6 /* CacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheManager.swift; sourceTree = "<group>"; };
 		443B0C9D2E2366BD00D292B9 /* CameraSceneDescriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSceneDescriptionView.swift; sourceTree = "<group>"; };
@@ -97,6 +102,7 @@
 		443B0CB62E236A4C00D292B9 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		443B0CB72E236A4C00D292B9 /* TimingData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimingData.swift; sourceTree = "<group>"; };
 		443B0CBB2E236A7D00D292B9 /* YOLOv3Tiny.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Tiny.mlmodel; sourceTree = "<group>"; };
+		44B427772EE4B2DD00934762 /* SecurePlaybackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurePlaybackView.swift; sourceTree = "<group>"; };
 		44CE0E812C30967D0060C2FF /* SpeechRecognizer+Authorization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpeechRecognizer+Authorization.swift"; sourceTree = "<group>"; };
 		44CE0E832C30977B0060C2FF /* SpeechRecognizer+config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpeechRecognizer+config.swift"; sourceTree = "<group>"; };
 		44CE0E852C30986E0060C2FF /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
@@ -220,6 +226,7 @@
 				44F6EBCB2C31BB2200BBF2F3 /* NativeStyleShareView.swift */,
 				44EA2BFE2C4884B500F76CFC /* SettingsView.swift */,
 				83AFD655C028498D8E6ADE20 /* SecureRecordingsView.swift */,
+				44B427772EE4B2DD00934762 /* SecurePlaybackView.swift */,
 				4420D05E2C2E4E2500263CF6 /* WaveformView.swift */,
 				4500001A2C60000000AAA111 /* VUMeterView.swift */,
 				4500003A2C60005000AAA113 /* TextSizeSettingView.swift */,
@@ -298,6 +305,8 @@
 			children = (
 				44E6EBE52C2B99D500BBF2F3 /* SpeechDictationTests.swift */,
 				181C4C6BED7E47AAA4642AA4 /* SecureRecordingTests.swift */,
+				181C4C6BED7E47AAA4642AA6 /* SecureAudioPersistenceTests.swift */,
+				181C4C6BED7E47AAA4642AA8 /* SecurePlaybackBusinessLogicTests.swift */,
 				CE446A7C990C4714AC59E6C2 /* SecureRecordingBusinessLogicTests.swift */,
 			);
 			path = SpeechDictationTests;
@@ -460,6 +469,7 @@
 				44CE0E862C30986E0060C2FF /* DownloadManager.swift in Sources */,
 				44E6EC002C2B9A7000BBF2F3 /* SpeechRecognizer.swift in Sources */,
 				4420D05F2C2E4E2500263CF6 /* WaveformView.swift in Sources */,
+				44B427782EE4B2DD00934762 /* SecurePlaybackView.swift in Sources */,
 				4500001B2C60000000AAA112 /* VUMeterView.swift in Sources */,
 				4500003B2C60005000AAA114 /* TextSizeSettingView.swift in Sources */,
 				4500003D2C60005000AAA115 /* ThemeSettingView.swift in Sources */,
@@ -496,6 +506,8 @@
 			files = (
 				44E6EBE62C2B99D500BBF2F3 /* SpeechDictationTests.swift in Sources */,
 				181C4C6BED7E47AAA4642AA3 /* SecureRecordingTests.swift in Sources */,
+				181C4C6BED7E47AAA4642AA5 /* SecureAudioPersistenceTests.swift in Sources */,
+				181C4C6BED7E47AAA4642AA7 /* SecurePlaybackBusinessLogicTests.swift in Sources */,
 				CE446A7C990C4714AC59E6C1 /* SecureRecordingBusinessLogicTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

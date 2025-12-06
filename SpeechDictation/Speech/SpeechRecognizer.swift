@@ -7,7 +7,7 @@ class SpeechRecognizer: ObservableObject {
     @Published private(set) var audioSamples: [Float] = []
     /// Live peak audio level (0.0 – 1.0) updated for each incoming buffer. Used for VU meter.
     @Published private(set) var currentLevel: Float = 0.0
-    @Published var volume: Float = 10.0 {
+    @Published var volume: Float = 80.0 {
         didSet {
             adjustVolume()
         }
@@ -55,6 +55,9 @@ class SpeechRecognizer: ObservableObject {
         }
         
         request.shouldReportPartialResults = true
+        if #available(iOS 16.0, *) {
+            request.addsPunctuation = true
+        }
         // SECURITY: Enforce on-device recognition for privacy and security
         // This ensures all speech processing happens locally on the device
         request.requiresOnDeviceRecognition = true

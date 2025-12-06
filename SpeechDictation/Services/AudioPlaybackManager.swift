@@ -38,20 +38,73 @@ class AudioPlaybackManager: NSObject, ObservableObject { // Inherit NSObject for
     ///   - audioURL: URL to the audio file
     ///   - session: Audio recording session with timing data
     func loadAudioForPlayback(audioURL: URL, session: AudioRecordingSession) {
+        print("AudioPlaybackManager: Attempting to load audio from: \(audioURL.path)")
+        print("AudioPlaybackManager: File exists: \(FileManager.default.fileExists(atPath: audioURL.path))")
+        
+        // Verify file is readable
+        guard FileManager.default.isReadableFile(atPath: audioURL.path) else {
+            print("ERROR: Audio file is not readable at: \(audioURL.path)")
+            return
+        }
+        
+        // Verify it's an audio file by checking extension
+        let fileExtension = audioURL.pathExtension.lowercased()
+        print("AudioPlaybackManager: File extension: \(fileExtension)")
+        
         do {
+            // Deactivate any existing audio session first to clear state
+            let audioSession = AVAudioSession.sharedInstance()
+            do {
+                try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+                print("AudioPlaybackManager: Deactivated previous audio session")
+            } catch {
+                print("AudioPlaybackManager: No previous session to deactivate (this is ok): \(error)")
+            }
+            
+            // Small delay to let the audio session fully deactivate
+            Thread.sleep(forTimeInterval: 0.1)
+            
+            // Configure fresh audio session for playback only
+            do {
+                try audioSession.setCategory(.playback, mode: .default)
+                try audioSession.setActive(true)
+                print("AudioPlaybackManager: Audio session configured for playback")
+            } catch {
+                print("ERROR: Failed to configure audio session: \(error)")
+                throw error
+            }
+            
+            // Create audio player
             audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
             audioPlayer?.delegate = self
+            audioPlayer?.volume = 1.0 // Set to maximum volume
             audioPlayer?.prepareToPlay()
+            
+            guard let player = audioPlayer else {
+                print("ERROR: AVAudioPlayer was nil after initialization")
+                return
+            }
+            
+            print("AudioPlaybackManager: Audio player created successfully")
+            print("AudioPlaybackManager: Audio duration: \(player.duration)s")
+            print("AudioPlaybackManager: Audio channels: \(player.numberOfChannels)")
+            print("AudioPlaybackManager: Player volume: \(player.volume)")
+            print("AudioPlaybackManager: Is playing: \(player.isPlaying)")
             
             currentSession = session
             segments = session.segments
-            duration = audioPlayer?.duration ?? 0
+            duration = player.duration
             currentTime = 0
             currentSegment = nil
             
-            print("Loaded audio for playback: \(audioURL.lastPathComponent)")
+            print("AudioPlaybackManager: Loaded audio with \(session.segments.count) segments")
         } catch {
-            print("Error loading audio for playback: \(error)")
+            print("ERROR: Failed to load audio for playback: \(error)")
+            print("ERROR: Error details: \(error.localizedDescription)")
+            if let nsError = error as NSError? {
+                print("ERROR: Domain: \(nsError.domain), Code: \(nsError.code)")
+                print("ERROR: UserInfo: \(nsError.userInfo)")
+            }
         }
     }
     

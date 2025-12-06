@@ -23,6 +23,7 @@ struct SecureRecordingsView: View {
     @State private var newRecordingTitle = ""
     @State private var showingDeleteConfirmation = false
     @State private var sessionToDelete: SecureRecordingSession?
+    @State private var playbackSession: SecureRecordingSession?
     @State private var isAuthenticating = false
     @Environment(\.colorScheme) private var colorScheme
     
@@ -96,6 +97,9 @@ struct SecureRecordingsView: View {
             if let session = sessionToDelete {
                 Text("Are you sure you want to permanently delete \"\(session.displayTitle)\"? This action cannot be undone.")
             }
+        }
+        .sheet(item: $playbackSession) { session in
+            SecurePlaybackView(session: session)
         }
     }
     
@@ -190,7 +194,8 @@ struct SecureRecordingsView: View {
                 ForEach(secureRecordingManager.getAllSessions()) { session in
                     SecureRecordingRow(
                         session: session,
-                        onDelete: { sessionToDelete = session; showingDeleteConfirmation = true }
+                        onDelete: { sessionToDelete = session; showingDeleteConfirmation = true },
+                        onPlay: { playbackSession = session }
                     )
                 }
             }
@@ -330,6 +335,7 @@ struct SecureRecordingsView: View {
 struct SecureRecordingRow: View {
     let session: SecureRecordingSession
     let onDelete: () -> Void
+    let onPlay: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
@@ -365,22 +371,41 @@ struct SecureRecordingRow: View {
             }
             
             // Status indicators
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 Label("Encrypted", systemImage: "lock.shield.fill")
                     .font(.caption2)
                     .foregroundColor(.green)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 
                 Label("On-Device", systemImage: "iphone")
                     .font(.caption2)
                     .foregroundColor(.blue)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 
                 if session.hasConsent {
                     Label("Consent", systemImage: "checkmark.circle.fill")
                         .font(.caption2)
                         .foregroundColor(.green)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
-                
-                Spacer()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Play button on separate line for better layout
+            if session.isCompleted {
+                Button(action: onPlay) {
+                    HStack {
+                        Image(systemName: "play.circle.fill")
+                        Text("Play")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.accentColor)
+                .accessibilityLabel("Play secure recording")
             }
         }
         .padding(.vertical, 4)

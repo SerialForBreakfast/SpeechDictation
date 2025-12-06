@@ -46,6 +46,9 @@ extension SpeechRecognizer {
         }
         
         request.shouldReportPartialResults = true
+        if #available(iOS 16.0, *) {
+            request.addsPunctuation = true
+        }
         // SECURITY: Enforce on-device recognition for privacy and security
         // This ensures all speech processing happens locally on the device
         request.requiresOnDeviceRecognition = true
@@ -63,7 +66,31 @@ extension SpeechRecognizer {
             }
             
             if let error = error {
+                let nsError = error as NSError
                 print("Recognition error: \(error)")
+                print("Error domain: \(nsError.domain), code: \(nsError.code)")
+                
+                // Specific handling for error 1101 (service unavailable)
+                if nsError.domain == "kAFAssistantErrorDomain" && nsError.code == 1101 {
+                    DispatchQueue.main.async {
+                        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                        print("CRITICAL: Speech recognition service unavailable (Error 1101)")
+                        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                        print("Possible causes:")
+                        print("  1. Language pack not downloaded for on-device recognition")
+                        print("  2. Speech recognition service crashed")
+                        print("  3. Low device storage (service disabled)")
+                        print("  4. iOS bug - device needs restart")
+                        print("")
+                        print("Solution:")
+                        print("  Go to: Settings > General > Keyboard > Dictation")
+                        print("  Enable: 'On-Device Dictation'")
+                        print("  Download: Language pack for your language")
+                        print("  Alternative: Restart device to reset speech service")
+                        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                    }
+                }
+                
                 self?.stopTranscribingWithTiming()
             }
         }

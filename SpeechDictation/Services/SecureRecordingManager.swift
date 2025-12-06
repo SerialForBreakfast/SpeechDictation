@@ -66,6 +66,7 @@ final class SecureRecordingManager: ObservableObject {
     private let speechRecognizer = SpeechRecognizer()
     private let cacheManager = CacheManager.shared
     private let timingDataManager = TimingDataManager.shared
+    private let audioPlaybackManager = AudioPlaybackManager.shared
     
     private var recordingTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -130,12 +131,17 @@ final class SecureRecordingManager: ObservableObject {
             currentSession = nil
             return nil
         }
-        liveTranscript = ""
+        
+        // Subscribe to timing segments and build transcript deterministically (no duplication)
         transcriptCancellable?.cancel()
-        transcriptCancellable = speechRecognizer.$transcribedText
+        liveTranscript = ""
+        transcriptCancellable = timingDataManager.$segments
             .receive(on: RunLoop.main)
-            .sink { [weak self] latestText in
-                self?.liveTranscript = latestText
+            .sink { [weak self] segments in
+                guard let self = self else { return }
+                // Build a clean transcript from finalized segments
+                let cleaned = self.buildNormalizedTranscript(from: segments)
+                self.liveTranscript = cleaned
             }
         
         // Start on-device transcription with timing
@@ -166,6 +172,27 @@ final class SecureRecordingManager: ObservableObject {
         
         // Stop audio recording
         let finalAudioURL = audioRecordingManager.stopRecording()
+        
+        // Move audio file to secure storage
+        if let audioURL = finalAudioURL, FileManager.default.fileExists(atPath: audioURL.path) {
+            do {
+                let audioData = try Data(contentsOf: audioURL)
+                let secureAudioURL = cacheManager.saveSecurely(
+                    data: audioData,
+                    forKey: session.audioFileName,
+                    subdirectory: session.id
+                )
+                if secureAudioURL != nil {
+                    // Delete temporary audio file
+                    try? FileManager.default.removeItem(at: audioURL)
+                    print("Moved audio file to secure storage: \(session.audioFileName)")
+                } else {
+                    print("Failed to save audio file to secure storage")
+                }
+            } catch {
+                print("Error moving audio file to secure storage: \(error)")
+            }
+        }
         
         // Stop transcription
         speechRecognizer.stopTranscribingWithTiming(audioFileURL: finalAudioURL)
@@ -290,8 +317,13 @@ final class SecureRecordingManager: ObservableObject {
     }
     
     private func saveTranscriptSecurely(sessionId: String) async {
-        let transcript = speechRecognizer.transcribedText
+        // Final cleanup: rebuild transcript from timing segments to remove duplicates/empties
+        let segments = timingDataManager.currentSession?.segments ?? []
+        let transcript = buildNormalizedTranscript(from: segments)
         let currentSession = timingDataManager.currentSession
+        
+        print("Saving transcript: \(transcript.count) chars, \(currentSession?.segments.count ?? 0) segments")
+        
         let payload = SecureTranscriptPayload(
             transcript: transcript,
             segments: currentSession?.segments ?? [],
@@ -319,6 +351,18 @@ final class SecureRecordingManager: ObservableObject {
         } catch {
             print("Error serializing transcript data: \(error)")
         }
+    }
+
+    /// Builds a normalized transcript string from timing segments:
+    /// - trims whitespace/newlines per segment
+    /// - filters out empty segments
+    /// - joins with single spaces
+    private func buildNormalizedTranscript(from segments: [TranscriptionSegment]) -> String {
+        return segments
+            .map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     private func saveSessionMetadata(_ session: SecureRecordingSession) async {
@@ -358,6 +402,60 @@ final class SecureRecordingManager: ObservableObject {
         allSessions = sessions.sorted { $0.startTime > $1.startTime }
         print("Loaded \(allSessions.count) secure recording sessions")
     }
+    
+    /// Loads secure playback resources for a completed session.
+    /// - Parameter session: Secure session to load.
+    /// - Returns: Audio URL + transcript payload if available.
+    nonisolated func loadPlaybackResources(for session: SecureRecordingSession) -> SecurePlaybackResources? {
+        guard session.isCompleted else {
+            print("Secure playback unavailable for incomplete session: \(session.id)")
+            return nil
+        }
+        
+        let audioURL = cacheManager.getSecureFileURL(
+            fileName: session.audioFileName,
+            sessionId: session.id
+        )
+        
+        guard FileManager.default.fileExists(atPath: audioURL.path) else {
+            print("Audio file missing for secure session: \(session.id)")
+            return nil
+        }
+        
+        do {
+            try cacheManager.validateFileProtection(at: audioURL)
+        } catch {
+            print("Audio file missing complete protection for session \(session.id): \(error)")
+            return nil
+        }
+        
+        guard let transcriptData = cacheManager.retrieveSecureData(
+            forKey: session.transcriptFileName,
+            subdirectory: session.id
+        ) else {
+            print("Transcript missing for secure session: \(session.id)")
+            return nil
+        }
+        
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let payload = try decoder.decode(SecureTranscriptPayload.self, from: transcriptData)
+            return SecurePlaybackResources(
+                audioURL: audioURL,
+                transcript: payload.transcript,
+                segments: payload.segments
+            )
+        } catch {
+            print("Failed to decode secure transcript for session \(session.id): \(error)")
+            return nil
+        }
+    }
+    
+    /// Stops any in-progress secure playback to clear audio buffers.
+    func stopSecurePlayback() {
+        audioPlaybackManager.stop()
+    }
 }
 
 // MARK: - Extensions
@@ -372,4 +470,11 @@ private struct SecureTranscriptPayload: Codable {
     let transcript: String
     let segments: [TranscriptionSegment]
     let savedAt: Date
+}
+
+/// Bundle of secure playback resources needed by the modal player.
+struct SecurePlaybackResources {
+    let audioURL: URL
+    let transcript: String
+    let segments: [TranscriptionSegment]
 }

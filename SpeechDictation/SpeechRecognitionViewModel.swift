@@ -26,7 +26,7 @@ class SpeechRecognizerViewModel: ObservableObject {
     @Published var theme: Theme = .light
     @Published var isRecording: Bool = false
     @Published var isSecureRecordingActive: Bool = false
-    @Published var volume: Float = 10.0
+    @Published var volume: Float = 80.0
     @Published var currentLevel: Float = 0.0
     @Published var showSettings: Bool = false
     
@@ -125,7 +125,7 @@ class SpeechRecognizerViewModel: ObservableObject {
             .assign(to: \.currentSegment, on: self)
             .store(in: &cancellables)
         
-        // Mirror secure recording state and transcript output
+        // Mirror secure recording state
         self.secureRecordingManager.$isRecording
             .receive(on: RunLoop.main)
             .sink { [weak self] isRecording in
@@ -133,12 +133,17 @@ class SpeechRecognizerViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
+        // Mirror secure recording live transcript
+        // SecureRecordingManager uses its own SpeechRecognizer instance,
+        // so we need to display its liveTranscript during secure recordings
         self.secureRecordingManager.$liveTranscript
             .receive(on: RunLoop.main)
             .sink { [weak self] secureText in
                 guard let self = self else { return }
-                guard self.secureRecordingManager.isRecording else { return }
-                self.transcribedText = secureText
+                // Only update transcribedText when secure recording is active
+                if self.secureRecordingManager.isRecording {
+                    self.transcribedText = secureText
+                }
             }
             .store(in: &cancellables)
 
@@ -237,10 +242,6 @@ class SpeechRecognizerViewModel: ObservableObject {
             return
         }
 
-        transcribedText = ""
-        segments.removeAll()
-        currentSession = nil
-        recordingDuration = 0
         print("Started secure recording workflow")
     }
 

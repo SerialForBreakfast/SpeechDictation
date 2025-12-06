@@ -218,6 +218,9 @@ The SpeechDictation app has evolved from a basic speech recognition tool into a 
 - **Export Manager Hang Fix**: Fixed UI hangs during export by moving heavy file generation to background queues and properly managing UIDocumentPicker delegates
 - **Build Script Improvements**: Added `--simulator-id` flag for specific simulator targeting and made unit tests opt-in via `--enableUnitTests`
 - **SRT Format Enhancement**: Improved SRT export to group segments by duration (2s max), character count (42 max), or sentence boundaries for better readability
+- **Secure Recording Transcript Stability**: Mirrored secure transcription output into `SpeechRecognizerViewModel`, reset session buffers when workflows begin, and switched secure transcript persistence to a strongly typed payload encoded with `JSONEncoder`, fixing the live-text gap and `Invalid type in JSON write (__SwiftValue)` crash
+- **GitHub PR Summary Workflow Crash**: Updated `.github/workflows/pr-summary.yml` to rely on the built-in `context` provided by `actions/github-script`, eliminating duplicate imports that previously caused `Identifier 'context' has already been declared` failures during PR automation
+- **Secure Playback Modal**: Added `SecurePlaybackView`/ViewModel with scrubber, ±30s skip, elapsed/remaining labels, and transcript highlighting tied to timing segments; `SecureRecordingsView` now offers per-session Play buttons that launch the modal, and `SecureRecordingManager` exposes validated helpers for loading protected audio + transcripts
 
 ---
 
@@ -240,6 +243,7 @@ As a user, I want to record and transcribe private conversations (such as medica
 - [ ] All UI changes (record, pause, stop, view, delete) are integrated in `ContentView.swift`.
 - [ ] Face ID/passcode lock for accessing recordings is implemented using `LocalAuthentication`.
 - [ ] Optional iCloud sync toggle is added to `SettingsView.swift`.
+- [ ] Secure playback modal provides authenticated review experience with transcript highlighting.
 
 **Subtasks:**
 - [ ] Implement consent banner and onboarding flow in `SettingsView.swift` or dedicated `OnboardingView.swift`.
@@ -251,6 +255,11 @@ As a user, I want to record and transcribe private conversations (such as medica
 - [ ] Add toggles in `SettingsView.swift` for Face ID access lock and iCloud backup (optional).
 - [ ] Update `SpeechRecognizer+Authorization.swift` to handle and guide permission requests gracefully.
 - [ ] Create unit tests in `SpeechDictationTests.swift` to validate secure storage, permissions, and transcription accuracy.
+- [ ] Implement secure playback modal with scrubber, elapsed/remaining labels, 30s skip buttons, and play/pause controls backed by `AudioPlaybackManager`.
+- [ ] Display full transcript inside the modal with bold + auto-scroll highlighting tied to timing data (SRT segments) from secure storage.
+- [ ] Ensure modal close button clears playback buffers, stops audio, and returns users to `SecureRecordingsView`.
+- [ ] Provide per-session “Play” entry points within the secure recordings list, only for completed sessions.
+- [ ] Keep playback data within protected directories; never expose secure audio/transcripts to non-secure workflows.
 
 **Technical References:**
 - Storage Path: `FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)`
