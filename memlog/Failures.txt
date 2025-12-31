@@ -1,0 +1,41 @@
+Failures.txt
+Last updated: 2025-12-31
+
+Purpose
+- Track known failure modes and current mitigations. Update status after device validation.
+
+================================================================================
+Failure 001 - Event stream subscription order
+================================================================================
+Status
+- Mitigated in code; needs device validation.
+
+Notes
+- Subscribe to engine.eventStream() before engine.start() so early events are not dropped.
+
+================================================================================
+Failure 002 - Timestamp resets on recognition restarts
+================================================================================
+Status
+- Mitigated in LegacyTranscriptionEngine; needs long-session validation.
+
+Notes
+- Session-level offsets are applied to timing segments to keep timestamps monotonic.
+
+================================================================================
+Failure 003 - External audio buffer routing
+================================================================================
+Status
+- Mitigated in SpeechRecognizer; verify secure recording live transcript.
+
+Notes
+- External buffers must be forwarded to the active transcription engine.
+
+================================================================================
+Failure 004 - Camera model load failure fallback
+================================================================================
+Status
+- Known gap.
+
+Notes
+- CameraExperienceView falls back to CameraErrorView; retry logic is TODO.

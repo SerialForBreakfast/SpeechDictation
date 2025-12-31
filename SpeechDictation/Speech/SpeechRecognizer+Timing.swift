@@ -13,153 +13,148 @@ import AVFoundation
 /// Integrates with TimingDataManager to store transcription segments with precise timing information
 extension SpeechRecognizer {
     
-    /// Starts transcription with timing data capture
+    /// Starts transcription with timing data capture using transcription engine
     /// - Parameters:
     ///   - sessionId: Optional session ID for timing data management
     ///   - isExternalAudioSource: Whether audio is provided externally (e.g. from recording manager)
+    ///
+    /// Concurrency: Engine handles async/await, this method coordinates timing session and event stream
     func startTranscribingWithTiming(sessionId: String? = nil, isExternalAudioSource: Bool = false) {
-        print("Starting transcription with timing data... (external source: \(isExternalAudioSource))")
+        print("Starting transcription with timing data via engine... (external source: \(isExternalAudioSource))")
+
+        // Reset per-session accumulation so each new timing transcription starts clean.
+        resetTranscriptAccumulationForNewSession(isExternalAudioSource: isExternalAudioSource)
+        timingSessionStartDate = Date()
+        timingRecognitionTimeOffset = 0
         
         // Start timing data session on main queue since TimingDataManager is @MainActor
         DispatchQueue.main.async {
             _ = TimingDataManager.shared.startSession(sessionId: sessionId)
         }
         
-        // If a monitoring engine is already running, stop and reset it before starting a
-        // fresh engine configured for speech recognition.
-        if let engine = audioEngine {
-            engine.stop()
-            engine.inputNode.removeTap(onBus: 0)
-        }
+        // Stop any existing engine and event stream (awaited inside the new task to avoid overlap).
+        let previousEngine = transcriptionEngine
+        let previousTask = engineEventTask
 
-        if !isExternalAudioSource {
-            audioEngine = AVAudioEngine()
-        }
-        
-        speechRecognizer = SFSpeechRecognizer()
-        request = SFSpeechAudioBufferRecognitionRequest()
-        
-        guard let request = request else {
-            print("Unable to create a SFSpeechAudioBufferRecognitionRequest object")
-            return
-        }
-        
-        request.shouldReportPartialResults = true
-        // SECURITY: Enforce on-device recognition for privacy and security
-        // This ensures all speech processing happens locally on the device
-        request.requiresOnDeviceRecognition = true
-        
-        // Store session start time for timing calculations
-        let sessionStartTime = Date()
-        
-        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
-            if let result = result {
+        // Create appropriate engine via factory
+        let configuration = TranscriptionEngineConfiguration.default
+        let engine = TranscriptionEngineFactory.createEngine(
+            configuration: configuration,
+            isExternalAudioSource: isExternalAudioSource
+        )
+        transcriptionEngine = engine
+
+        // Start engine and subscribe to its event stream with timing support
+        engineEventTask = Task { [weak self] in
+            do {
+                // Ensure any prior engine has fully stopped before starting a new one.
+                await previousEngine?.stop()
+                if let previousTask {
+                    await previousTask.value
+                }
+
+                // CRITICAL: Subscribe to event stream FIRST so continuation is set before start() yields events
+                // Otherwise, events emitted during start() are lost (continuation is nil).
+                let eventStream = engine.eventStream()
+                
+                // Start the engine (now continuation is ready to receive events)
+                try await engine.start(audioBufferHandler: { [weak self] buffer in
+                    // Forward audio buffers to level monitoring if needed
+                    self?.processAudioForLevelMonitoring(buffer)
+                })
+
+                // Process events from the stream
+                for await event in eventStream {
+                    await self?.handleEngineEventWithTiming(event)
+                }
+            } catch {
+                print("Engine start failed: \(error)")
                 DispatchQueue.main.async {
-                    self?.transcribedText = result.bestTranscription.formattedString
-                    self?.processTimingData(result: result, sessionStartTime: sessionStartTime)
-                    print("Transcription result with timing: \(result.bestTranscription.formattedString)")
+                    self?.transcribedText = "Error: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+    
+    /// Handles events from the transcription engine with timing data support
+    ///
+    /// Concurrency: Called from background task, marshals UI updates to main thread
+    private func handleEngineEventWithTiming(_ event: TranscriptionEvent) async {
+        switch event {
+        case .partial(let text, let segments):
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, !text.isEmpty else { return }
+                self.transcribedText = text
+                
+                // Merge partial segments for real-time UI updates
+                if !segments.isEmpty {
+                    TimingDataManager.shared.mergeSegments(segments)
                 }
             }
             
-            if let error = error {
-                print("Recognition error: \(error)")
-                self?.stopTranscribingWithTiming()
+        case .final(let text, let segments):
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, !text.isEmpty else { return }
+                
+                print("[UI-FINAL] Setting text=\(text.count)ch, merging \(segments.count) segs")
+                self.transcribedText = text
+                
+                // Merge final segments
+                if !segments.isEmpty {
+                    let before = TimingDataManager.shared.segments.count
+                    TimingDataManager.shared.mergeSegments(segments)
+                    let after = TimingDataManager.shared.segments.count
+                    print("[UI-FINAL] Segments: \(before) → \(after) (Δ\(after - before))")
+                }
+            }
+            
+        case .audioLevel(let level):
+            DispatchQueue.main.async { [weak self] in
+                self?.currentLevel = level
+            }
+            
+        case .error(let error):
+            print("[ENGINE-ERROR] \(error)")
+            
+        case .stateChange(let state):
+            if state == .restarting || state == .running {
+                print("[ENGINE-STATE] \(state)")
             }
         }
-        
-        if isExternalAudioSource {
-            print("Using external audio source for timing transcription - skipping local engine setup")
-            return
-        }
-        
-        guard let inputNode = audioEngine?.inputNode else {
-            print("Audio engine has no input node")
-            return
-        }
-        
-        // Use the native format from the input node for better compatibility
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-        
-        // Validate the format is supported before installing tap
-        guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else {
-            print("Invalid recording format detected: sampleRate=\(recordingFormat.sampleRate), channels=\(recordingFormat.channelCount)")
-            print("Skipping audio tap installation due to invalid format")
-            return
-        }
-        
-        inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, time in
-            self.processAudioBuffer(buffer: buffer)
-            self.request?.append(buffer)
-        }
-        
-        audioEngine?.prepare()
-        
-        do {
-            try audioEngine?.start()
-            print("Audio engine started with timing data capture")
-        } catch {
-            print("Audio engine failed to start: \(error)")
-            #if targetEnvironment(simulator)
-            // In simulator, we'll continue anyway for testing even if audio engine fails
-            print("Continuing in simulator despite audio engine failure")
-            #else
-            // On real device, this is a critical error
-            print("Audio engine failure on real device")
-            #endif
-        }
-        
-        adjustVolume()
     }
     
     /// Stops transcription and saves timing data
     /// - Parameter audioFileURL: URL to the recorded audio file (optional)
+    ///
+    /// Concurrency: Coordinates async engine stop with sync timing data finalization
     func stopTranscribingWithTiming(audioFileURL: URL? = nil) {
-        print("Stopping transcription with timing data...")
-        
-        audioEngine?.stop()
-        audioEngine?.inputNode.removeTap(onBus: 0)
-        
-        request?.endAudio()
-        recognitionTask?.cancel()
-        
-        request = nil
-        recognitionTask = nil
-        audioEngine = nil
-        
-        // Stop timing data session on main queue since TimingDataManager is @MainActor
-        DispatchQueue.main.async {
-            TimingDataManager.shared.stopSession(audioFileURL: audioFileURL)
+        Task {
+            await stopTranscribingWithTimingAndWait(audioFileURL: audioFileURL)
         }
     }
-    
-    /// Processes timing data from speech recognition results
-    /// - Parameters:
-    ///   - result: Speech recognition result
-    ///   - sessionStartTime: Start time of the recording session
-    private func processTimingData(result: SFSpeechRecognitionResult, sessionStartTime: Date) {
-        let transcription = result.bestTranscription
-        var newSegments: [TranscriptionSegment] = []
-        
-        // Process each segment with timing information
-        for segment in transcription.segments {
-            let startTime = segment.timestamp
-            let endTime = segment.timestamp + segment.duration
-            let confidence = segment.confidence
-            let text = segment.substring
-            
-            let newSegment = TranscriptionSegment(
-                text: text,
-                startTime: startTime,
-                endTime: endTime,
-                confidence: confidence
-            )
-            newSegments.append(newSegment)
+
+    /// Stops transcription with timing and awaits engine shutdown before returning.
+    ///
+    /// Concurrency: This must await `engine.stop()` so final transcript/segments are delivered
+    /// through the event stream before we persist them.
+    func stopTranscribingWithTimingAndWait(audioFileURL: URL? = nil) async {
+        print("Stopping transcription with timing data via engine...")
+
+        markRecognitionStopping()
+
+        // Stop the engine first so the event task can drain the final events.
+        let engine = transcriptionEngine
+        await engine?.stop()
+
+        // Wait for the event task to finish consuming final events.
+        if let task = engineEventTask {
+            await task.value
         }
-        
-        // Update timing data manager on main queue since TimingDataManager is @MainActor
-        DispatchQueue.main.async {
-            TimingDataManager.shared.updateSegments(newSegments)
+
+        await MainActor.run {
+            self.engineEventTask = nil
+            self.transcriptionEngine = nil
+            TimingDataManager.shared.stopSession(audioFileURL: audioFileURL)
         }
     }
     

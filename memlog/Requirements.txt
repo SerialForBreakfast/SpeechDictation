@@ -1,0 +1,112 @@
+# SpeechDictation iOS - Core Requirements
+
+## REQ-001: Continuous Transcript Accumulation
+Status: Needs device validation
+
+Requirement
+- Transcript text must accumulate over time and remain scrollable across pauses.
+
+Acceptance Criteria
+- Speech before and after pauses remains visible in a single transcript.
+
+Test Strategy
+- Device test with multiple pauses in a single session.
+
+---
+
+## REQ-002: On-Device Recognition
+Status: Implemented (code)
+
+Requirement
+- Speech recognition must run on-device with `requiresOnDeviceRecognition = true`.
+
+Test Strategy
+- Airplane mode transcription session.
+
+---
+
+## REQ-003: Timing Data and Export Formats
+Status: Implemented (code)
+
+Requirement
+- Export text (plain, RTF, Markdown) and timing formats (SRT, VTT, TTML, JSON).
+
+Test Strategy
+- Unit tests in `SpeechDictationTests/` and manual export validation.
+
+---
+
+## REQ-004: Recording Preservation
+Status: Implemented (code)
+
+Requirement
+- Audio recordings persist even if transcription restarts or fails.
+
+Test Strategy
+- Record, stop, and verify audio file duration matches session length.
+
+---
+
+## REQ-005: Secure Recording Protection
+Status: Implemented (code), needs verification
+
+Requirement
+- Secure recordings should use iOS file protection and optional Face ID.
+
+Test Strategy
+- Manual verification on device and review of file protection attributes.
+
+---
+
+## REQ-006: Camera Experience (Experimental)
+Status: Implemented (code), needs validation
+
+Requirement
+- Provide permission-gated camera experience with object detection and scene description.
+
+Test Strategy
+- Manual run on device; validate permission flow and overlays.
+
+---
+
+## REQ-007: Accessibility Support
+Status: Implemented (code)
+
+Requirement
+- Dynamic type, VoiceOver labels, and accessible controls across primary flows.
+
+Test Strategy
+- VoiceOver walk-through of EntryView, ContentView, and CameraExperienceView.
+
+---
+
+## REQ-008: Build and Test Automation
+Status: Implemented (scripts)
+
+Requirement
+- Provide repeatable build and test scripts.
+
+Test Strategy
+- Run `./utility/build_and_test.sh` and review logs in `build/`.
+
+---
+
+## REQ-009: Model Management
+Status: Implemented (code), needs validation
+
+Requirement
+- Maintain a model catalog and dynamic model loader for camera features.
+
+Test Strategy
+- Load embedded models and verify ModelManagementView listings.
+
+---
+
+## REQ-010: Long-Form Session Stability
+Status: Needs device validation
+
+Requirement
+- Support long sessions (30+ minutes) without transcript loss or timing regressions.
+
+Test Strategy
+- Device recording with pauses and export verification.

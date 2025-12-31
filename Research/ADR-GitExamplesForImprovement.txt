@@ -1,0 +1,337 @@
+ADR-GitExamplesForImprovement.txt
+Generated: 2025-12-13 (America/Los_Angeles)
+
+Title
+ADR: Using Reference Git Repos to Improve Long-Form Transcription (iOS 26 SpeechAnalyzer / SpeechTranscriber)
+
+Status
+Proposed
+
+Context
+SpeechDictation needs to reliably record and transcribe real-world sessions (e.g., 60 minutes) with long pauses and intermittent dialogue. We have a recurring bug where accumulated transcript text can be lost or overwritten over long periods, especially when transcription is restarted and segments overlap in time (classic failure: merging segments using only startTime, then overwriting earlier segments when timestamps reset).
+
+Apple’s iOS 26 Speech framework introduces SpeechAnalyzer + SpeechTranscriber, designed explicitly for long-form and distant audio (lectures/meetings/conversations). citeturn0search4turn0search9
+
+We will compare three “primary” reference repos that use these APIs:
+- AuralKit (Swift Package wrapper): https://github.com/rryam/AuralKit citeturn0view0
+- SpeechAnalyzerSample (sample app): https://github.com/yuichirokato/SpeechAnalyzerSample citeturn0search0
+- swift-scribe (full example app): https://github.com/FluidInference/swift-scribe citeturn0view1
+
+We also treat Apple documentation and WWDC25 guidance as normative semantics:
+- SpeechAnalyzer docs: https://developer.apple.com/documentation/speech/speechanalyzer citeturn0search9
+- SpeechTranscriber docs: https://developer.apple.com/documentation/speech/speechtranscriber citeturn0search8
+- audioTimeRange attribute option: https://developer.apple.com/documentation/speech/speechtranscriber/resultattributeoption/audiotimerange citeturn0search3
+- WWDC25 session: “Bring advanced speech-to-text to your app with SpeechAnalyzer” https://developer.apple.com/videos/play/wwdc2025/277/ citeturn0search1turn0search4
+
+Decision Drivers
+- Must support 60-minute sessions with long pauses (no data loss, no duplicated transcript).
+- Must allow scrollback through the full transcript during recording.
+- Must be robust to interruptions / task restarts / audio engine restarts.
+- Must preserve time alignment to support playback highlighting and “jump to timestamp”.
+- Must remain testable (deterministic fixture modes for unit/integration tests).
+
+Non-Goals
+- This ADR does not decide speaker diarization or summarization.
+- This ADR does not mandate a single UI approach; it focuses on transcript pipeline + data model.
+
+================================================================================
+Option 0 (Baseline): Current “string accumulation + merge-by-startTime” approach
+================================================================================
+Observed risk: if transcription tasks restart and timestamps repeat (e.g., start again at 0), merge logic keyed by startTime can overwrite earlier segments. This matches the failure mode documented by our own tests (overlapping start times causes replacement).
+
+We will compare to known-good patterns in reference repos and Apple guidance.
+
+================================================================================
+Option 1: “Apple canonical pattern” (finalized segments + volatile overlay)
+================================================================================
+Apple’s WWDC25 guidance:
+- Volatile results are real-time guesses.
+- Finalized results are best guesses.
+- Display both (volatile styled differently), but do NOT permanently append volatile into the long-lived transcript.
+- On stop, cancel tasks and call finalize on the analyzer stream so any volatile results are finalized. citeturn0search1turn0search4
+
+Implication:
+- Our storage must be append-only for finalized segments (or replace-authoritative snapshots), while volatile stays separate.
+- This eliminates the most common duplication bug (“append partial, then append final”).
+
+================================================================================
+Primary Repo Review
+================================================================================
+
+For each primary repo (AuralKit, SpeechAnalyzerSample, swift-scribe), answer:
+
+1) Where do they store finalized vs volatile?
+2) Do they ever append volatile to the stored transcript?
+3) How do they ensure monotonic time ranges across restarts?
+4) Do they finalize on stop? How do they cancel tasks?
+5) Do they persist incrementally?
+6) How do they keep analyzers/transcribers alive (avoid deinit)?
+7) Do they use audioTimeRange attributes from AttributedString runs? If so, how?
+
+Important note about evidence:
+- Some repos’ READMEs are explicit about behavior; others require code inspection for definitive answers. Where the publicly visible readme/snippets do not prove behavior, I label it as “Needs code verification” and point to where to confirm.
+
+--------------------------------------------------------------------------------
+A) AuralKit — https://github.com/rryam/AuralKit
+--------------------------------------------------------------------------------
+Repo positioning
+AuralKit is a Swift wrapper around SpeechAnalyzer/SpeechTranscriber that includes microphone capture, buffer conversion, model downloads, and cancellation. It exposes a session-based interface (SpeechSession) and supports partial results and observability streams. citeturn0view0
+
+1) Finalized vs volatile storage
+- Evidence: README indicates support for “Partial Results” and streaming transcription via session interface. citeturn0view0
+- Needs code verification: how it internally distinguishes volatile vs finalized (likely via reporting options). Look for:
+  - SpeechSession / result handling in Sources/
+  - any “volatileTranscript” or “finalized” buffers
+
+2) Append volatile to stored transcript?
+- Needs code verification. README doesn’t explicitly state the accumulation strategy.
+- Expectation (based on Apple semantics + “partial results” feature): it should not persist volatile into the final store, but verify in code.
+
+3) Monotonic time ranges across restarts?
+- Needs code verification.
+- What to look for: whether AuralKit uses audioTimeRange and stores absolute CMTime/TimeInterval ranges, or relies on session offsets.
+- If it includes VAD and restarts tasks, it must avoid time collisions or it risks our same bug. The VAD feature makes this especially relevant. citeturn0view0
+
+4) Finalize on stop / cancellation
+- Evidence: README states it handles “cancellation on your behalf.” citeturn0view0
+- Needs code verification: confirm it calls analyzer finalize to flush volatile (Apple recommends finalize). citeturn0search1turn0search4
+
+5) Incremental persistence
+- As a library, it likely leaves persistence to the app layer. Needs verification.
+
+6) Keep analyzer/transcriber alive
+- Evidence: session abstraction suggests it owns the analyzer/transcriber lifecycle; library design often prevents accidental deinit.
+- Needs code verification: confirm strong references are held for the duration of transcription.
+
+7) audioTimeRange usage
+- Needs code verification: look for SpeechTranscriber initialization with attributeOptions containing .audioTimeRange. Apple doc: .audioTimeRange includes time-code attributes in AttributedString. citeturn0search3turn0search8
+
+How AuralKit can help us
+- It likely demonstrates a “session wrapper” that reduces lifecycle mistakes (deinit, cancellation ordering).
+- Its VAD support is a strong reference for “long pause” behavior: avoid stopping transcription (or restart safely). citeturn0view0
+
+--------------------------------------------------------------------------------
+B) SpeechAnalyzerSample — https://github.com/yuichirokato/SpeechAnalyzerSample
+--------------------------------------------------------------------------------
+Repo positioning
+This is a sample app that compares SpeechAnalyzer (iOS 26+) with legacy SFSpeechRecognizer. It explicitly separates “confirmed text” and “temporary text” for SpeechAnalyzer. citeturn0search0
+
+1) Finalized vs volatile storage
+- Evidence: README states it distinguishes confirmed vs temporary text in the UI for SpeechAnalyzer. citeturn0search0
+- This aligns with Apple’s volatile/final split. citeturn0search1turn0search4
+
+2) Append volatile to stored transcript?
+- The intent is separation, so volatile should not be appended into the stored transcript. This is consistent with Apple’s guidance. citeturn0search1turn0search0
+- Code verification recommended: SpeechAnalyzerManager.swift likely contains the accumulation logic (repo structure is listed in README). citeturn0search0
+
+3) Monotonic time ranges across restarts
+- Evidence (indirect): A Japanese blog analyzing this repo shows SpeechTranscriber configured with attributeOptions: [.audioTimeRange]. citeturn0search1turn0search3
+- That enables time alignment per attributed run, which is the best foundation for monotonic ranges (but you still must handle restarts carefully).
+
+4) Finalize on stop / cancellation
+- Apple’s WWDC guidance: cancel tasks + finalize analyzer stream on stop so volatile results finalize. citeturn0search1turn0search4
+- Code verification needed: confirm stop path calls finalize (sample likely follows WWDC code-along).
+
+5) Incremental persistence
+- As a sample app, it likely does not persist much; focus is behavior and UI.
+
+6) Keep analyzer/transcriber alive
+- Usually done by storing them as properties on a manager (SpeechAnalyzerManager). README shows such a manager file exists. citeturn0search0
+
+7) audioTimeRange usage
+- Evidence: the asken.inc article shows SpeechTranscriber constructed with attributeOptions: [.audioTimeRange]. citeturn0search1turn0search3
+
+How SpeechAnalyzerSample can help us
+- Provides the cleanest minimal reference for the “final + volatile” state machine.
+- Shows model-availability and setup patterns (ensureModel, bestAvailableAudioFormat) and ties directly to long-form recording use cases. citeturn0search1turn0search4
+
+--------------------------------------------------------------------------------
+C) swift-scribe — https://github.com/FluidInference/swift-scribe
+--------------------------------------------------------------------------------
+Repo positioning
+Swift Scribe is a full example app for iOS 26/macOS 26+ that uses SpeechAnalyzer and SpeechTranscriber and positions itself as a real-world transcription/note-taking app. citeturn0view1turn0search5
+
+1) Finalized vs volatile storage
+- Needs code verification: README doesn’t explicitly name its buffers, but as a “real-time voice transcription” app it must manage “partial vs final” semantics somewhere.
+- For verification, inspect the “Scribe/” directory indicated by the repo file list. citeturn0search0turn0view1
+
+2) Append volatile to stored transcript?
+- Needs code verification.
+- For long-form reliability it should avoid persisting volatile; verify by locating where it updates its model/store.
+
+3) Monotonic time ranges across restarts
+- Needs code verification.
+- Look for:
+  - attributeOptions: [.audioTimeRange] in transcriber setup
+  - whether it stores the AttributedString runs with audio time ranges rather than converting to “startTime Double” without session context
+- Apple’s audioTimeRange attribute is designed to support this. citeturn0search3turn0search8
+
+4) Finalize on stop / cancellation
+- Needs code verification.
+- Should align with WWDC guidance: stop audio engine + stop transcriber + cancel tasks + analyzer finalize. citeturn0search1turn0search4
+
+5) Incremental persistence
+- Needs code verification.
+- As a note-taking app, it likely persists transcripts (or at least the final transcript) as you record; this is a key pattern we should adopt for 60-minute sessions.
+
+6) Keep analyzer/transcriber alive
+- Needs code verification.
+- Full app architectures often keep the transcriber in a long-lived view model/service to avoid deinit.
+
+7) audioTimeRange usage
+- Needs code verification (but very likely, given playback/highlighting needs).
+- Apple docs make it the canonical way to get timecode mapping in the transcript. citeturn0search3turn0search8
+
+How swift-scribe can help us
+- It is the closest to our product goal: “long-form transcription with scrollback and additional processing.”
+- It likely demonstrates how to keep UI responsive with long transcripts (segmented storage, incremental updates) and how to structure the app around long-lived recording sessions.
+
+================================================================================
+Cross-cutting improvements for SpeechDictation
+================================================================================
+
+These are the concrete changes recommended after comparing Apple’s intended semantics and what the reference repos emphasize.
+
+1) Adopt a “Final Segments + Volatile Overlay” transcript state machine (mandatory)
+- Store finalized transcript as append-only segments (or append-only attributed chunks).
+- Store volatile transcript separately (not persisted).
+- UI shows: finalized + volatile.
+- On receipt of a finalized result:
+  - append to finalized
+  - clear/replace volatile
+This directly follows WWDC guidance and prevents duplication and many “append partial” bugs. citeturn0search1turn0search4
+
+2) Replace merge-by-startTime with a stable identity strategy (fixes your known bug)
+Your current tests demonstrate that using only startTime for identity is unsafe when tasks restart and timestamps reset.
+
+Recommended:
+- Primary key: (recordingSessionID, runID) OR use attributed-run identity derived from audioTimeRange + text range.
+- Store segments as:
+  - id: UUID
+  - audioTimeRange: CMTimeRange (or TimeInterval range derived from it)
+  - text: String/AttributedString
+- Append-only policy:
+  - never “replace” earlier segments based on startTime alone.
+  - if a correction comes in, it should be represented as a replacement of the volatile overlay, not a rewrite of already-final segments.
+
+If you must merge:
+- Key on (absoluteStart, absoluteEnd, plus a monotonic session offset) and only replace if the new segment is explicitly marked as final for the same range.
+
+3) Make time monotonic across restarts using session offsets + audioTimeRange (strongly recommended)
+- Initialize SpeechTranscriber with attributeOptions: [.audioTimeRange]. citeturn0search3turn0search1
+- Convert CMTimeRange to an absolute session timeline.
+- If you restart the analyzer/transcriber:
+  - maintain sessionOffset = lastFinalEndTime
+  - shift new ranges by sessionOffset if the framework restarts at 0 (defensive)
+This avoids the “overlapping start times” failure entirely.
+
+4) Stop semantics: cancel tasks + finalize analyzer stream (mandatory for correctness)
+- On stop:
+  - stop audio engine
+  - cancel transcription tasks
+  - call finalize on the analyzer stream to flush volatile results into finalized results
+Apple calls this out explicitly. citeturn0search1turn0search4
+
+5) Ensure analyzer/transcriber lifetimes are explicit and testable
+- Use a dedicated service object (e.g., SpeechTranscriptionService) that holds strong references to:
+  - SpeechAnalyzer
+  - SpeechTranscriber
+  - input stream builder / AsyncStream continuation
+  - AVAudioEngine
+- Avoid “view owns transcriber” unless you can guarantee view lifetime (SwiftUI view rebuilds can cause accidental deinit).
+AuralKit’s “SpeechSession” wrapper suggests this shape. citeturn0view0
+
+6) Incremental persistence for long-form sessions (highly recommended)
+To safely handle 60 minutes:
+- Persist finalized segments periodically (e.g., every finalized segment) rather than only at the end.
+- Keep UI rendering incremental:
+  - store [TranscriptSegment] and render in a list (or chunked text) instead of constantly rebuilding one giant string.
+
+swift-scribe, as a note-taking app, is a strong reference to inspect for its persistence/chunking model (code verification needed). citeturn0view1turn0search5
+
+7) Long pauses: avoid restart loops; if you must restart, restart safely
+- Prefer “keep session alive” (audio engine continues, analyzer continues). SpeechAnalyzer is intended for long-form conversations. citeturn0search5turn0search4
+- If silence causes stoppage (e.g., audio route changes, interruptions, VAD):
+  - restart transcription using the same session store and monotonic offset
+  - never reset your storage identity keys
+
+AuralKit’s VAD/voice activation feature makes it a useful reference for handling long pauses intentionally (code verification needed). citeturn0view0
+
+================================================================================
+Recommended Decision
+================================================================================
+Adopt Option 1 + improvements:
+- Canonical final/volatile split.
+- Use audioTimeRange-enabled attributed runs for time alignment and stable storage.
+- Append-only finalized segment storage (no merge-by-startTime).
+- Strict stop semantics: cancel tasks + analyzer finalize.
+- Explicit long-lived service/actor to own analyzer/transcriber.
+- Incremental persistence + chunked UI rendering.
+
+This combination targets the two real-world failure classes we see:
+(1) duplication (partial appended then final appended),
+(2) data loss (overwriting earlier segments when tasks restart and timestamps collide).
+
+================================================================================
+Implementation Plan (high-level)
+================================================================================
+1) Data model
+- Create TranscriptSegment:
+  - id: UUID
+  - text: AttributedString (or String + attributes)
+  - audioTimeRange: CMTimeRange (or TimeInterval range derived from it)
+  - isFinal: Bool (final segments only persisted)
+- Create TranscriptState:
+  - finalized: [TranscriptSegment]
+  - volatile: TranscriptSegment? (not persisted)
+
+2) Service
+- SpeechTranscriptionService (actor recommended):
+  - owns SpeechAnalyzer, SpeechTranscriber, AVAudioEngine
+  - exposes AsyncStream<TranscriptStateUpdate>
+  - has start(), stop(), pause(), resume()
+  - stop() always cancels tasks + finalizes analyzer stream
+
+3) Result handling
+- On each SpeechTranscriber result:
+  - parse AttributedString runs (with audioTimeRange enabled)
+  - update volatile segment for non-final
+  - when final arrives: append final segments; clear volatile
+
+4) Restart handling
+- Maintain lastFinalEndTime (monotonic) and apply offset if needed.
+- Never merge by startTime only.
+
+5) Tests
+- Unit tests for:
+  - volatile/final state machine (no duplicates)
+  - restart/time-offset behavior (monotonic time ranges)
+- Integration tests:
+  - “fixture audio mode” file transcription deterministic checks
+  - UI tests that record (fixture), ensure scrollback contains early phrases after long pauses
+
+================================================================================
+Open Questions / Verification TODOs
+================================================================================
+To make this ADR fully “code-proven” against the repos:
+- Inspect AuralKit Sources/ to confirm:
+  - how it buffers volatile vs final
+  - whether it uses .audioTimeRange
+  - stop/cancel/finalize ordering
+- Inspect swift-scribe “Scribe/” to confirm:
+  - transcript persistence strategy
+  - chunking vs single-string UI updates
+  - stop/finalize behavior
+- Inspect SpeechAnalyzerSample’s SpeechAnalyzerManager.swift to confirm:
+  - state machine implementation (confirmed vs temporary)
+  - stop/finalize behavior
+
+References
+- AuralKit: https://github.com/rryam/AuralKit citeturn0view0
+- SpeechAnalyzerSample: https://github.com/yuichirokato/SpeechAnalyzerSample citeturn0search0
+- swift-scribe: https://github.com/FluidInference/swift-scribe citeturn0view1turn0search5
+- Apple WWDC25 session: https://developer.apple.com/videos/play/wwdc2025/277/ citeturn0search1turn0search4
+- audioTimeRange docs: https://developer.apple.com/documentation/speech/speechtranscriber/resultattributeoption/audiotimerange citeturn0search3
+- Apple SpeechTranscriber docs: https://developer.apple.com/documentation/speech/speechtranscriber citeturn0search8
+- Apple SpeechAnalyzer docs: https://developer.apple.com/documentation/speech/speechanalyzer citeturn0search9
+- asken.inc walkthrough w/ audioTimeRange + ensureModel: https://tech.asken.inc/entry/20251205 citeturn0search1

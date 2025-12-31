@@ -10,10 +10,10 @@ alwaysApply: false
   - If you make a change to a type, change the access level, change the async property, you must search for all uses of it and update their implementation across the entire repo.
   - If you make a change to anything async, you must provide a comment explaining its concurrency requirements and how its used.  You must examine how that change will affect its interactions with other components and make sure that the update doesn't break the current implementation in other areas of the code.
   - Use optionality when needed
-  - Be intentional with access levels
+  - Be intentional with access levels(don't use internal if it's default)
   - Consider mutablilty for let vs var, etc
   - Use descriptive class and variable names
-  - Don't add emojis to the codebase. It is annoying and unprofessional.
+  - Don't use emojis to the codebase or in conversation. It is annoying and unprofessional.
   - Maintain useful Unit tests, don't test basic math or array counting, just test the business logic of our code
   - Never skip/disable Unit tests to try to get the tests to pass.
   - Use Constructor Injection for DI, Determine if a protocol abstraction would help.
@@ -26,6 +26,9 @@ alwaysApply: false
  - Use grep and regex heavily to search, understand and change operations on multiple files instead of going one by one.
  - Create and maintain a /utility/ folder.  
  It should have a build_and_test.sh script 1.  Upon each run it outputs a new timestamped .txt document to the build folder summarizing all successes and errors/failures with relevant context 2. attempts to build the project, then runs the tests to ensure they pass. 
+ - Don't assume youve fixed anything until I verify.  You are FAR too confident with your edits, and update documentation prematurely causing false positives.  Only update upon human validation.
+ - Produce terse and effective logging.  Debounce duplicates.  Consider that console will be used for debugging with LLMs and consider how best to limit the length of this output.  Use OSLog, and properly assess how what level of verbosity is necessary, group items by features for selective logging.
+ - DO NOT MODIFY FILES OUTSIDE OF THE REPOSITORY.
 
 ConcurrencyGuidelines.md:
 	1.	Embrace Swift’s Structured Concurrency:
@@ -49,6 +52,6 @@ ConcurrencyGuidelines.md:
 	7.	Document and Test Concurrency Assumptions:
 	•	Provide clear documentation for concurrent sections of your code.
 	•	Write tests that specifically target race conditions, deadlocks, and proper cancellation handling.
-  8. Avoid @unchecked Sendable and @preconcurrency as code smell, and conform to best practices for all code in the repo.
+  8. Avoid nonisolated @unchecked Sendable and @preconcurrency as code smell, and conform to best practices for all code in the repo.
 
 - When you've read this, section output "RULES ARE READ AND RESPECTED JOE, NO GREEN M&Ms" and summarize these 11. Swift Specific requirements, to prove you've read and understand these rules.

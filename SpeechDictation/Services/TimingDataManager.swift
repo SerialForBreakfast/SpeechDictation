@@ -106,6 +106,58 @@ class TimingDataManager: ObservableObject {
         
         print("Updated segments: count=\(segments.count)")
     }
+
+    /// Merges segments into the current list without deleting previously-seen content.
+    ///
+    /// This is designed for live speech recognition where partial results may intermittently
+    /// omit earlier segments. We upsert by (rounded) `startTime` to keep a stable timeline while
+    /// still allowing the recognizer to revise previously emitted words.
+    ///
+    /// Concurrency: `@MainActor` because `segments` and `currentSession` are published and consumed by SwiftUI.
+    /// - Parameter newSegments: Latest set of segments from the speech recognizer.
+    @MainActor
+    func mergeSegments(_ newSegments: [TranscriptionSegment]) {
+        guard !newSegments.isEmpty else { return }
+
+        // Filter invalid segments (negative times or NaNs)
+        let validNewSegments = newSegments.filter {
+            $0.startTime >= 0 && $0.endTime >= 0 && !$0.startTime.isNaN && !$0.endTime.isNaN
+        }
+        guard !validNewSegments.isEmpty else { return }
+
+        func key(for segment: TranscriptionSegment) -> Int {
+            Int((segment.startTime * 1000).rounded())
+        }
+
+        var mergedByStartTime: [Int: TranscriptionSegment] = Dictionary(
+            uniqueKeysWithValues: segments.map { (key(for: $0), $0) }
+        )
+
+        for segment in validNewSegments {
+            // Deduplication: if we already have this exact segment (text + times), skip it.
+            // But if times match and text differs, we overwrite (it's a correction).
+            let k = key(for: segment)
+            if let existing = mergedByStartTime[k] {
+                // If it's effectively a duplicate, keep the existing one (or overwrite if identical - same result)
+                // But we want to allow *correction* (same time, new text).
+                // The tricky case is if we receive the *same* text again. We shouldn't duplicate it.
+                // Our map logic handles "same time replaces old", which is correct for corrections.
+                //
+                // What about *duplicates*? If we just assign, we replace.
+                // The only problem is if we have multiple segments mapping to the same key *in the input*.
+                // But `validNewSegments` is a list.
+                
+                // If it's an exact duplicate (text + start + end match), we don't need to do anything.
+                // If it's a correction (text differs, confidence higher/differs), we update.
+                mergedByStartTime[k] = segment
+            } else {
+                mergedByStartTime[k] = segment
+            }
+        }
+
+        let mergedSegments = mergedByStartTime.values.sorted { $0.startTime < $1.startTime }
+        updateSegments(mergedSegments)
+    }
     
     /// Gets the segment at a specific time position
     /// - Parameter time: Time in seconds from session start
@@ -114,6 +166,13 @@ class TimingDataManager: ObservableObject {
         return segments.first { segment in
             time >= segment.startTime && time <= segment.endTime
         }
+    }
+    
+    /// Clears all segments (for testing)
+    /// - Note: This is primarily for unit tests to reset state
+    @MainActor
+    func clearSegments() {
+        updateSegments([])
     }
     
     /// Gets all segments within a time range

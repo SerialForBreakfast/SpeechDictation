@@ -1,25 +1,25 @@
-# InfoPlist_PermissionsChecklist.md
+# Info.plist Permissions Checklist - Speech Dictation
 
-## Required Keys for App Store Submission (AI Ears)
-
-Ensure the following keys are added to your `Info.plist`:
+## Required Keys
 
 - `NSMicrophoneUsageDescription`
-  - **Value**: “AI Ears requires access to the microphone to record and transcribe conversations.”
+  - Value: "Speech Dictation uses the microphone to convert your speech to text with real-time transcription and secure private recording."
 
-- `NSFaceIDUsageDescription` (if using Face ID for secure access)
-  - **Value**: “Used to secure your private recordings from unauthorized access.”
+- `NSCameraUsageDescription`
+  - Value: "Speech Dictation uses the camera to provide live object detection and scene description for accessibility and content creation features."
 
-- `NSAppleMusicUsageDescription` (optional, only if you plan to analyze media)
-  - **Value**: “Used for analyzing or transcribing media content on-device.”
+- `NSFaceIDUsageDescription` (optional but enabled in the project)
+  - Value: "Speech Dictation uses Face ID to protect your private recordings and ensure only you can access sensitive transcribed content."
 
 - `UIBackgroundModes`
-  - **Value**: Include `audio` if supporting background recording.
+  - Include `audio` if background recording is supported.
 
-- `NSUserTrackingUsageDescription` — Should **not** be included unless advertising/tracking (we recommend avoiding this).
+## Networking and ATS
+
+- `NSAppTransportSecurity` currently allows arbitrary loads. Tighten this before release if model downloads or external requests can be restricted to HTTPS domains.
 
 ## App Store Metadata Recommendations
 
-- **Privacy Policy URL**: Host your `PrivacyPolicy.md` as an HTTPS-accessible page.
-- **App Description**: State “AI Ears records and transcribes conversations privately on-device with full user control and local storage.”
-- **Keywords**: Accessibility, Transcription, Private Recording, Deaf and Hard of Hearing, Speech to Text
+- Provide a hosted Privacy Policy URL.
+- Clearly state on-device speech recognition and local storage in the app description.
+- If camera features are optional, describe them as experimental and permission-gated.

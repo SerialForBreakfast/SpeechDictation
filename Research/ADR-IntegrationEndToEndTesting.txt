@@ -1,0 +1,210 @@
+ADR-IntegrationEndToEndTesting.txt
+Title: End-to-End Integration Testing for SpeechDictation (Transcription + Secure Recording + Playback)
+Status: Proposed
+Date: 2025-12-13
+Owners: Engineering
+
+Context
+We want automated, end-to-end “happy path” coverage for SpeechDictation that:
+1) feeds known audio into the app,
+2) verifies transcription output (including long pauses / intermittent dialog),
+3) verifies secure recording is stored correctly,
+4) verifies playback flows work, and
+5) remains stable enough to run in CI without constant flake.
+
+The core tension: XCUITest can drive UI, but iOS does not offer a supported, deterministic way for UI tests to “pipe an audio file into the microphone” on either Simulator or device. The Simulator can route to a host microphone, and simctl can grant permissions, but that still doesn’t solve deterministic microphone injection at scale.
+
+Decision Drivers
+- Reliability (CI-friendly; minimal flake)
+- Determinism (same transcript expectations across runs)
+- Coverage of critical user journeys (record → transcribe → scroll back → stop → replay)
+- Security validation (file protection + encryption path)
+- Maintainability (tests should be easy to update when UI evolves)
+- Separation of concerns (avoid “testing Apple’s recognizer”; test our logic/integration)
+
+What Xcode/XCUITest can and cannot do
+Supported / practical
+- Drive UI flows via accessibility identifiers and gestures (XCUITest).
+- Reset / manage permissions in tests:
+  - `XCUIApplication.resetAuthorizationStatus(for:)` (Xcode UI Testing API) can reset authorization state for specific resources. (Apple docs)
+- Pre-grant Simulator permissions in CI using simctl:
+  - WWDC20 shows `xcrun simctl privacy booted grant <service> <bundleId>` / revoke / reset for protected resources. (Apple video)
+- Use the Speech framework in deterministic ways if we control the audio source:
+  - File-based: `SFSpeechURLRecognitionRequest` transcribes a local audio file. (Apple docs)
+  - Buffer-based: `SFSpeechAudioBufferRecognitionRequest` can accept provided audio buffers (not necessarily microphone) if we implement feeding correctly. (Apple docs)
+- Force offline/on-device recognition to reduce network variability:
+  - `SFSpeechRecognitionRequest.requiresOnDeviceRecognition = true` when supported. (Apple docs)
+
+Not supported / unreliable
+- Fully deterministic “inject this WAV into the microphone” in a headless, CI-stable way on device.
+  - Third-party harnesses (e.g., Appium’s audio capture docs) explicitly note Apple does not provide APIs to directly retrieve/pipe the audio stream from a Simulator or device; they resort to host-side capture. This is a good proxy for the general limitation around audio I/O determinism in automation. (Appium docs)
+- Validating actual acoustic output during playback (what the speaker produced) from within XCTest.
+  - You can validate state transitions and that playback started/stopped, but not reliably validate the waveform that reached the DAC.
+
+We should treat “microphone hardware + OS speech recognizer accuracy” as an external dependency, and focus automation on our integration and persistence logic.
+
+Options Considered
+
+Option A — Pure UI End-to-End with real microphone capture (no test mode)
+Description
+- UI test launches app, taps Record, speaks/plays audio “into the room” (external device/speaker), then asserts transcript and playback.
+
+Pros
+- Tests the truly-real path: AVAudioSession/engine + mic capture + recognizer + UI.
+Cons
+- Not CI-viable: requires physical audio injection (speaker in the room), environment noise control, and still suffers recognition nondeterminism.
+- Extremely flaky across devices/OS versions/acoustic conditions.
+
+Decision
+- Do not adopt as automated CI coverage. Keep as a manual “smoke test script” only.
+
+Option B — UI End-to-End in “Fixture Audio Mode” (recommended)
+Description
+- Add a test-only runtime switch (launch argument / environment variable) that routes the app’s “audio input” and/or “transcription source” from a bundled fixture file instead of the microphone.
+- UI test still taps the same buttons and navigates the same UI, but the transcription engine consumes deterministic audio.
+
+Two implementation patterns:
+B1) File-based recognition request
+- Use `SFSpeechURLRecognitionRequest(url:)` to transcribe a known audio file fixture.
+- You still exercise transcript rendering, scrollback, session lifecycle, exports, etc.
+- You do NOT exercise microphone capture, but you can separately validate recording/encryption.
+
+B2) Buffer feeding (closer to live path)
+- Use `SFSpeechAudioBufferRecognitionRequest` and feed audio buffers produced by an `AVAudioFile` reader / `AVAudioPCMBuffer` chain.
+- This more closely matches the “streaming” behavior and can test long pauses and incremental updates.
+- Still does not test actual microphone hardware, but tests our streaming plumbing.
+
+Pros
+- CI-friendly and deterministic.
+- Exercises the UI end-to-end, including scrollback of a long transcript.
+- Lets us build fixture suites: “long pauses”, “interruptions”, “multiple speakers”, “quiet sections”, “intermittent dialog”.
+Cons
+- Does not test actual microphone capture latency/quality.
+- Speech recognition output can still vary slightly between OS versions, locales, punctuation settings. Requires robust assertions (normalization, fuzzy match).
+
+Decision
+- Adopt Option B as the primary “end-to-end” automation strategy.
+
+Option C — Non-UI integration tests with dependency injection (“engine tests”)
+Description
+- Keep UI tests thin.
+- Use XCTest integration tests (not XCUITest) to run the transcription pipeline directly:
+  - feed a known file,
+  - assert on stored segments,
+  - assert secure storage attributes and decryptability,
+  - assert export formats.
+
+Pros
+- Fast and extremely stable.
+- Great for validating security invariants and transcript segmentation logic.
+Cons
+- Misses UI wiring/regressions (buttons, navigation, scroll, playback UX).
+
+Decision
+- Adopt as a complementary layer, not a replacement for UI-level tests.
+
+Option D — Snapshot/screenshot tests only
+Pros
+- Easy and stable.
+Cons
+- Doesn’t validate transcription/recording behavior at all.
+
+Decision
+- Not sufficient alone.
+
+Decision
+Adopt a layered approach:
+1) Deterministic fixture-driven UI tests (Option B) for end-to-end app flows.
+2) Fast integration tests (Option C) for correctness + security invariants.
+3) A minimal manual device smoke test (Option A) for the true “mic in the wild” path.
+
+Implementation Plan (Concrete)
+
+1) Add a “Test Harness Mode” switch
+- Read from:
+  - `ProcessInfo.processInfo.arguments` (e.g. `-UITestMode 1`, `-UITestAudioFixture long_pause_01.m4a`)
+  - or env vars (e.g. `UITEST_MODE=1`).
+
+2) Route transcription input based on test mode
+- Production:
+  - `AVAudioEngine` mic tap → `SFSpeechAudioBufferRecognitionRequest`
+- UI Test mode:
+  - B1 (simpler): `SFSpeechURLRecognitionRequest` with a bundled fixture file URL.
+  - B2 (streaming): feed PCM buffers from `AVAudioFile` into `SFSpeechAudioBufferRecognitionRequest`.
+
+3) Make UI assertions robust (avoid brittleness)
+- Normalize transcript text:
+  - lowercased
+  - collapse whitespace
+  - strip punctuation (optional)
+- Assert “contains key phrases in order” rather than exact full string.
+- If you need stronger checks, compare word-level tokens and allow a small edit distance.
+
+4) Permissions and test stability
+- Simulator CI:
+  - Use `xcrun simctl privacy booted grant microphone <bundleId>`
+  - Also grant speech recognition if needed (service names vary by Xcode; validate via `xcrun simctl help privacy` in CI logs).
+  - WWDC20 demonstrates the workflow (grant/revoke/reset). (Apple video)
+- Device UI tests:
+  - Prefer `XCUIApplication.resetAuthorizationStatus(for:)` to control prompts. (Apple docs)
+  - Keep a fallback `addUIInterruptionMonitor` handler for unexpected system alerts.
+
+5) Secure recording verification
+To test “secure recording” deterministically:
+- In test mode, when user taps “Record”, you can:
+  - (a) actually record from mic (not deterministic), OR
+  - (b) simulate recording by copying the fixture audio into the “recording pipeline input” and running the same encryption + persistence code paths.
+- Verify:
+  - file exists,
+  - expected protection attributes (e.g., NSFileProtectionComplete) are set,
+  - decryption succeeds within the app,
+  - playback UI reaches “playing” state and progresses.
+
+6) Coverage for long sessions (1 hour scrollback)
+- Use smaller fixtures for CI (e.g., 2–5 minutes with long pauses) plus synthetic repetition:
+  - Create a “long transcript fixture generator” at build time (concatenate fixture segments) for stress tests.
+- Ensure transcript UI virtualization:
+  - avoid rendering 1-hour text as a single giant attributed string if it hurts performance.
+- UI test should:
+  - scroll back to earlier segments,
+  - verify stable/committed text remains unchanged after pauses,
+  - verify session resume continues appending.
+
+Limitations / Known Gaps
+- You are not validating “the OS recognized speech correctly from a microphone in a noisy room.”
+  - Instead, you validate: given known audio buffers, the app produces and persists a transcript, and the UI behaves correctly.
+- Speech output may still differ slightly by OS version and locale (punctuation, formatting). Use tolerant assertions.
+- True file protection enforcement can differ in Simulator vs. device. Use device integration tests for the strongest guarantees.
+
+Utility / Why this ADR is worth doing
+- Prevents regressions in your most important flow: record → transcript → secure save → playback.
+- Allows building a fixture suite that represents real-world conditions (long pauses, multi-speaker, intermittent speech).
+- Keeps CI reliable by reducing dependency on mic hardware and nondeterministic recognition behavior.
+
+Reference Implementations / Code to Learn From
+Apple docs & sample:
+- Recognizing speech in live audio (sample) — https://developer.apple.com/documentation/Speech/recognizing-speech-in-live-audio
+- SFSpeechURLRecognitionRequest (file-based transcription) — https://developer.apple.com/documentation/speech/sfspeechurlrecognitionrequest
+- SFSpeechAudioBufferRecognitionRequest (buffer-based transcription) — https://developer.apple.com/documentation/speech/sfspeechaudiobufferrecognitionrequest
+- requiresOnDeviceRecognition — https://developer.apple.com/documentation/speech/sfspeechrecognitionrequest/requiresondevicerecognition
+
+UI testing & Simulator automation:
+- XCUIApplication.resetAuthorizationStatus(for:) — https://developer.apple.com/documentation/xcuiautomation/xcuiapplication/resetauthorizationstatus(for:)
+- WWDC20 “Become a Simulator expert” (simctl privacy grant/revoke/reset examples) — https://developer.apple.com/videos/play/wwdc2020/10647/
+
+GitHub repos (Speech framework examples; useful for patterns we’ll adapt, not for testing specifics):
+- https://github.com/hansemannn/SpeechRecognitionExample (includes file-based request example)
+- https://github.com/naftaly/SpeechRecognition (simple live speech recognition app)
+- https://github.com/renaudjenny/swift-speech-recognizer (wrapper/abstraction patterns that can be adapted for DI)
+
+Appendix A — Practical test plan structure
+- Unit tests: segment merging, export formats, encryption primitives.
+- Integration tests (XCTest): “transcribe fixture → persist session → reload → transcript matches”.
+- UI tests (XCUITest): “tap record → live transcript view updates → stop → session list shows recording → play → UI indicates playing”.
+
+Appendix B — Suggested launch arguments
+- -UITestMode 1
+- -UITestAudioFixture long_pause_01.m4a
+- -UITestLocale en_US
+- -UITestRequiresOnDeviceRecognition 1
+

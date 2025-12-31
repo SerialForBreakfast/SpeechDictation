@@ -1,48 +1,28 @@
-# PrivacyPolicy.md
+# Speech Dictation - Privacy Policy
 
-## AI Ears – Privacy Policy
+Effective Date: 2025-12-31
 
-Effective Date: [Insert Date]
+Speech Dictation is designed for on-device transcription and optional camera-based accessibility features. We do not collect or transmit your audio, transcripts, or camera data unless you explicitly share or export them.
 
-AI Ears is committed to protecting your privacy. This app provides on-device transcription and recording capabilities designed to assist with accessibility, documentation, and memory support. We do not collect or transmit any user data off-device unless explicitly configured by the user.
+## Data We Create and Store
+- Audio recordings and transcripts are stored locally on your device.
+- Exported files are created only when you initiate an export or share action.
+- Optional model downloads (for camera features) may fetch model files from external servers; user content is never uploaded as part of these downloads.
 
----
+## Permissions We Request
+- Microphone: required for transcription and recording.
+- Camera: required for the experimental camera experience.
+- Face ID: optional protection for secure recordings.
+- Background audio: required for continued recording when the app is not active.
 
-### 🔒 What We Collect
+## Sharing and Exports
+- Sharing uses the iOS share sheet and is always user-initiated.
+- We do not automatically send data to third parties.
 
-AI Ears records audio and generates associated captions upon your request. These recordings:
-- Are **stored locally** on your iOS device.
-- Are **encrypted** using iOS-provided protections.
-- Are **never shared or uploaded** unless you use external iCloud backup.
+## Your Controls
+- You can delete recordings and transcripts from the app.
+- You can revoke permissions at any time in iOS Settings.
 
----
-
-### 📍 Location & Permissions
-
-AI Ears requires the following permissions:
-
-- **Microphone Access**: To record audio and transcribe speech.
-- **Face ID / Touch ID (Optional)**: To protect private recordings from unauthorized access.
-- **iCloud (Optional)**: If you choose to back up data manually.
-
----
-
-### ⚖️ Consent & Legal Compliance
-
-AI Ears includes a consent prompt before starting any recording. You are responsible for complying with local laws regarding audio recordings. In some jurisdictions, you must obtain consent from all parties before recording.
-
----
-
-### ⚙️ User Controls
-
-- View, delete, and manage all recordings via the app.
-- Configure privacy settings in **Settings > Recording Preferences**.
-- Turn off microphone access at any time via iOS Settings.
-
----
-
-### 📬 Contact
-
-If you have any questions or concerns about your privacy, please contact:
-**Email**: support@aiears.app
-
+## Contact
+If you have questions or concerns about privacy, contact:
+joe.mccraw+github@gmail.com

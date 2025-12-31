@@ -2,7 +2,15 @@
 
 # SpeechDictation iOS - Build and Test Automation Script
 # Provides comprehensive build validation, test execution, and detailed reporting
-# Usage: ./utility/build_and_test.sh [--verbose] [--clean] [--device] [--simulator]
+# 
+# Test Speed Optimizations (per ADR-TestSpeedImprovements.txt):
+# - Uses build-for-testing + test-without-building pattern to avoid redundant rebuilds
+# - Disables parallel testing (-parallel-testing-enabled NO) to prevent simulator clones
+# - Pre-boots simulator to reduce launch latency
+# - Includes timing diagnostics for performance analysis
+# 
+# Usage: ./utility/build_and_test.sh [--verbose] [--clean] [--device] [--simulator] [--disableUnitTests] [--enableUITests]
+# Note: Unit tests run by default. Use --disableUnitTests to skip them.
 
 set -e  # Exit on any error
 
@@ -54,8 +62,8 @@ VERBOSE=false
 CLEAN_BUILD=false
 TARGET_DEVICE=""
 # Feature flags
-ENABLE_UI_TESTS=false     # UI tests are opt-in via --enableUITests (existing)
-ENABLE_UNIT_TESTS=false   # Unit tests are now opt-in via --enableUnitTests
+ENABLE_UI_TESTS=false     # UI tests are opt-in via --enableUITests (slower, run less frequently)
+ENABLE_UNIT_TESTS=true    # Unit tests run by default (fast, should run on every build)
 CLEAR_CACHE=false         # Clear simulator cache and force re-selection
 # Allow caller to override the simulator UUID
 SIMULATOR_OVERRIDE_UUID=""
@@ -97,13 +105,17 @@ while [[ $# -gt 0 ]]; do
             ENABLE_UNIT_TESTS=true
             shift
             ;;
+        --disableUnitTests|--noUnitTests)
+            ENABLE_UNIT_TESTS=false
+            shift
+            ;;
         --cache-clear|--clear-cache)
             CLEAR_CACHE=true
             shift
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--verbose] [--clean] [--device] [--simulator] [--simulator-id <UUID>] [--enableUnitTests] [--enableUITests] [--cache-clear]"
+            echo "Usage: $0 [--verbose] [--clean] [--device] [--simulator] [--simulator-id <UUID>] [--disableUnitTests] [--enableUITests] [--cache-clear]"
             exit 1
             ;;
     esac
@@ -432,9 +444,9 @@ clean_build() {
     fi
 }
 
-# Function to build the project
+# Function to build the project for testing (Phase 2: build-for-testing pattern)
 build_project() {
-    log "INFO" "Building SpeechDictation project..."
+    log "INFO" "Building SpeechDictation project for testing..."
     
     local build_log="$BUILD_DIR/xcodebuild.log"
     local build_args=(
@@ -462,10 +474,17 @@ build_project() {
     # Clear previous build log
     > "$build_log"
     
-    # Build the project with progress monitoring
-    update_currently_running "[Build] Compiling..."
-    if xcodebuild "${build_args[@]}" > "$build_log" 2>&1; then
-        log "SUCCESS" "Project built successfully"
+    # Build for testing (enables test-without-building in subsequent runs)
+    update_currently_running "[Build] Compiling for testing..."
+    local build_exit_code=0
+    xcodebuild build-for-testing "${build_args[@]}" > "$build_log" 2>&1 || build_exit_code=$?
+    
+    if [[ $build_exit_code -eq 0 ]]; then
+        log "SUCCESS" "Project built for testing successfully"
+        # Ensure build log has success marker for summary generation
+        if ! grep -qE "(BUILD.*SUCCEEDED|BUILD SUCCEEDED)" "$build_log"; then
+            echo "** BUILD SUCCEEDED **" >> "$build_log"
+        fi
         return 0
     else
         log "ERROR" "Build failed. Check $build_log for details"
@@ -494,12 +513,30 @@ clear_currently_running() {
     fi
 }
 
-# Function to run unit tests
+# Function to pre-boot simulator (reduces launch latency)
+preboot_simulator() {
+    if [[ -n "$SIMULATOR_UUID" ]]; then
+        log "INFO" "Pre-booting simulator $SIMULATOR_UUID..."
+        local start_boot=$(date +%s)
+        xcrun simctl boot "$SIMULATOR_UUID" 2>/dev/null || true
+        xcrun simctl bootstatus "$SIMULATOR_UUID" -b 2>/dev/null || true
+        local end_boot=$(date +%s)
+        local boot_duration=$((end_boot - start_boot))
+        log "INFO" "Simulator boot+ready: ${boot_duration}s"
+    fi
+}
+
+# Function to run unit tests (Phase 1 & 2: parallel testing disabled, test-without-building)
 run_unit_tests() {
     log "INFO" "Running unit tests..."
     update_currently_running "[Testing] Running unit tests"
     
+    # Phase 3: Pre-boot simulator to reduce launch latency
+    preboot_simulator
+    
     local test_log="$BUILD_DIR/test.log"
+    local start_test=$(date +%s)
+    
     # Use the already selected simulator UUID
     local destination_arg
     if [[ -n "$SIMULATOR_UUID" ]]; then
@@ -514,9 +551,12 @@ run_unit_tests() {
         -project "$PROJECT_ROOT/SpeechDictation.xcodeproj"
         -scheme SpeechDictation
         -destination "$destination_arg"
+        -derivedDataPath "$BUILD_DIR/derived_data"
         -only-testing:SpeechDictationTests
         -quiet
         -hideShellScriptEnvironment
+        -parallel-testing-enabled NO
+        -maximum-parallel-testing-workers 1
     )
     
     if [[ "$VERBOSE" == true ]]; then
@@ -526,7 +566,8 @@ run_unit_tests() {
     # Clear previous test log
     > "$test_log"
     
-    xcodebuild test "${test_args[@]}" > "$test_log" 2>&1 &
+    # Phase 2: Use test-without-building (assumes build-for-testing was run)
+    xcodebuild test-without-building "${test_args[@]}" > "$test_log" 2>&1 &
     local test_pid=$!
     
     # Improved progress monitoring with better regex patterns
@@ -553,24 +594,35 @@ run_unit_tests() {
         fi
         sleep 1  # Reduced from 2 seconds to 1 second for more responsive updates
     done
+    # Capture xcodebuild exit code (don't let `set -e` abort before we can report)
+    set +e
     wait $test_pid
+    local test_exit_code=$?
+    set -e
     clear_currently_running
     
-    if grep -q "\*\* TEST SUCCEEDED \*\*" "$test_log"; then
-        log "SUCCESS" "Unit tests passed"
+    local end_test=$(date +%s)
+    local test_duration=$((end_test - start_test))
+    
+    # Newer xcodebuild output may omit the legacy "** TEST SUCCEEDED **" sentinel line.
+    # Prefer the actual process exit code, and fall back to log parsing if needed.
+    if [[ "$test_exit_code" -eq 0 ]]; then
+        log "SUCCESS" "Unit tests passed (duration: ${test_duration}s)"
         local test_summary=$(grep -E "(Test Suite|Test Case|PASS|FAIL)" "$test_log" | tail -10)
         {
             echo ""
             echo "=== Test Results Summary ==="
+            echo "Test execution duration: ${test_duration}s"
             echo "$test_summary"
         } >> "$REPORT_FILE"
         return 0
     else
-        log "ERROR" "Unit tests failed. Check $test_log for details"
+        log "ERROR" "Unit tests failed (duration: ${test_duration}s). Check $test_log for details"
         local test_failures=$(grep -A 5 -B 5 "FAIL\|error:" "$test_log" | tail -20)
         {
             echo ""
             echo "=== Test Failures ==="
+            echo "Test execution duration: ${test_duration}s"
             echo "$test_failures"
         } >> "$REPORT_FILE"
         return 1
@@ -603,9 +655,12 @@ run_ui_tests() {
         -project "$PROJECT_ROOT/SpeechDictation.xcodeproj"
         -scheme SpeechDictation
         -destination "$destination_arg"
+        -derivedDataPath "$BUILD_DIR/derived_data"
         -only-testing:SpeechDictationUITests
         -quiet
         -hideShellScriptEnvironment
+        -parallel-testing-enabled NO
+        -maximum-parallel-testing-workers 1
     )
     
     if [[ "$VERBOSE" == true ]]; then
@@ -688,10 +743,18 @@ generate_summary() {
     local unit_test_status="NOT_RUN"
     local ui_test_status="NOT_RUN"
     
-    # Check build status
+    # Check build status (build-for-testing may output "BUILD SUCCEEDED" or we added it manually)
     if [[ -f "$BUILD_DIR/xcodebuild.log" ]]; then
-        if grep -q "BUILD SUCCEEDED" "$BUILD_DIR/xcodebuild.log"; then
+        if grep -qE "(BUILD.*SUCCEEDED|BUILD SUCCEEDED)" "$BUILD_DIR/xcodebuild.log"; then
             build_status="SUCCESS"
+        elif [[ -s "$BUILD_DIR/xcodebuild.log" ]]; then
+            # If log exists and has content but no success message, check for failure indicators
+            if grep -qiE "(BUILD FAILED|error:|failed)" "$BUILD_DIR/xcodebuild.log"; then
+                build_status="FAILED"
+            else
+                # No failure indicators - assume success (tests wouldn't run if build failed)
+                build_status="SUCCESS"
+            fi
         fi
     fi
     
@@ -699,14 +762,24 @@ generate_summary() {
     if [[ "$ENABLE_UNIT_TESTS" == false ]]; then
         unit_test_status="DISABLED"
     else
-        if [[ "$build_status" == "SUCCESS" && -f "$BUILD_DIR/test.log" ]]; then
-            if grep -q "\*\* TEST SUCCEEDED \*\*" "$BUILD_DIR/test.log"; then
+        if [[ -f "$BUILD_DIR/test.log" ]]; then
+            # Tests ran - check for success or failure
+            if grep -qE "(\*\* TEST SUCCEEDED \*\*|Test Suite.*passed)" "$BUILD_DIR/test.log"; then
                 unit_test_status="SUCCESS"
-            else
+            elif grep -qE "(TEST EXECUTE FAILED|Failing tests:|Test Case.*failed)" "$BUILD_DIR/test.log"; then
                 unit_test_status="FAILED"
+            else
+                # Test log exists but unclear status - check if tests actually ran
+                if grep -qE "(Testing started|Test Suite)" "$BUILD_DIR/test.log"; then
+                    unit_test_status="FAILED"  # Tests ran but no success marker
+                else
+                    unit_test_status="NOT_RUN"
+                fi
             fi
         elif [[ "$build_status" == "FAILED" ]]; then
             unit_test_status="SKIPPED"
+        else
+            unit_test_status="NOT_RUN"
         fi
     fi
     
@@ -747,6 +820,7 @@ generate_summary() {
 
 # Main execution
 main() {
+    local start_all=$(date +%s)
     update_currently_running "[Prerequisites] Checking prerequisites"
     log "INFO" "Starting SpeechDictation build and test automation"
     log "INFO" "Arguments: VERBOSE=$VERBOSE, CLEAN=$CLEAN_BUILD, TARGET=$TARGET_DEVICE, ENABLE_UNIT_TESTS=$ENABLE_UNIT_TESTS, ENABLE_UI_TESTS=$ENABLE_UI_TESTS, CLEAR_CACHE=$CLEAR_CACHE"
@@ -788,7 +862,17 @@ main() {
     update_currently_running "[Summary] Generating build & test summary"
     generate_summary $overall_exit_code
     clear_currently_running
-    update_currently_running "[Complete] Build & test process finished"
+    
+    local end_all=$(date +%s)
+    local total_duration=$((end_all - start_all))
+    log "INFO" "Total execution time: ${total_duration}s"
+    {
+        echo ""
+        echo "=== Timing Summary ==="
+        echo "Total execution time: ${total_duration}s"
+    } >> "$REPORT_FILE"
+    
+    update_currently_running "[Complete] Build & test process finished (${total_duration}s)"
     sleep 1
     clear_currently_running
     return $overall_exit_code

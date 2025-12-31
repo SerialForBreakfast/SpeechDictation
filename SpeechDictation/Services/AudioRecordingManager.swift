@@ -240,7 +240,9 @@ class AudioRecordingManager: ObservableObject {
         print("Using recording format: \(recordingFormat)")
         
         // Create audio file for recording
-        let fileName = "recording_\(formattedTimestamp()).m4a"
+        // We currently write PCM buffers directly via `AVAudioFile.write(from:)`.
+        // Use a container/extension that matches the underlying PCM data so AVAudioPlayer can load it reliably.
+        let fileName = "recording_\(formattedTimestamp()).caf"
         let audioFileURL: URL
         
         if mode == .secure {
@@ -364,7 +366,10 @@ class AudioRecordingManager: ObservableObject {
     func getAllAudioFiles() -> [URL] {
         do {
             let fileURLs = try FileManager.default.contentsOfDirectory(at: documentsDirectory, includingPropertiesForKeys: nil)
-            return fileURLs.filter { $0.pathExtension == "m4a" }.sorted { $0.lastPathComponent > $1.lastPathComponent }
+            // Include legacy `.m4a` files (created before we corrected the container) and the current `.caf` recordings.
+            return fileURLs
+                .filter { ["caf", "m4a"].contains($0.pathExtension.lowercased()) }
+                .sorted { $0.lastPathComponent > $1.lastPathComponent }
         } catch {
             print("Error getting audio files: \(error)")
             return []

@@ -139,8 +139,20 @@ struct SecurePlaybackView: View {
     
     private func loadSessionData() {
         // Load Audio
-        let audioURL = cacheManager.getSecureFileURL(fileName: session.audioFileName, sessionId: session.id)
-        self.audioURL = audioURL
+        var resolvedAudioURL = cacheManager.getSecureFileURL(fileName: session.audioFileName, sessionId: session.id)
+
+        // If metadata is stale (older builds wrote a placeholder filename), fall back to scanning the session directory.
+        if !FileManager.default.fileExists(atPath: resolvedAudioURL.path) {
+            let candidates = cacheManager
+                .listSecureFiles(inSubdirectory: session.id)
+                .filter { ["caf", "m4a"].contains($0.pathExtension.lowercased()) }
+
+            if let candidate = candidates.first {
+                resolvedAudioURL = candidate
+            }
+        }
+
+        self.audioURL = resolvedAudioURL
         
         // Load Transcript Segments
         if let transcriptData = cacheManager.retrieveSecureData(forKey: session.transcriptFileName, subdirectory: session.id) {
@@ -163,13 +175,13 @@ struct SecurePlaybackView: View {
                     sessionId: session.id,
                     startTime: session.startTime,
                     endTime: session.endTime,
-                    audioFileURL: audioURL,
+                    audioFileURL: resolvedAudioURL,
                     segments: payload.segments,
                     totalDuration: session.duration,
                     wordCount: payload.segments.reduce(0) { $0 + $1.text.components(separatedBy: " ").count }
                 )
                 
-                playbackManager.loadAudioForPlayback(audioURL: audioURL, session: audioSession)
+                playbackManager.loadAudioForPlayback(audioURL: resolvedAudioURL, session: audioSession)
             } else {
                 print("Failed to decode transcript payload")
             }

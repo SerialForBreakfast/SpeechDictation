@@ -1,0 +1,284 @@
+GitReferences.txt
+Generated: 2025-12-13 (America/Los_Angeles)
+
+Purpose
+- Collect Swift (or Swift-containing) Git repositories that already use Apple’s “new Speech APIs” (SpeechAnalyzer / SpeechTranscriber / related model-management + AsyncSequence patterns).
+- Compare architectures with a specific goal: long-form, real-world recording (e.g., 60 minutes with long pauses and intermittent dialogue) while preserving an ever-growing transcript you can scroll back through.
+- Use these repos as working references to diagnose and fix a recurring “accumulating text over long periods” bug (common failure mode: losing earlier text when restarting tasks / overlapping timestamps / merge-by-startTime collisions).
+
+What I mean by “new Speech APIs”
+- SpeechAnalyzer (analysis container)
+- SpeechTranscriber (speech-to-text module)
+- (Optionally) SpeechDetector / VAD-style modules where used
+- Model management and install flows (often via AssetInventory)
+- Streaming patterns via AsyncSequence / AsyncStream for both input and results
+
+Notes / Limits of this research
+- The public ecosystem is still early; there are not yet hundreds of open-source Swift repos using SpeechAnalyzer/SpeechTranscriber.
+- I prioritized repos that (a) compile on iOS 26/macOS 26 (or beta equivalents), and (b) contain concrete code (not only blog posts).
+
+================================================================================
+1) Primary Swift repos that use SpeechAnalyzer / SpeechTranscriber
+================================================================================
+
+A) AuralKit
+Repo: https://github.com/rryam/AuralKit
+What it is
+- A Swift Package that wraps SpeechAnalyzer + SpeechTranscriber into a session-based API (SpeechSession).
+- Exposes AsyncStreams for transcription results, lifecycle status, audio route changes, and (optionally) voice activation / detector-style behaviors.
+
+How it works (architecture highlights)
+- “Session” abstraction: create SpeechSession(locale:), startTranscribing(), iterate results.
+- Handles microphone capture and buffer conversion internally, so app code doesn’t need to manage AVAudioEngine plumbing.
+- Explicit model install/availability concerns are first-class (progress reporting is part of the package’s design).
+- Emphasizes robust lifecycle handling (cancellation, stopping, finalization).
+
+What’s most useful for SpeechDictation
+- A direct template for: “finalized transcript + volatile transcript” layering without duplication.
+- A clean separation between:
+  1) audio capture
+  2) buffer conversion
+  3) analyzer + transcriber setup
+  4) result accumulation and persistence
+- If your bug is in “merge/accumulate,” this repo is a good comparison point because it avoids forcing consumers to merge timestamps themselves—its wrapper structure makes “append finalized, overlay volatile” easier.
+
+Long-form / long-pause considerations
+- Session abstraction is helpful for resuming after interruptions.
+- Look for how it finalizes streams on stop (to flush volatile -> final) and how it prevents duplicate appends.
+
+Differences vs other repos
+- This is a reusable library, not just a sample app.
+- Explicitly advertises voice activation/VAD options, making it relevant to “long pause” behavior (avoid stopping transcription too early, or restart cleanly).
+
+B) SpeechAnalyzerSample
+Repo: https://github.com/yuichirokato/SpeechAnalyzerSample
+What it is
+- A minimal sample app demonstrating SpeechAnalyzer (new) vs SFSpeechRecognizer (legacy), with UI toggles.
+- Shows “final vs volatile” display separation (SpeechAnalyzer side).
+
+How it works (architecture highlights)
+- Includes a SpeechAnalyzerManager that sets up:
+  - SpeechTranscriber module
+  - AsyncStream pipeline for audio buffers
+  - buffer conversion (e.g., via a “BufferConverter” concept)
+  - model download/install automation
+- Keeps a legacy manager (SFSpeechRecognizer) in parallel for contrast.
+
+What’s most useful for SpeechDictation
+- The simplest, clearest reference for the canonical Apple-recommended data model:
+  - finalizedTranscript + volatileTranscript, where finalized appends on isFinal and volatile is cleared when final arrives
+- Useful for validating whether your accumulation bug is due to mixing partials with finals.
+
+Long-form / long-pause considerations
+- As a sample, it’s not necessarily optimized for hour-long sessions, but it’s excellent for verifying “correct semantics” of result handling.
+
+Differences vs other repos
+- This repo’s value is clarity and “minimal moving parts,” not production robustness.
+
+C) Swift Scribe
+Repo: https://github.com/FluidInference/swift-scribe
+What it is
+- A full iOS 26/macOS 26+ app that combines:
+  - SpeechAnalyzer + SpeechTranscriber transcription
+  - Speaker diarization (via FluidAudio)
+  - Rich text formatting (AttributedString)
+  - Local persistence (via SwiftData)
+  - Optional summarization via Apple Foundation Models (separate from Speech)
+
+How it works (architecture highlights)
+- Treats transcription output as a rich text / attributed model (speaker tags, formatting, metadata).
+- Stores data locally and emphasizes privacy-first architecture and offline operation.
+- More “product-shaped” than other repos: it demonstrates how to build a full long-form transcription experience.
+
+What’s most useful for SpeechDictation
+- Patterns for long-lived transcripts:
+  - incremental persistence (SwiftData)
+  - display of large text with formatting
+  - potential chunking strategies to keep UI responsive (you’ll want to inspect how they avoid huge single-string updates)
+- Useful “reference UX” for hour-long scrollback.
+
+Long-form / long-pause considerations
+- The repo’s goal is explicitly real-world transcription and note-taking, so it is likely to contain practical strategies around keeping the session alive and keeping transcript storage/scrollback manageable.
+
+Differences vs other repos
+- It’s a full app with extra components (speaker diarization + summarization), so isolate just the Speech pipeline when comparing.
+
+D) speech-analyzer-dylib
+Repo: https://github.com/aethiopicuschan/speech-analyzer-dylib
+What it is
+- A Swift package that wraps SpeechAnalyzer into a dylib with a C-callable API (focused on file transcription).
+
+How it works (architecture highlights)
+- Provides a C API entry point (e.g., transcribeFile(..., callback)) which runs transcription asynchronously and returns transcript text via callback.
+- Oriented around pre-recorded file transcription rather than live mic streaming.
+
+What it’s useful for SpeechDictation
+- Great reference for “offline verification” and deterministic testing:
+  - You can transcribe a fixed audio file and compare transcripts without microphone flakiness.
+- Good for building “fixture audio mode” in your app for UI/integration tests.
+
+Long-form / long-pause considerations
+- File transcription naturally handles long pauses because the source is deterministic; the key is memory/perf and how results are accumulated.
+
+Differences vs other repos
+- Not a UI app; it’s a packaging/interop strategy.
+- Very relevant if you want to run SpeechAnalyzer as part of a command-line, service, or test harness.
+
+================================================================================
+2) Swift-containing repos that integrate the new Speech APIs via wrappers/plugins
+================================================================================
+
+These are not pure Swift apps, but they contain real Swift code using SpeechAnalyzer/SpeechTranscriber and are useful to study for lifecycle management, bridging, and “keep the handler alive” issues that can also bite native apps.
+
+E) Liquid-Speech (Flutter plugin)
+Repo: https://github.com/itsthisjustin/Liquid-Speech
+What it is
+- Flutter plugin providing real-time transcription on iOS/macOS using SpeechAnalyzer/SpeechTranscriber.
+- Contains Swift code for AVAudioEngine capture, AsyncStream<AnalyzerInput> style audio streaming, and result event streaming back to Dart.
+
+How it works (architecture highlights)
+- Native side keeps a handler alive for the entire app lifecycle (static storage) to avoid deallocation issues.
+- Audio capture and transcription run as a pipeline; results are published through an event stream.
+
+What it’s useful for SpeechDictation
+- “Lifecycle hardening” patterns:
+  - avoiding accidental deinit of transcriber/analyzer
+  - handling start/stop and repeated starts
+- Useful if your long-form bug is “it stops transcribing after a pause” due to lifecycle teardown or audio engine restarts.
+
+F) expo-speech-transcriber (Expo/React Native module)
+Repo: https://github.com/DaveyEke/expo-speech-transcriber
+What it is
+- Expo module exposing both legacy (SFSpeechRecognizer) and “Analyzer-based” transcription.
+- Includes file transcription via SpeechAnalyzer and other utility methods.
+
+How it works (architecture highlights)
+- Presents an explicit split between:
+  - legacy recognizer transcription
+  - SpeechAnalyzer-based transcription for iOS 26+
+- Also provides “buffer-based transcription” primitives (useful conceptually even if you don’t use RN).
+
+What it’s useful for SpeechDictation
+- Very blunt notes on limitations and reliability tradeoffs.
+- A reminder that a robust product likely needs:
+  - fallback modes
+  - “known-good” file transcription for QA
+  - guarded behavior around unsupported devices/locales
+
+Caution for long-form usage
+- The README suggests constraints in some flows (e.g., “best for short recordings”). Use this repo primarily for architecture/bridging ideas rather than as a gold-standard for 60-minute sessions.
+
+G) callstackincubator/ai (React Native AI provider with Apple transcription)
+Repo: https://github.com/callstackincubator/ai
+What it is
+- A broader on-device AI SDK with an Apple provider; includes “Transcription - SpeechAnalyzer” support.
+
+What it’s useful for SpeechDictation
+- High-level integration and capability gating:
+  - iOS-version availability checks
+  - “provider” style abstraction that keeps app code decoupled from the underlying engine
+- If you want SpeechDictation to support multiple engines (Apple SpeechAnalyzer vs fallback), this is an example of provider-based architecture.
+
+================================================================================
+3) Canonical result-handling model to compare against your accumulation bug
+================================================================================
+
+WWDC session transcript (text gist, useful as a checklist for intended semantics):
+https://gist.github.com/auramagi/9c040c2233dfe71c24c76942e186f788
+
+Core model described there:
+- Maintain:
+  - finalizedTranscript: append-only store (segments/runs)
+  - volatileTranscript: latest realtime guess (not persisted)
+- Display:
+  - concat(finalizedTranscript) + volatileTranscript
+- On isFinal:
+  - clear volatileTranscript
+  - append new final segment
+  - persist if needed
+- On stop:
+  - finalize analyzer stream so any volatile text is finalized
+
+================================================================================
+4) Comparison: how these approaches differ (the “why”)
+================================================================================
+
+1) Product-grade app vs sample vs library
+- swift-scribe: “product-shaped” app (persistence, UX, rich formatting)
+- SpeechAnalyzerSample: minimal sample emphasizing semantic correctness
+- AuralKit: reusable library emphasizing lifecycle, streams, model install, optional VAD
+- speech-analyzer-dylib: packaging for file transcription, great for test harnessing
+
+2) Where transcript accumulation lives
+- “Best practice” approach: append only finalized segments; volatile is overlay only.
+  - Likely used by AuralKit and SpeechAnalyzerSample directly
+- App-level persistent model:
+  - swift-scribe likely stores structured transcript data (runs/segments) and persists incrementally
+- “File-first transcription”:
+  - speech-analyzer-dylib focuses on a final transcript output, but can be extended to stream partials/finals
+
+3) How they avoid long-form “merge collisions”
+Common pitfall (matches your unit test bug pattern)
+- Merge keyed only by startTime (or a coarse timestamp) will overwrite earlier segments if you restart a task and timestamps reset to 0.
+- This is exactly the kind of failure your TranscriptAccumulationTests.swift documents via an “overlapping start times” scenario.
+
+Working strategies to look for in these repos
+- Keep a session-level monotonic clock:
+  - When a transcription task restarts, apply an offset so all segments remain monotonic.
+- Prefer audioTimeRange-based identity (from AttributedString runs) over just “startTime Double”.
+- Store finalized segments as append-only by sequence number, not mutable merge-by-key.
+- If you must merge: key on (sessionID, absoluteStartTime, absoluteEndTime) or a stable run ID.
+
+4) Handling long pauses
+Strategies to look for
+- VAD / detector:
+  - AuralKit advertises voice activation; this can keep a session open without aggressive stop/restart loops.
+- “Finalize on stop”:
+  - Explicitly finalize analyzer streams on stop to flush volatile.
+- “Keep audio engine alive” vs “restart on silence”:
+  - Restarting can be dangerous if your accumulation store uses startTime-relative merges.
+
+================================================================================
+5) Practical takeaways for SpeechDictation’s “hour-long, real-world” target
+================================================================================
+
+A) Transcript model
+- Do NOT keep transcript as one giant string that you constantly replace.
+- Prefer:
+  - [TranscriptSegment] append-only store for finals (each segment has stable ID + time range)
+  - volatileSegment separate
+- Persist finalized segments periodically (e.g., every final segment) so the transcript survives interruptions.
+
+B) Timestamp strategy (likely fixes your “overlapping start time” class of bug)
+- Establish a sessionStartTime and a monotonic “sessionAudioOffset”.
+- On every task restart, update the offset so new segments are placed after the last known endTime.
+- Do not key merges solely on “startTime” without session context.
+
+C) Pause behavior
+- If SpeechAnalyzer stops outputting after a long pause, treat it as a lifecycle/engine issue first:
+  - ensure your audio engine is still running
+  - ensure your analyzer/transcriber tasks are still alive (no deinit)
+  - consider VAD to avoid aggressive stop/restart loops
+- If you must restart transcription after silence:
+  - keep the session monotonic offset so earlier segments are never overwritten.
+
+D) QA / testing
+- Use file transcription wrappers (speech-analyzer-dylib-style) to build deterministic “fixture audio mode” tests.
+- Separate:
+  - correctness tests: run fixed audio files and compare normalized expected phrases/order
+  - UI tests: validate the UI can scroll back through long transcripts, survives stop/start, and preserves earlier content
+
+================================================================================
+6) Suggested next step: targeted “compare & contrast” checklist
+================================================================================
+
+For each primary repo above (AuralKit, SpeechAnalyzerSample, swift-scribe):
+1) Where do they store finalized vs volatile?
+2) Do they ever append volatile to the stored transcript? (If yes, risk of duplication.)
+3) How do they ensure monotonic time ranges across restarts?
+4) Do they finalize on stop? How do they cancel tasks?
+5) Do they persist incrementally?
+6) How do they keep analyzers/transcribers alive (avoid deinit)?
+7) Do they use audioTimeRange attributes from AttributedString runs? If so, how?
+
+End of document.

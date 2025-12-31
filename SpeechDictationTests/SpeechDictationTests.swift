@@ -424,18 +424,39 @@ class SpeechRecognizerTests: XCTestCase {
     func testStartTranscribingSetsUpAudioEngine() {
         speechRecognizer.startTranscribing()
         
-        XCTAssertNotNil(speechRecognizer.audioEngine)
-        XCTAssertNotNil(speechRecognizer.speechRecognizer)
-        XCTAssertNotNil(speechRecognizer.request)
-        XCTAssertTrue(speechRecognizer.audioEngine!.isRunning)
+        // With new engine architecture, transcriptionEngine and engineEventTask should be set
+        XCTAssertNotNil(speechRecognizer.transcriptionEngine, "Transcription engine should be created")
+        XCTAssertNotNil(speechRecognizer.engineEventTask, "Engine event task should be running")
+        
+        // Give engine a moment to start
+        let expectation = self.expectation(description: "Engine starts")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            expectation.fulfill()
+        }
+        waitForExpectations(timeout: 1.0)
     }
     
     func testStopTranscribingStopsAudioEngine() {
         speechRecognizer.startTranscribing()
+        
+        // Give engine a moment to start
+        let startExpectation = self.expectation(description: "Engine starts")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            startExpectation.fulfill()
+        }
+        waitForExpectations(timeout: 1.0)
+        
         speechRecognizer.stopTranscribing()
         
-        XCTAssertNil(speechRecognizer.audioEngine)
-        XCTAssertNil(speechRecognizer.request)
-        XCTAssertNil(speechRecognizer.recognitionTask)
+        // Give engine a moment to stop
+        let stopExpectation = self.expectation(description: "Engine stops")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            stopExpectation.fulfill()
+        }
+        waitForExpectations(timeout: 1.0)
+        
+        // Engine and event task should be cleaned up
+        XCTAssertNil(speechRecognizer.transcriptionEngine, "Engine should be nil after stop")
+        XCTAssertNil(speechRecognizer.engineEventTask, "Event task should be nil after stop")
     }
 }

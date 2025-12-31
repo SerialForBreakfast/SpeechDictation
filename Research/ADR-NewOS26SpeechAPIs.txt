@@ -1,0 +1,301 @@
+ADR-NewOS26SpeechAPIs: Adopting SpeechAnalyzer / SpeechTranscriber for long-form, on-device STT
+
+Status
+- Proposed
+
+Date
+- 2025-12-13 (America/Los_Angeles)
+
+Context
+
+The current SpeechDictation app uses a pluggable `TranscriptionEngine` (via `TranscriptionEngineFactory`) and a coordinating `SpeechRecognizer` ObservableObject to:
+- start/stop transcription
+- surface live transcript updates to UI
+- surface audio level updates (for a VU meter)
+- support “long pauses” by restarting recognition tasks when the legacy Speech API ends a task after silence
+
+The legacy path (SFSpeechRecognizer + SFSpeechAudioBufferRecognitionRequest) is known to end tasks on long silence and can require restart logic. This creates complexity around keeping a single continuous transcript (especially for long sessions like 1 hour).
+
+Apple introduced a newer on-device Speech API in the Speech framework on iOS 26:
+- `SpeechAnalyzer`: coordinator that consumes audio and runs modules
+- `SpeechTranscriber`: module that produces speech-to-text transcription optimized for longer recordings / general conversation
+- `SpeechDetector`: module that detects voice activity
+
+This ADR evaluates adopting these iOS 26 Speech APIs within the existing engine architecture, keeping backwards compatibility with iOS < 26.
+
+Decision Drivers
+
+1) Long-form transcription: handle long pauses/intermittent dialogue without “task ended” behavior or transcript resets
+2) On-device processing: privacy/security and predictable performance
+3) Compatibility: keep app deployable to older iOS versions
+4) Clean integration with current design:
+   - `TranscriptionEngine` abstraction
+   - engine-driven `TranscriptionEvent` stream
+   - existing audio-level event + VU meter integration
+5) Testability:
+   - file/buffer-driven transcription should be testable without microphone
+   - deterministic transcript accumulation / segmentation
+
+Important Links (Docs + References)
+
+Apple docs (official)
+- SpeechAnalyzer: https://developer.apple.com/documentation/speech/speechanalyzer
+- SpeechTranscriber: https://developer.apple.com/documentation/speech/speechtranscriber
+- SpeechDetector: https://developer.apple.com/documentation/speech/speechdetector
+- Speech framework overview: https://developer.apple.com/documentation/speech
+
+WWDC / Notes / Guides (good “how to” and code examples)
+- WWDC25 session notes (“Bring advanced speech-to-text to your app with SpeechAnalyzer”): https://wwdcnotes.com/documentation/wwdcnotes/wwdc25-277-bring-advanced-speechtotext-to-your-app-with-speechanalyzer/
+- “Implementing advanced speech-to-text in your SwiftUI app” (Create with Swift): https://www.createwithswift.com/implementing-advanced-speech-to-text-in-your-swiftui-app/
+- “Bring advanced speech-to-text to your app with SpeechAnalyzer” (LevelUp): https://levelup.gitconnected.com/bring-advanced-speech-to-text-to-your-app-with-speechanalyzer-6ed25a84586c
+- Callstack overview of modules + assets: https://www.callstack.com/blog/on-device-speech-transcription-with-apple-speechanalyzer
+
+GitHub projects (real-world usage patterns / architecture ideas)
+- expo-speech-transcriber (bridges SFSpeechRecognizer + SpeechAnalyzer): https://github.com/DaveyEke/expo-speech-transcriber
+- Liquid-Speech (Flutter plugin; shows how teams are wrapping SpeechAnalyzer behind event streams): https://github.com/itsthisjustin/Liquid-Speech
+- swift-scribe (Swift-focused transcription tooling; tracks modern Speech APIs): https://github.com/FluidInference/swift-scribe
+
+(Community reports / caveats; treat as non-authoritative)
+- Simulator/device caveats and locale mismatch anecdotes: https://www.reddit.com/r/shortcuts/comments/1nns0iw/speechtranscriber_issue/
+
+Options Considered
+
+Option A — Keep current approach (SFSpeechRecognizer only)
+Pros
+- Works on older iOS versions
+- Known behavior and existing implementation
+- Lots of examples online
+
+Cons
+- Long pauses may end recognition tasks; requires complex restart + transcript accumulation
+- Harder to provide robust 1-hour “scroll back through everything” UX without careful segment management
+- API is older and not designed around modern async streaming
+
+Option B — Adopt SpeechAnalyzer/SpeechTranscriber on iOS 26+ only (fallback to SFSpeechRecognizer for iOS < 26)
+Pros
+- Designed for long-form and modern app patterns (modules, streaming, async)
+- Cleaner “single session” behavior for long pauses (no recognition-task restart loop)
+- Better fit for producing segment/timing metadata to support scrollback + highlighting
+
+Cons
+- Requires iOS 26 SDK availability to compile and run
+- Needs model/asset management considerations (language assets may need installation)
+- Some simulator/locale edge cases reported by community (must validate on real devices)
+
+Option C — Fully switch to SpeechAnalyzer everywhere (raise deployment target)
+Pros
+- Simplifies overall codebase (single API)
+- Best long-form behavior
+
+Cons
+- Drops users on older OS versions
+- Not acceptable if backwards compatibility matters
+
+Decision
+
+Choose Option B:
+- Implement a new iOS 26+ `SpeechAnalyzerTranscriptionEngine` behind the existing `TranscriptionEngine` protocol.
+- Keep current engine(s) for iOS < 26.
+- Preserve the engine event stream contract (`.partial`, `.final`, `.audioLevel`, `.error`, `.stateChange`) so existing views and timing workflows remain compatible.
+
+Implementation Plan (within current project architecture)
+
+1) Add a new engine implementation (actor)
+- New type: `OS26SpeechAnalyzerTranscriptionEngine` (actor)
+- Lives alongside existing engines (e.g., `ModernTranscriptionEngine`, `LegacyTranscriptionEngine`)
+
+Responsibilities
+- Configure and manage:
+  - AVAudioEngine (or external buffer source)
+  - SpeechAnalyzer (using correct audio format)
+  - SpeechTranscriber module (configured with locale + reporting style)
+  - Optional SpeechDetector module for “voice activity” events
+- Emit `TranscriptionEvent` via AsyncStream
+- Manage lifecycle (start/stop, cancellation, cleanup)
+
+2) Update `TranscriptionEngineFactory`
+Selection logic:
+- If iOS 26+ AND device supports SpeechAnalyzer path for the configured locale:
+  - use `OS26SpeechAnalyzerTranscriptionEngine`
+- Else:
+  - fallback to existing SFSpeechRecognizer-based engine
+
+3) Keep `SpeechRecognizer` UI coordinator unchanged
+The current `SpeechRecognizer.startTranscribing()` already:
+- creates engine via factory
+- consumes eventStream
+- updates UI on main queue
+- handles audio level events for VU meter
+
+That’s exactly what we want—no new UI contracts.
+
+4) Transcript model: stop treating “current text” as the single source of truth
+For long sessions, implement (in the engine or a dedicated transcript accumulator) a data model like:
+- `TranscriptSegment { id, startTime, endTime, text, isFinal }`
+Then:
+- UI can display:
+  - finalized segments as “stable”
+  - current in-progress segment(s) as “processing”
+- Persistence can store segments incrementally (safer for 1-hour recordings)
+
+This mirrors your earlier ADR direction (committed vs processing) and eliminates “append string deltas” traps.
+
+Reference Implementation Patterns (Swift)
+
+A) Core pattern: analyzer + module + AsyncStream input
+
+NOTE: The exact initializer names and types should be taken from the current iOS 26 SDK docs (links above).
+The structure below matches the patterns in the WWDC25 notes / guides.
+
+    import AVFoundation
+    import Speech
+
+    @available(iOS 26.0, *)
+    actor OS26SpeechAnalyzerTranscriptionEngine: TranscriptionEngine {
+        private var audioEngine: AVAudioEngine?
+        private var analyzer: SpeechAnalyzer?
+        private var transcriber: SpeechTranscriber?
+
+        private var continuation: AsyncStream<TranscriptionEvent>.Continuation?
+        private var eventStream: AsyncStream<TranscriptionEvent>?
+
+        func start(audioBufferHandler: @escaping (AVAudioPCMBuffer) -> Void) async throws {
+            let stream = AsyncStream<TranscriptionEvent> { continuation in
+                self.continuation = continuation
+            }
+            self.eventStream = stream
+
+            let engine = AVAudioEngine()
+            let inputNode = engine.inputNode
+
+            // Use analyzer’s best-compatible format for the module set (per WWDC guidance)
+            let inputFormat = inputNode.outputFormat(forBus: 0)
+            let analyzerFormat = SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: inputFormat)
+
+            // Create analyzer + module(s)
+            let analyzer = SpeechAnalyzer()
+            let transcriber = SpeechTranscriber(locale: Locale(identifier: "en_US"))
+            analyzer.addModule(transcriber)
+
+            // Prepare analyzer
+            try await analyzer.prepareToAnalyze(in: analyzerFormat)
+
+            // Install tap and feed buffers
+            inputNode.installTap(onBus: 0, bufferSize: 1024, format: analyzerFormat) { buffer, _ in
+                audioBufferHandler(buffer)
+
+                // send audio into analyzer (pattern varies by SDK; some docs show analyzer consuming buffers via inputs)
+                Task { [weak self] in
+                    await self?.handleBuffer(buffer)
+                }
+            }
+
+            engine.prepare()
+            try engine.start()
+
+            self.audioEngine = engine
+            self.analyzer = analyzer
+            self.transcriber = transcriber
+
+            // Listen for transcription results (pattern varies; typically async updates from module)
+            Task { [weak self] in
+                await self?.consumeTranscriptionUpdates()
+            }
+
+            continuation.yield(.stateChange(.running))
+        }
+
+        func stop() async {
+            audioEngine?.stop()
+            audioEngine?.inputNode.removeTap(onBus: 0)
+            audioEngine = nil
+
+            continuation?.yield(.stateChange(.stopped))
+            continuation?.finish()
+
+            analyzer = nil
+            transcriber = nil
+        }
+
+        func eventStream() -> AsyncStream<TranscriptionEvent> {
+            // Your existing engines likely return a stored stream or recreate a stream each start.
+            // Keep behavior consistent with your current TranscriptionEngine protocol.
+            return eventStream ?? AsyncStream { $0.finish() }
+        }
+
+        // MARK: - Internal
+
+        private func handleBuffer(_ buffer: AVAudioPCMBuffer) async {
+            // Feed analyzer input here (SDK-specific)
+        }
+
+        private func consumeTranscriptionUpdates() async {
+            // Observe transcription updates here (SDK-specific)
+            // Emit .partial/.final events:
+            // continuation?.yield(.partial(text, segments))
+            // continuation?.yield(.final(text, segments))
+        }
+    }
+
+B) Managing assets (language models)
+- SpeechAnalyzer / SpeechTranscriber may require that language assets are installed on device.
+- Prefer proactive install at app onboarding or before long recording starts.
+- If the SDK exposes “asset inventory” APIs, wrap them in the engine as:
+  - `prepareAssets(for locale)`
+  - fallback behavior (prompt user, retry, or fall back to SFSpeechRecognizer)
+
+C) Handling long pauses
+- Keep a single analyzer session alive for the whole recording (up to 1 hour).
+- Optionally attach SpeechDetector and use voice-activity to:
+  - mark segment boundaries
+  - end “processing” region / commit a stable segment after N seconds of silence
+- Avoid “restart loop” logic used in SFSpeechRecognizer paths.
+
+Recommended Implementation for SpeechDictation
+
+1) Add `OS26SpeechAnalyzerTranscriptionEngine` (actor)
+2) Add a `TranscriptStore` / accumulator that:
+   - appends finalized segments
+   - exposes a derived `displayText` for current UI
+   - can be persisted incrementally to disk (for 1-hour reliability)
+3) Update the UI to scroll a segment list rather than a giant string
+   - a giant `String` is workable but becomes expensive for frequent updates
+4) Keep `SpeechRecognizer` as the coordinator, but change it to prefer segment-based models when available
+   - the existing `applyPartialTranscriptUpdate`/accumulation helpers are a good transitional bridge
+
+Consequences
+
+Positive
+- iOS 26+ gets a modern, long-form friendly transcription pipeline
+- iOS < 26 keeps working (fallback engine)
+- Cleanly fits your current TranscriptionEngine + event stream design
+- Better foundation for 1-hour “scrollback transcript” UX and persistence
+
+Negative / Risks
+- SDK churn: iOS 26 APIs may evolve; keep engine isolated to a single file/module.
+- Asset install: first-use latency, offline availability varies by language; must handle gracefully.
+- Simulator/device differences: validate on real devices early and add “capability checks” + user-facing messaging.
+
+Open Questions / Follow-ups
+
+1) Locale selection + region pitfalls:
+   - Prefer explicit BCP-47 locale identifiers (e.g., “en_US”).
+   - Validate behavior when system language/region is a mismatched combo.
+
+2) Segment metadata:
+   - Decide whether to store timings at word level or phrase/segment level.
+   - Decide the schema for secure storage (encrypt-at-rest).
+
+3) Performance:
+   - UI should update from a segment model to avoid frequent re-rendering of a huge monolithic string.
+
+Appendix: Quick checklist for adding iOS 26 APIs safely
+
+- Wrap all iOS 26 symbols with `@available(iOS 26.0, *)` and runtime availability checks.
+- Keep the iOS 26 engine isolated behind `TranscriptionEngine`.
+- Add a “capability probe” function:
+  - Is OS 26+?
+  - Are assets available for chosen locale?
+  - Is analyzer usable on this device?
+- Provide fallbacks and user messaging when unavailable.
+

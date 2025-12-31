@@ -60,6 +60,12 @@ class AudioPlaybackManager: NSObject, ObservableObject { // Inherit NSObject for
         guard let player = audioPlayer, !player.isPlaying else { return }
         
         do {
+            // Ensure a consistent session configuration via the centralized manager.
+            let configured = AudioSessionManager.shared.configureForPlaybackSync()
+            guard configured else {
+                print("Error starting playback: audio session failed to configure for playback")
+                return
+            }
             try AVAudioSession.sharedInstance().setActive(true)
             player.play()
             playbackState = .playing
@@ -175,14 +181,8 @@ class AudioPlaybackManager: NSObject, ObservableObject { // Inherit NSObject for
     // MARK: - Private Methods
     
     private func setupAudioSession() {
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default)
-            try session.setActive(true)
-            print("Audio session configured for playback")
-        } catch {
-            print("Error setting up audio session: \(error)")
-        }
+        // Configure via the centralized manager to avoid session category races with recording/speech recognition.
+        _ = AudioSessionManager.shared.configureForPlaybackSync()
     }
     
     private func startPlaybackTimer() {

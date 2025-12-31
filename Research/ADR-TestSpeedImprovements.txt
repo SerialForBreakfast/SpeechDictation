@@ -1,0 +1,323 @@
+ADR-TestSpeedImprovements
+Status: Proposed
+Date: 2025-12-13
+Owner: SpeechDictation iOS Team
+
+Context
+We are seeing slow test feedback loops and (per observation) multiple iOS Simulator instances launching during test runs. This is especially painful while iterating on the “continuous transcript accumulation” logic and other core business rules.
+
+From a quick review of the repo’s automation scripts, the current workflow tends to:
+- Build first with a custom DerivedData path, then
+- Invoke `xcodebuild test` without specifying the same DerivedData path (which can trigger an additional build in a different DerivedData location), and
+- Potentially allow Xcode “parallel/distributed testing” behavior that creates simulator clones to run tests concurrently.
+
+Problem Statement
+1) Multiple simulator “clone” instances can be spawned when parallel testing is enabled, increasing boot time and overall test latency.
+2) Unit test runs can inadvertently rebuild (or do additional indexing work) if DerivedData is not consistently reused between build and test phases.
+3) We need reliable, repeatable improvements that speed up unit tests specifically (UI tests remain necessary, but should not dominate the dev loop).
+
+Goals / Non-Goals
+Goals
+- Reduce unit test wall-clock time for the common developer workflow.
+- Avoid spawning multiple simulator clones for unit tests.
+- Avoid redundant rebuilds between build and test.
+- Keep results reproducible (no “fast but flaky” configuration).
+
+Non-Goals
+- Maximizing throughput via sharding across many simulators (that’s a separate CI optimization topic).
+- Redesigning the test suite itself (though we note some follow-up ideas).
+
+Observed Cause: “Simulator Clones” and Parallel Testing
+Xcode supports running tests in parallel by spawning multiple “test runners”, which can create simulator clone instances even when you specify one destination.
+References:
+- Use Your Loaf: Xcode 10 introduced random/parallel tests; parallel runs create simulator clones per test runner:
+  https://useyourloaf.com/blog/xcode-10-random-and-parallel-tests/
+- StackOverflow discussion of cloned simulators created during unit test runs:
+  https://stackoverflow.com/questions/73746572/xcode-unit-tests-run-clone-ios-simulators
+- `xcodebuild` flags to control this behavior (e.g. `-parallel-testing-enabled`, `-maximum-parallel-testing-workers`):
+  https://leancrew.com/all-this/man/man1/xcodebuild.html
+  https://fig.io/manual/xcodebuild
+
+Decision Drivers
+- Most of our unit tests exercise business logic and do not require parallelism to finish quickly.
+- Simulator boot time dominates for small-to-medium test suites.
+- Deterministic, single-simulator unit tests are easier to reason about and debug.
+- The dev-loop should run unit tests fast; UI tests can run less frequently and/or in CI.
+
+Considered Options
+
+Option A — Disable parallel testing for unit tests (single simulator, single runner)
+Approach
+- Ensure parallel testing is OFF when running unit tests.
+- Either:
+  1) Turn it off in the Scheme/Test Plan (“Execute in parallel”), AND/OR
+  2) Override on the command line: `-parallel-testing-enabled NO` and/or set workers to 1.
+
+Pros
+- Prevents simulator cloning and reduces launch overhead.
+- More deterministic runtime environment.
+- Less flakiness.
+
+Cons
+- Unit tests may run slower if we eventually have a very large suite.
+- Doesn’t address redundant rebuilds by itself.
+
+Practical CLI example
+xcodebuild test \
+  -project SpeechDictation.xcodeproj \
+  -scheme SpeechDictation \
+  -destination "platform=iOS Simulator,id=<SIM_UUID>" \
+  -only-testing:SpeechDictationTests \
+  -parallel-testing-enabled NO \
+  -maximum-parallel-testing-workers 1
+
+Notes
+- `-parallel-testing-enabled` overrides the per-target scheme setting.
+- Limiting workers prevents clones even if a scheme setting enables parallel testing.
+
+Option B — Build once, test without building (avoid redundant builds)
+Approach
+- Use `xcodebuild build-for-testing` once, then `xcodebuild test-without-building` for fast iteration loops.
+- Reuse the SAME `-derivedDataPath` for both steps.
+
+References
+- Example writeups using `build-for-testing` + `test-without-building`:
+  https://www.xcteq.co.uk/xcblog/speed-ios-ci-using-test-without-building-xctestrun-fastlane/
+  (Historical but still conceptually correct: build once, reuse artifacts.)
+
+Pros
+- Often the single biggest win for repeated local runs and CI.
+- Reduces “mystery rebuilds” and improves determinism.
+- Works well with `-only-testing:` to run just the relevant tests.
+
+Cons
+- Slightly more script complexity.
+- Still needs Option A to avoid parallel-clone simulator overhead if scheme enables it.
+
+Practical CLI example
+# 1) Build once for testing
+xcodebuild build-for-testing \
+  -project SpeechDictation.xcodeproj \
+  -scheme SpeechDictation \
+  -destination "platform=iOS Simulator,id=<SIM_UUID>" \
+  -derivedDataPath "<PATH>/derived_data" \
+  -parallel-testing-enabled NO \
+  -maximum-parallel-testing-workers 1
+
+# 2) Run unit tests without rebuilding
+xcodebuild test-without-building \
+  -project SpeechDictation.xcodeproj \
+  -scheme SpeechDictation \
+  -destination "platform=iOS Simulator,id=<SIM_UUID>" \
+  -derivedDataPath "<PATH>/derived_data" \
+  -only-testing:SpeechDictationTests \
+  -parallel-testing-enabled NO \
+  -maximum-parallel-testing-workers 1
+
+Option C — Separate schemes/test plans for Unit vs UI tests
+Approach
+- Create a dedicated Unit Test scheme/test plan that includes only SpeechDictationTests.
+- Create a separate UI Test scheme/test plan for SpeechDictationUITests.
+- Ensure the Unit scheme disables parallel testing and code coverage by default.
+
+Pros
+- Simplifies “fast path” commands and avoids accidental UI test runs.
+- Makes CI configuration clearer (unit suite can run more frequently).
+- Supports different runtime flags for unit vs UI tests.
+
+Cons
+- Maintenance overhead (must keep both plans up to date).
+- Still benefits from Options A and B for maximum speed.
+
+Option D — Aggressive sharding/parallelism (not recommended for our dev loop)
+Approach
+- Keep parallel testing enabled and shard across multiple simulator clones and/or multiple destinations.
+- This is more suitable for CI for very large suites.
+
+Pros
+- Can reduce total suite duration in CI for large test suites.
+
+Cons
+- Spawns multiple simulators (the exact pain we’re trying to reduce locally).
+- Higher flakiness risk; harder debugging.
+
+Decision
+Adopt Option A + Option B for local/dev-loop unit tests, and Option C for long-term maintainability.
+
+Concrete decisions
+1) Unit tests MUST run with parallel testing disabled (no simulator clones).
+2) Unit test runs MUST reuse a consistent DerivedData path between build and test phases.
+3) Prefer build-for-testing + test-without-building for repeated runs (local and CI where applicable).
+4) Keep UI tests separate and opt-in for developer runs; run UI tests in CI or on-demand locally.
+
+Implementation Plan (reliable, incremental)
+Phase 1 — Immediate speed win (no project file edits required)
+- Update test-running scripts to pass:
+  - `-parallel-testing-enabled NO`
+  - `-maximum-parallel-testing-workers 1`
+- Ensure unit test invocation uses the SAME `-derivedDataPath` used during build.
+
+Phase 2 — Avoid rebuilds during unit tests
+- Replace the “build then xcodebuild test” pattern with:
+  - `xcodebuild build-for-testing ... -derivedDataPath <...>`
+  - `xcodebuild test-without-building ... -derivedDataPath <...>`
+- Keep `-only-testing:SpeechDictationTests` for the fast path.
+
+Phase 3 — Split schemes/test plans (optional but recommended)
+- Add:
+  - “SpeechDictation-UnitTests” (Unit tests only)
+  - “SpeechDictation-UITests” (UI tests only)
+- Ensure Unit scheme:
+  - Parallel testing OFF
+  - Code coverage OFF by default
+  - No additional UI test target inclusion
+
+Additional Low-Risk Optimizations
+- Preboot simulator in scripts (saves some boot latency):
+  - `xcrun simctl boot <SIM_UUID> || true`
+  - `xcrun simctl bootstatus <SIM_UUID> -b`
+- Avoid “clean” by default (already the case); reserve it for CI or explicit `--clean`.
+- Consider disabling coverage at build time for unit test runs:
+  - `ENABLE_CODE_COVERAGE=NO` as an xcodebuild build setting override.
+
+Measurement / Success Criteria
+We will consider this ADR successful when:
+- A typical unit test run launches exactly one simulator instance (no “Clone 1 of…” etc).
+- Consecutive unit test runs do not perform a full rebuild (verify via logs and timing).
+- Average “edit → run relevant unit tests” time drops meaningfully (target: sub-15s on warmed caches, machine dependent).
+- Unit test reliability remains unchanged (no increased flake).
+
+Diagnostics and Logging (Find Where Time Is Going)
+This section adds practical, reliable ways to quantify what you’re already observing (simulators opening, loading, and running tests) and to locate the real bottlenecks.
+
+A. Capture a “single run” artifact bundle for analysis (.xcresult)
+Why
+- A result bundle gives you durable evidence: per-test duration, setup/teardown time, and overall action timing.
+- It also makes it obvious whether you are spending most time in build, install/launch, or test execution.
+
+How
+1) Run tests with an explicit result bundle path:
+xcodebuild test \
+  -project SpeechDictation.xcodeproj \
+  -scheme SpeechDictation \
+  -destination "platform=iOS Simulator,id=<SIM_UUID>" \
+  -resultBundlePath "<PATH>/unit-tests.xcresult" \
+  -parallel-testing-enabled NO \
+  -maximum-parallel-testing-workers 1 \
+  -only-testing:SpeechDictationTests
+
+Reference: xcodebuild -resultBundlePath documentation
+- https://fig.io/manual/xcodebuild
+- https://keith.github.io/xcode-man-pages/xcresulttool.1.html
+
+2) Extract timing information from the .xcresult
+If you’re on Xcode 16+, xcresulttool includes “test-results” subcommands (preferred).
+Example:
+xcrun xcresulttool get test-results summary --path "<PATH>/unit-tests.xcresult"
+
+Reference: Xcode 16 xcresulttool changes
+- https://developer.apple.com/documentation/xcode-release-notes/xcode-16_3-release-notes
+- https://keith.github.io/xcode-man-pages/xcresulttool.1.html
+
+What to look for
+- Total duration vs. “tests executed duration”
+- Top slow tests by duration
+- Any large “setup” or “attachment” time
+
+B. Add wall-clock timing around simulator boot vs. test execution
+Why
+- If simulator boot dominates, you’ll see it directly as a separate measured phase.
+- This prevents optimizing the wrong thing (e.g., micro-optimizing tests when boot is the problem).
+
+How
+Wrap key phases with timestamps (shell example):
+START_ALL=$(date +%s)
+
+echo "[TEST] Boot simulator <SIM_UUID>..."
+START_BOOT=$(date +%s)
+xcrun simctl boot <SIM_UUID> || true
+xcrun simctl bootstatus <SIM_UUID> -b
+END_BOOT=$(date +%s)
+echo "[TEST] Simulator boot+ready: $((END_BOOT-START_BOOT))s"
+
+echo "[TEST] Run unit tests..."
+START_TEST=$(date +%s)
+# (run xcodebuild here)
+END_TEST=$(date +%s)
+echo "[TEST] Unit test duration: $((END_TEST-START_TEST))s"
+
+END_ALL=$(date +%s)
+echo "[TEST] Total: $((END_ALL-START_ALL))s"
+
+Notes
+- `bootstatus -b` blocks until the device reports “booted + ready”, which makes it a good timing boundary.
+- If boot+ready is consistently large, focus on avoiding new simulator instances (disable parallel clones) and keeping a stable simulator alive between runs.
+
+C. Detect simulator clones explicitly (confirm the root cause)
+Why
+- When you see “multiple simulators opening”, they are often CoreSimulator “clones” created by parallel testing.
+- Confirm it with a deterministic command: list devices and grep for clones.
+
+How
+xcrun simctl list devices | grep -i clone || true
+
+If clones show up:
+- Ensure `-parallel-testing-enabled NO` AND `-maximum-parallel-testing-workers 1`
+- Verify the scheme/test plan doesn’t override this locally.
+
+D. Build timing summary (separate build slowness from test slowness)
+Why
+- If you’re actually spending 70% of time rebuilding, simulator tuning won’t help much.
+- Build timing summary gives you a high-level breakdown of build phases.
+
+How
+xcodebuild build \
+  -project SpeechDictation.xcodeproj \
+  -scheme SpeechDictation \
+  -destination "platform=iOS Simulator,id=<SIM_UUID>" \
+  -showBuildTimingSummary
+
+Reference
+- Apple: Improving incremental build speed (includes -showBuildTimingSummary)
+  https://developer.apple.com/documentation/xcode/improving-the-speed-of-incremental-builds
+
+E. Capture and retain logs (make regressions measurable)
+Why
+- When “it suddenly got slower”, you want evidence: which phase, which device, which command.
+- A single log file + xcresult bundle makes performance regressions reviewable in PRs.
+
+How
+- Pipe xcodebuild output to a timestamped file:
+xcodebuild test ... 2>&1 | tee "<PATH>/logs/unit-tests-$(date +%Y%m%d-%H%M%S).log"
+
+- Keep:
+  1) the .xcresult bundle
+  2) the xcodebuild log
+  3) the boot timing numbers
+
+F. Minimal “fast-path” recommendation for local iteration
+After you’ve measured where time goes, the reliable fast-path (dev loop) should be:
+1) Boot an existing simulator once (don’t erase between runs).
+2) build-for-testing (one-time per code change set)
+3) test-without-building (repeat rapidly)
+4) parallel testing disabled for unit tests
+
+This reduces:
+- new simulator creation / clones
+- redundant rebuilds
+- noise in performance measurements
+
+
+Risks and Mitigations
+- Risk: disabling parallel testing may increase runtime if the unit suite grows large.
+  - Mitigation: re-enable parallelism ONLY when suite size justifies it, and cap workers (2) to avoid too many clones.
+- Risk: test-without-building can confuse developers if they change code but re-run without rebuilding.
+  - Mitigation: scripts should always do build-for-testing first, or detect stale build artifacts.
+- Risk: UI tests still slow.
+  - Mitigation: keep UI tests opt-in; use separate workflow and consider parallelism in CI only.
+
+Follow-ups (separate ADRs if needed)
+- CI-specific: sharded UI tests with capped workers and a dedicated simulator pool.
+- Structural: reduce heavyweight app launches in unit tests by moving more logic into pure Swift modules.
+
+End.

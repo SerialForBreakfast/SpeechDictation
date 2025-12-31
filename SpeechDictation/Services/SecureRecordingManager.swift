@@ -125,10 +125,25 @@ final class SecureRecordingManager: ObservableObject {
             sessionId: sessionId
         )
         
-        guard currentAudioURL != nil else {
+        guard let currentAudioURL else {
             print("Failed to start secure audio recording")
             currentSession = nil
             return nil
+        }
+
+        // Persist the actual recorded filename so playback resolves the correct secure URL.
+        if let session = currentSession {
+            currentSession = SecureRecordingSession(
+                id: session.id,
+                title: session.title,
+                startTime: session.startTime,
+                endTime: session.endTime,
+                duration: session.duration,
+                audioFileName: currentAudioURL.lastPathComponent,
+                transcriptFileName: session.transcriptFileName,
+                isCompleted: session.isCompleted,
+                hasConsent: session.hasConsent
+            )
         }
         
         // Connect audio buffer stream to speech recognizer
@@ -136,12 +151,16 @@ final class SecureRecordingManager: ObservableObject {
             self?.speechRecognizer.appendAudioBuffer(buffer)
         }
         
-        liveTranscript = AttributedString("")
+        // Initialize live transcript as plain text (String) for consistency with storage and SRT export
+        // Note: SRT files require plain text, and we maintain String throughout the pipeline
+        liveTranscript = ""
         transcriptCancellable?.cancel()
         transcriptCancellable = speechRecognizer.$transcribedText
             .receive(on: RunLoop.main)
             .sink { [weak self] latestText in
-                self?.liveTranscript = AttributedString(latestText)
+                // Use plain text directly - speechRecognizer.transcribedText is already a String
+                // This ensures consistency with SRT export which requires plain text
+                self?.liveTranscript = latestText
             }
         
         // Start on-device transcription with timing using external audio source
@@ -177,7 +196,7 @@ final class SecureRecordingManager: ObservableObject {
         let finalAudioURL = audioRecordingManager.stopRecording()
         
         // Stop transcription
-        speechRecognizer.stopTranscribingWithTiming(audioFileURL: finalAudioURL)
+        await speechRecognizer.stopTranscribingWithTimingAndWait(audioFileURL: finalAudioURL)
         
         // Save transcript data securely
         await saveTranscriptSecurely(sessionId: session.id)

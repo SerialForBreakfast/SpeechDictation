@@ -71,6 +71,18 @@ final class AudioSessionManager: ObservableObject {
     func configureForLevelMonitoringSync() -> Bool {
         return configureSessionSync(for: .levelMonitoring)
     }
+
+    /// Configures audio session for playback with priority handling
+    /// - Returns: True if configuration was successful
+    func configureForPlayback() async -> Bool {
+        return await configureSession(for: .playback)
+    }
+
+    /// Synchronous variant for playback setup in contexts where async cannot be used
+    /// - Returns: True if configuration succeeded
+    func configureForPlaybackSync() -> Bool {
+        return configureSessionSync(for: .playback)
+    }
     
     /// Resets audio session to default state
     func resetAudioSession() async {
@@ -133,10 +145,17 @@ final class AudioSessionManager: ObservableObject {
                 return true
             }
             
-            // Deactivate current session if needed, unless it's already playAndRecord
-            if session.category != .playAndRecord {
-                try session.setActive(false, options: .notifyOthersOnDeactivation)
-                print("Deactivated current audio session for new configuration.")
+            // Deactivate the current session when switching to playback, or when we're not already in playAndRecord.
+            // Some devices/OS versions refuse category changes while active, yielding `!pri` / OSStatus failures.
+            let shouldDeactivate = (configuration == .playback) || (session.category != .playAndRecord)
+            if shouldDeactivate {
+                do {
+                    try session.setActive(false, options: .notifyOthersOnDeactivation)
+                    print("Deactivated current audio session for new configuration.")
+                } catch {
+                    // Continue and attempt to set category anyway; failures can be transient depending on audio route.
+                    print("Warning: Failed to deactivate audio session before reconfiguration: \(error)")
+                }
             } else {
                 print("Current audio session is already playAndRecord, skipping deactivation.")
             }

@@ -2,11 +2,19 @@ import Foundation
 import Speech
 import AVFoundation
 
+/// Main speech recognition coordinator using pluggable transcription engines.
+///
+/// Concurrency:
+/// - Published properties must be updated on the main thread
+/// - Engine event stream runs on background tasks
+/// - Uses DispatchQueue.main.async for UI updates from engine events
 class SpeechRecognizer: ObservableObject {
     @Published var transcribedText: String = ""
     @Published private(set) var audioSamples: [Float] = []
     /// Live peak audio level (0.0 – 1.0) updated for each incoming buffer. Used for VU meter.
-    @Published private(set) var currentLevel: Float = 0.0
+    ///
+    /// Concurrency: Must be set on main thread (published property)
+    @Published var currentLevel: Float = 0.0
     @Published var volume: Float = 10.0 {
         didSet {
             adjustVolume()
@@ -23,6 +31,83 @@ class SpeechRecognizer: ObservableObject {
     var displayLink: CADisplayLink?
     var playerNode: AVAudioPlayerNode?
     var mixerNode: AVAudioMixerNode?
+
+    // MARK: - Transcription Engine Integration
+    
+    /// Current transcription engine (LegacyTranscriptionEngine or ModernTranscriptionEngine)
+    ///
+    /// Concurrency: Actor-isolated engine, accessed via async methods
+    /// Note: Accessible to extensions for timing workflows
+    var transcriptionEngine: (any TranscriptionEngine)?
+    
+    /// Task that consumes the engine's event stream and updates UI
+    ///
+    /// Concurrency: Background task that marshals updates to main thread
+    /// Note: Accessible to extensions for timing workflows
+    var engineEventTask: Task<Void, Never>?
+
+    // MARK: - Live transcription accumulation (kept for backward compatibility)
+
+    /// Accumulates **finalized** transcript text across recognition-task restarts.
+    ///
+    /// Speech recognition tasks may end after silence; we restart them to support natural gaps
+    /// in dialogue while keeping a single logical transcript for the UI and persistence layers.
+    private var accumulatedTranscript: String = ""
+
+    /// Last partial transcript emitted by the current recognition task.
+    ///
+    /// Used to prevent regressions where `bestTranscription` temporarily shortens while the recognizer
+    /// revises its hypothesis.
+    private var lastPartialTranscript: String = ""
+
+    /// Indicates we are intentionally stopping recognition, so auto-restart should not occur.
+    private var isStoppingRecognition: Bool = false
+
+    /// Whether the current transcription session is driven by an external audio source.
+    private var isUsingExternalAudioSourceForTranscription: Bool = false
+
+    /// Records the start date for the current timing session (used by the timing extension).
+    var timingSessionStartDate: Date?
+
+    /// Offset in seconds applied to timing segments when the recognizer is restarted (used by the timing extension).
+    var timingRecognitionTimeOffset: TimeInterval = 0
+
+    // MARK: - Cross-file helpers (used by extensions)
+
+    /// Resets transcript accumulation for a brand-new recording/transcription session.
+    ///
+    /// Concurrency: Must be called on the main thread because it mutates published state (`transcribedText`).
+    func resetTranscriptAccumulationForNewSession(isExternalAudioSource: Bool) {
+        accumulatedTranscript = ""
+        lastPartialTranscript = ""
+        transcribedText = ""
+        isStoppingRecognition = false
+        isUsingExternalAudioSourceForTranscription = isExternalAudioSource
+    }
+
+    /// Updates the current partial transcript and re-composes `transcribedText` for display.
+    ///
+    /// Concurrency: Must be called on the main thread because it updates `transcribedText`.
+    func applyPartialTranscriptUpdate(_ newText: String, isFinal: Bool) {
+        guard !newText.isEmpty else { return }
+
+        if newText.count >= lastPartialTranscript.count || isFinal {
+            lastPartialTranscript = newText
+        }
+
+        transcribedText = composeTranscript(accumulated: accumulatedTranscript, partial: lastPartialTranscript)
+    }
+
+    /// Marks the recognizer as stopping to prevent auto-restart loops.
+    func markRecognitionStopping() {
+        isStoppingRecognition = true
+        lastPartialTranscript = ""
+    }
+
+    /// Indicates whether recognition is in the process of stopping (used by timing auto-restart logic).
+    var isRecognitionStopping: Bool {
+        return isStoppingRecognition
+    }
     
     init() {
         requestAuthorization()
@@ -31,92 +116,123 @@ class SpeechRecognizer: ObservableObject {
     }
     
     func startTranscribing(isExternalAudioSource: Bool = false) {
-        print("Starting transcription... (external source: \(isExternalAudioSource))")
-        // If a monitoring engine is already running, stop and reset it before starting a
-        // fresh engine configured for speech recognition.
-        if let engine = audioEngine {
-            engine.stop()
-            engine.inputNode.removeTap(onBus: 0)
-        }
+        print("Starting transcription with engine... (external source: \(isExternalAudioSource))")
 
-        if !isExternalAudioSource {
-            audioEngine = AVAudioEngine()
-        }
-        
-        speechRecognizer = SFSpeechRecognizer()
-        request = SFSpeechAudioBufferRecognitionRequest()
-        
-        guard let request = request else {
-            print("Unable to create a SFSpeechAudioBufferRecognitionRequest object")
-            return
-        }
-        
-        request.shouldReportPartialResults = true
-        // SECURITY: Enforce on-device recognition for privacy and security
-        // This ensures all speech processing happens locally on the device
-        request.requiresOnDeviceRecognition = true
-        
-        recognitionTask = speechRecognizer?.recognitionTask(with: request) { result, error in
-            if let result = result {
+        // Reset per-session accumulation so each new transcription starts clean.
+        resetTranscriptAccumulationForNewSession(isExternalAudioSource: isExternalAudioSource)
+
+        // Stop any existing engine and event stream (awaited inside the new task to avoid overlap).
+        let previousEngine = transcriptionEngine
+        let previousTask = engineEventTask
+
+        // Create appropriate engine via factory
+        let configuration = TranscriptionEngineConfiguration.default
+        let engine = TranscriptionEngineFactory.createEngine(
+            configuration: configuration,
+            isExternalAudioSource: isExternalAudioSource
+        )
+        transcriptionEngine = engine
+
+        // Start engine and subscribe to its event stream
+        engineEventTask = Task { [weak self] in
+            do {
+                // Ensure any prior engine has fully stopped before starting a new one.
+                await previousEngine?.stop()
+                if let previousTask {
+                    await previousTask.value
+                }
+
+                // CRITICAL: Subscribe to event stream FIRST so continuation is set before start() yields events
+                // Otherwise, events emitted during start() are lost (continuation is nil).
+                let eventStream = engine.eventStream()
+                
+                // Start the engine (now continuation is ready to receive events)
+                try await engine.start(audioBufferHandler: { [weak self] buffer in
+                    // Forward audio buffers to level monitoring if needed
+                    self?.processAudioForLevelMonitoring(buffer)
+                })
+
+                // Process events from the stream
+                for await event in eventStream {
+                    await self?.handleEngineEvent(event)
+                }
+            } catch {
+                print("Engine start failed: \(error)")
                 DispatchQueue.main.async {
-                    self.transcribedText = result.bestTranscription.formattedString
-                    print("Transcription result: \(result.bestTranscription.formattedString)")
+                    self?.transcribedText = "Error: \(error.localizedDescription)"
                 }
             }
-            
-            if let error = error {
-                print("Recognition error: \(error)")
-                self.stopTranscribing()
+        }
+    }
+    
+    /// Handles events from the transcription engine
+    ///
+    /// Concurrency: Called from background task, marshals UI updates to main thread
+    private func handleEngineEvent(_ event: TranscriptionEvent) async {
+        switch event {
+        case .partial(let text, _):
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, !text.isEmpty else { return }
+                self.transcribedText = text
             }
+            
+        case .final(let text, _):
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, !text.isEmpty else { return }
+                self.transcribedText = text
+                print("Final transcription result: \(text)")
+            }
+            
+        case .audioLevel(let level):
+            DispatchQueue.main.async { [weak self] in
+                self?.currentLevel = level
+            }
+            
+        case .error(let error):
+            print("Engine error: \(error)")
+            
+        case .stateChange(let state):
+            print("Engine state: \(state)")
         }
-        
-        if isExternalAudioSource {
-            print("Using external audio source - skipping local engine setup")
-            return
+    }
+    
+    /// Processes audio buffer for level monitoring
+    ///
+    /// Concurrency: Called from engine's audio tap, can run on any thread
+    /// Note: Accessible to extensions for timing workflows
+    func processAudioForLevelMonitoring(_ buffer: AVAudioPCMBuffer) {
+        // Level monitoring is handled by the engine itself via audioLevel events
+        // This is just a hook for any additional audio processing if needed
+    }
+    
+    /// Stops the transcription engine and cleans up resources
+    ///
+    /// Concurrency: Can be called from any thread, coordinates cleanup
+    /// Note: Accessible to extensions for timing and other specialized workflows
+    func stopTranscriptionEngine() {
+        // Default behavior: stop quickly and release resources.
+        // For flows that must drain final events for persistence (e.g., secure recordings),
+        // use `stopTranscribingWithTimingAndWait(...)` which awaits shutdown.
+        engineEventTask?.cancel()
+        engineEventTask = nil
+
+        let engine = transcriptionEngine
+        transcriptionEngine = nil
+
+        Task {
+            await engine?.stop()
         }
-        
-        guard let inputNode = audioEngine?.inputNode else {
-            print("Audio engine has no input node")
-            return
-        }
-        
-        // Use the native format from the input node for better compatibility
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-        print("Using native input format for transcription: \(recordingFormat)")
-        
-        #if targetEnvironment(simulator)
-        if recordingFormat.sampleRate <= 0 || recordingFormat.channelCount <= 0 {
-            print("[Simulator] Invalid input format for transcription: sampleRate=\(recordingFormat.sampleRate), channels=\(recordingFormat.channelCount). Skipping audio tap.")
-            return
-        }
-        #endif
-        
-        inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, time in
-            self.processAudioBuffer(buffer: buffer)
-            self.request?.append(buffer)
-        }
-        
-        audioEngine?.prepare()
-        
-        do {
-            try audioEngine?.start()
-            print("Audio engine started")
-        } catch {
-            print("Audio engine failed to start: \(error)")
-            #if targetEnvironment(simulator)
-            print("Audio engine failure in simulator is expected - continuing for testing")
-            #endif
-        }
-        
-        adjustVolume()
     }
     
     /// Appends an external audio buffer to the recognition request
     /// - Parameter buffer: The audio buffer to process
     func appendAudioBuffer(_ buffer: AVAudioPCMBuffer) {
         processAudioBuffer(buffer: buffer)
-        request?.append(buffer)
+        
+        // Forward buffer to transcription engine (for external audio source mode)
+        Task {
+            await transcriptionEngine?.appendAudioBuffer(buffer)
+        }
     }
     
     /// Processes a PCM buffer to store samples for waveform visualisation **and** update `currentLevel`.
@@ -199,16 +315,102 @@ class SpeechRecognizer: ObservableObject {
     }
     
     func stopTranscribing() {
-        print("Stopping transcription...")
+        print("Stopping transcription with engine...")
+
+        markRecognitionStopping()
+        
+        // Stop the transcription engine
+        stopTranscriptionEngine()
+        
+        // Stop audio engine if it was started for level monitoring
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
-        
-        request?.endAudio()
-        recognitionTask?.cancel()
-        
-        request = nil
-        recognitionTask = nil
         audioEngine = nil
+
+        // Preserve transcript for the UI until the next start.
+    }
+
+    // MARK: - Transcript composition & restart helpers
+
+    /// Combines accumulated finalized transcript with the current partial transcript.
+    func composeTranscript(accumulated: String, partial: String) -> String {
+        guard !accumulated.isEmpty else { return partial }
+        guard !partial.isEmpty else { return accumulated }
+        return accumulated + " " + partial
+    }
+
+    /// Appends the current partial transcript to the accumulated transcript and clears the partial buffer.
+    func finalizePartialTranscriptForAccumulation() {
+        let finalized = lastPartialTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !finalized.isEmpty else { return }
+
+        if accumulatedTranscript.isEmpty {
+            accumulatedTranscript = finalized
+        } else {
+            accumulatedTranscript += " " + finalized
+        }
+
+        lastPartialTranscript = ""
+        transcribedText = accumulatedTranscript
+    }
+
+    /// Restarts the recognition task to support gaps in dialogue (silence can end tasks).
+    ///
+    /// Concurrency: Must be called from the main thread because it mutates recognition state
+    /// (`request`, `recognitionTask`) that is used by the audio render callback.
+    private func restartTranscriptionTaskIfNeeded() {
+        guard !isStoppingRecognition else { return }
+        guard let speechRecognizer else { return }
+
+        // Cancel the old task; keep the audio engine and tap running.
+        recognitionTask?.cancel()
+        recognitionTask = nil
+
+        let newRequest = SFSpeechAudioBufferRecognitionRequest()
+        newRequest.shouldReportPartialResults = true
+        newRequest.requiresOnDeviceRecognition = true
+        request = newRequest
+
+        recognitionTask = speechRecognizer.recognitionTask(with: newRequest) { [weak self] result, error in
+            if let result = result {
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    let newText = result.bestTranscription.formattedString
+                    guard !newText.isEmpty else { return }
+
+                    if newText.count >= self.lastPartialTranscript.count || result.isFinal {
+                        self.lastPartialTranscript = newText
+                    }
+
+                    self.transcribedText = self.composeTranscript(accumulated: self.accumulatedTranscript, partial: self.lastPartialTranscript)
+
+                    if result.isFinal {
+                        self.finalizePartialTranscriptForAccumulation()
+                        // Delay slightly to avoid rapid restart loops in long silences.
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            self.restartTranscriptionTaskIfNeeded()
+                        }
+                    }
+                }
+            }
+
+            if let error = error {
+                guard let self else { return }
+                let nsError = error as NSError
+                if nsError.code == 301 || nsError.localizedDescription.localizedCaseInsensitiveContains("canceled") {
+                    return
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    self.restartTranscriptionTaskIfNeeded()
+                }
+            }
+        }
+
+        if isUsingExternalAudioSourceForTranscription {
+            print("Restarted recognition task (external audio source)")
+        } else {
+            print("Restarted recognition task")
+        }
     }
     
     // MARK: - Input-level monitoring (always-on)

@@ -1,0 +1,262 @@
+SpeechADR.txt
+ADR-###: Long-Form, Pause-Tolerant Speech Transcription on Apple Platforms (Swift)
+
+Status: Proposed
+Date: 2025-12-13
+Owner: (you)
+
+Context
+- We need real-world transcription that can handle:
+  - Long pauses (silence) and intermittent dialogue.
+  - 1-hour recordings with a complete transcript the user can scroll back through.
+  - Live “what’s being said now” UX, without losing earlier text.
+- Using Apple-native speech transcription. Historically this means Speech.framework via SFSpeechRecognizer.
+- Practical problem observed: after long pauses, transcription may stop or “stall” until speech resumes or the task restarts.
+
+Problem statement
+- SFSpeechRecognizer streaming is optimized for dictation-like interactions; long-lived recognition tasks are discouraged and may be stopped by the framework.
+  - Apple’s own guidance (quoted by De La Sign) says speech recognition tasks can be stopped after ~1 minute to reduce battery/network load, similar to dictation.
+    Source: https://www.delasign.com/blog/swift-speech-recognition-loop/ (see “Plan for a one-minute limit…” quote, attributed to Apple Developer docs)
+- Even with on-device recognition forced, developers report intermittent pausing behavior after silence.
+  - Example discussion: https://stackoverflow.com/questions/76761230/ios-speech-recognition-repeatedly-pauses-and-resumes-its-transcription
+
+Goals
+1) Never lose the raw audio: a 1-hour conversation must always be recorded to disk.
+2) Produce a complete transcript suitable for scrollback (with timestamps/segments).
+3) Provide a robust “live transcription” UX despite pauses and framework task limits.
+4) Prefer Apple-native APIs; support multiple OS versions if possible.
+
+Non-goals
+- Speaker diarization (labeling speakers) is nice-to-have but not required for MVP.
+- Cloud transcription is out of scope (unless used as an optional fallback).
+
+Decision drivers
+- Reliability for long-form, intermittent speech.
+- Platform/version constraints (new APIs may require newest OS).
+- On-device capability (privacy + offline).
+- Energy usage and background behavior.
+- UX: stable vs. partial text presentation with minimal flicker.
+- Maintainability (Swift Concurrency; actor isolation; testability).
+
+Options considered
+
+Option A — SFSpeechRecognizer live transcription with periodic task restart (“rolling sessions”)
+Summary
+- Use AVAudioEngine input tap to feed SFSpeechAudioBufferRecognitionRequest.
+- Restart the recognition task periodically (e.g., 45–55s) and/or on silence, and stitch results.
+- Always record audio separately to disk so transcription can be reconstructed or re-run.
+
+Key references / code examples
+- Apple sample mirror: “Recognizing speech in live audio”
+  - Shows AVAudioEngine + installTap + request.append(buffer).
+  - Repo: https://github.com/gromb57/ios-wwdc23__RecognizingSpeechInLiveAudio
+  - In the README, it demonstrates installing an input tap and appending buffers:
+    https://github.com/gromb57/ios-wwdc23__RecognizingSpeechInLiveAudio#configure-the-microphone-using-avfoundation
+- Looping/restart pattern discussion (with Apple’s 1-minute guidance quoted):
+  - https://www.delasign.com/blog/swift-speech-recognition-loop/
+
+Pros
+- Works on older iOS versions than the new SpeechAnalyzer APIs (depending on your deployment target).
+- Familiar API; lots of examples; supports partial results and contextual hints.
+- Can be combined with on-device recognition (requiresOnDeviceRecognition) where supported.
+
+Cons / risks
+- “Stalling” on silence and/or framework stopping long tasks still needs defensive restart logic.
+- Stitching segments is non-trivial:
+  - partial result corrections can rewrite earlier words; naive append creates duplication.
+  - you must treat each task’s output as authoritative within its time window and merge carefully.
+- Long-form accuracy may degrade vs. newer models; punctuation/formatting may be limited.
+
+Implementation sketch (high-level)
+1) Recording (always on):
+   - Start an AVAudioEngine tap to write to an AVAudioFile (PCM) or use AVAudioRecorder (compressed) plus an AVAudioEngine tap for transcription feed.
+   - Keep “audio is recorded” decoupled from “speech task is running”.
+
+2) Recognition session loop:
+   - Start recognitionTask with SFSpeechAudioBufferRecognitionRequest.
+   - Append buffers continuously while session is active.
+   - Periodically “rotate” the task:
+     - End audio on the request, cancel task, create new request+task.
+     - Maintain a short overlap window (e.g., 250–750ms) to avoid cutting words on boundaries.
+   - Additionally rotate on:
+     - isFinal == true
+     - errors (e.g., audio session interruptions)
+     - prolonged silence detection (see Option A+ below).
+
+3) Transcript model (for scrollback and correctness):
+   - Store segments: {startTime, endTime, text, isFinal}.
+   - Maintain a “committed transcript” buffer and a “current partial” buffer (cursor model).
+   - When rotating tasks, finalize the segment and commit.
+
+Option A+ — SFSpeechRecognizer + explicit silence detection (RMS/VAD) to control task boundaries
+Summary
+- Add a local voice activity detector (simple RMS threshold) to decide when a “phrase” ends.
+- Stop/restart tasks at silence boundaries (rather than random timers) to improve stitching.
+
+Key reference / code example
+- Compiler-Inc/Transcriber:
+  - Actor-based wrapper around Speech.framework with “automatic silence detection using RMS power analysis”.
+  - Repo: https://github.com/Compiler-Inc/Transcriber
+  - README shows configurable silenceThreshold and silenceDuration, plus requiresOnDeviceRecognition:
+    https://github.com/Compiler-Inc/Transcriber#configuration-options
+
+Pros
+- More natural segmentation (commits at pauses).
+- Reduces duplication risk at arbitrary time boundaries.
+- Encapsulates complexity behind a modern async/await interface.
+
+Cons / risks
+- Still limited by SFSpeechRecognizer behavior (task restarts still required defensively).
+- RMS thresholds are device/environment dependent; needs tuning and UX affordances (e.g., “ambient noise calibration”).
+- Requires careful concurrency (audio callbacks vs. UI updates).
+
+Option B — Adopt SpeechAnalyzer + SpeechTranscriber for long-form on-device transcription
+Summary
+- Use the newer SpeechAnalyzer API (WWDC25) and attach a SpeechTranscriber module.
+- Optionally attach SpeechDetector for voice activity detection and segmentation.
+
+Key references
+- Apple docs snippet: SpeechTranscriber is “appropriate for normal conversation”, iOS 26.0+:
+  https://developer.apple.com/documentation/speech/speechtranscriber
+- Apple WWDC25 session link (277):
+  https://developer.apple.com/wwdc25/277
+- Third-party technical overview (modules, SpeechDetector + SpeechTranscriber):
+  https://www.callstack.com/blog/on-device-speech-transcription-with-apple-speechanalyzer
+- MacStories hands-on notes it’s available across iPhone/iPad/Mac/Vision Pro and is faster than Whisper in their tests:
+  https://www.macstories.net/stories/hands-on-how-apples-new-speech-apis-outpace-whisper-for-lightning-fast-transcription/
+- Model download note (latency/UX consideration):
+  https://www.argmaxinc.com/blog/apple-and-argmax
+- Device/support uncertainty in the field (example forum thread):
+  https://developer.apple.com/forums/thread/807739
+
+Pros
+- Designed for broader use cases than classic dictation; intended for long-form transcription.
+- On-device pipeline with modern Swift APIs (async/await), better control.
+- Modular design: SpeechTranscriber (transcription) + SpeechDetector (VAD) gives cleaner segmentation.
+
+Cons / risks
+- Requires iOS 26+ (and corresponding OS versions on other platforms), which may be too new for your audience.
+- May require model download before first use, affecting “first-run” UX.
+- Device capability might vary; simulator support may be limited and some older devices might not run the model.
+
+Option C — Hybrid: SpeechAnalyzer when available, fallback to SFSpeechRecognizer (rolling sessions)
+Summary
+- Prefer SpeechAnalyzer+SpeechTranscriber on iOS 26+.
+- On older OS versions, run Option A/A+.
+
+Pros
+- Best long-form experience on new OS, while supporting existing users.
+- Lets you keep a single transcript store format (segments with timestamps), regardless of backend.
+
+Cons / risks
+- Two pipelines to maintain; requires careful abstraction and testing.
+- Behavioral differences (punctuation, timing granularity, partial updates).
+
+Option D — Non-Apple on-device STT (e.g., Whisper/WhisperKit) as an optional engine
+Summary
+- Use Apple-native as default but allow an optional engine (for unsupported devices/OS).
+- Not preferred for MVP if “Apple-native only” is strict, but useful as contingency.
+
+Pros
+- Works on older OS versions; predictable long-form behavior.
+- Control over segmentation and model selection.
+
+Cons / risks
+- Larger app size or model download; more CPU/GPU/RAM usage; battery impact.
+- Additional licensing/maintenance considerations.
+
+Decision (recommended)
+Choose Option C (Hybrid):
+- Primary engine on iOS 26+: SpeechAnalyzer + SpeechTranscriber, with SpeechDetector for segmentation when needed.
+- Fallback engine: SFSpeechRecognizer rolling sessions with explicit silence detection (RMS) + periodic restart safety net.
+
+Rationale
+- This best matches the requirement (“1 hour conversation with scrollback transcript”) while acknowledging OS fragmentation.
+- SpeechAnalyzer appears explicitly aimed at long-form, conversation-appropriate transcription and provides modular VAD support.
+- The fallback path is proven in the ecosystem via Apple sample patterns (AVAudioEngine tap → request.append(buffer)) and open-source wrappers that implement silence detection and a streaming interface.
+
+Consequences
+Positive
+- Reliable long-form capture because audio recording is always independent and continuous.
+- Pause tolerance: segmentation and restarts ensure the UI continues to update and the system doesn’t “get stuck”.
+- Architecture keeps transcript model stable across engines.
+
+Negative
+- More engineering work and test surface (two pipelines).
+- Need robust merge logic and transcript storage.
+- Need to handle model download + capability checks for SpeechAnalyzer path.
+
+Architecture outline (engine-agnostic)
+Core components
+1) AudioRecorder
+   - Owns AVAudioSession configuration.
+   - Captures microphone audio and writes to a single continuous file (1 hour) plus provides a live PCM stream for analysis/transcription.
+
+2) TranscriptionEngine (protocol)
+   - start(stream) -> AsyncStream<TranscriptionEvent>
+   - stop()
+   - Events:
+     - partial(text, segmentId, timeRange?)
+     - final(text, segmentId, timeRange?)
+     - rms(level) (optional)
+     - error(...)
+
+3) TranscriptStore
+   - Normalized store of segments for scrollback:
+     - Segment { id, startTime, endTime, text, isFinal }
+   - Merge policy:
+     - Keep “committed” segments immutable once finalized.
+     - Maintain one “active” segment for partial updates.
+
+4) UI / ViewModel
+   - Builds an attributed transcript for display:
+     - committed = normal
+     - active partial = secondary/italic
+   - Scrollback uses the segment list, not a single giant string (better for performance).
+
+Handling long pauses (concrete tactics)
+- Never stop the AudioRecorder unless the user stops.
+- Engine behavior:
+  - SpeechAnalyzer path: keep the analyzer running; use SpeechDetector to detect silence and decide when to finalize segments.
+  - SFSpeechRecognizer path:
+    - Always be ready to restart the recognition task when:
+      - timer hits ~45–55 seconds (safety net per Apple guidance quoted in De La Sign)
+      - silence detected for N seconds (commit segment, start a new one)
+      - task errors or returns isFinal
+- Merge policy:
+  - Within a single task, treat its partial results as authoritative and “replace” the active segment (don’t append deltas).
+  - When a segment is finalized, freeze it and start a new segment.
+
+Testing strategy (high value)
+- Synthetic audio fixtures:
+  - 1 hour file with long silence blocks and intermittent speech.
+  - Stress: background/foreground transitions; phone call interruption simulation if feasible.
+- Invariants:
+  - Audio file is continuous and playable end-to-end.
+  - TranscriptStore never loses committed segments.
+  - Segment boundaries do not duplicate more than a small overlap allowance.
+- Performance:
+  - UI renders transcript incrementally without re-rendering a huge string each update.
+
+Open questions / follow-ups
+- Exact platform support matrix for SpeechAnalyzer/SpeechTranscriber (devices + regions/languages).
+- Model download UX: progress UI, storage size, prefetch strategy.
+- Whether diarization is needed later (and how to implement within Apple-native constraints).
+
+Appendix: Verified reference URLs
+- SFSpeechRecognizer rolling loop + Apple 1-minute guidance quote:
+  https://www.delasign.com/blog/swift-speech-recognition-loop/
+- WWDC23 sample mirror (“Recognizing speech in live audio”):
+  https://github.com/gromb57/ios-wwdc23__RecognizingSpeechInLiveAudio
+- Transcriber wrapper (silence detection, async stream):
+  https://github.com/Compiler-Inc/Transcriber
+- SpeechAnalyzer overview (third-party, modules):
+  https://www.callstack.com/blog/on-device-speech-transcription-with-apple-speechanalyzer
+- MacStories hands-on:
+  https://www.macstories.net/stories/hands-on-how-apples-new-speech-apis-outpace-whisper-for-lightning-fast-transcription/
+- SpeechTranscriber doc (availability + description snippet):
+  https://developer.apple.com/documentation/speech/speechtranscriber
+- Apple Developer Forum thread (device support discussion):
+  https://developer.apple.com/forums/thread/807739
+- Reported “pausing/resuming” behavior discussion:
+  https://stackoverflow.com/questions/76761230/ios-speech-recognition-repeatedly-pauses-and-resumes-its-transcription

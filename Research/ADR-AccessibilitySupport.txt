@@ -1,0 +1,301 @@
+ADR-AccessibilitySupport.txt
+Date: 2025-12-13
+Status: Proposed
+Owners: SpeechDictation-iOS maintainers
+Scope: SpeechDictation (Audio Transcription + Live Camera Input + Secure Recording)
+
+================================================================================
+1. Context
+================================================================================
+
+SpeechDictation has grown from “basic dictation” into a multi-surface app:
+
+- Audio transcription with long-form, continuous transcript accumulation (Hybrid engines).
+- Recording + playback with synchronized transcript timing.
+- Secure recording workflow (privacy-first).
+- A second “Live Camera Input” experience with spoken descriptions.
+- A Settings surface controlling appearance, mic sensitivity, and feature toggles.
+
+Project artifacts indicate a deliberate accessibility direction:
+- EntryView explicitly calls out VoiceOver + Dynamic Type + High Contrast + Reduce Motion support.
+- The changelog references VoiceOver improvements for camera scene descriptions and improved contrast.
+- UI surfaces include ContentView, SettingsView, TextSizeSettingView, ThemeSettingView, MicSensitivityView, and export/share UI.
+
+However, accessibility today appears “feature-local”: EntryView and camera overlays are called out as accessible,
+but the rest of the surfaces (long transcript, playback controls, secure recording, export) need a consistent
+system to ensure:
+
+- VoiceOver navigation is predictable across screens.
+- Dynamic Type remains readable and scrollable for long transcripts (including AX sizes).
+- State changes (Recording / Listening / Playing) are communicated safely without spamming announcements.
+- UI tests can catch regressions early.
+
+Primary Apple references:
+- SwiftUI Accessibility fundamentals:
+  https://developer.apple.com/documentation/swiftui/accessibility-fundamentals
+- SwiftUI accessibility modifiers:
+  https://developer.apple.com/documentation/swiftui/view-accessibility
+- Human Interface Guidelines: Accessibility:
+  https://developer.apple.com/design/human-interface-guidelines/accessibility
+- Human Interface Guidelines: VoiceOver:
+  https://developer.apple.com/design/human-interface-guidelines/voiceover
+- Automated audits in XCTest (WWDC23):
+  https://developer.apple.com/videos/play/wwdc2023/10035/
+- Accessibility audits documentation:
+  https://developer.apple.com/documentation/accessibility/performing-accessibility-audits-for-your-app
+
+================================================================================
+2. Goals and Non-Goals
+================================================================================
+
+Goals
+- VoiceOver: Every interactive element has an accurate label, hint (where needed), and value (when stateful).
+- Long transcript: 1+ hour transcript remains navigable, scrollable, and usable at accessibility text sizes.
+- Predictable focus: Logical reading order and groupings; no “mystery” unlabeled icons.
+- Status communication: Recording/transcription/playback state is accessible (and optionally announced).
+- Testability: Automated audits + UI tests cover major flows; unit tests protect identifier/string contracts.
+- Maintainability: Accessibility metadata is centrally defined and reused; avoids per-view ad-hoc identifiers.
+
+Non-Goals (for this ADR)
+- Full localization rollout (but we will structure strings for localization readiness).
+- Fully automated VoiceOver gesture simulation (XCUITest cannot fully emulate VO rotor/gestures).
+- External dependency adoption (e.g., snapshot-testing frameworks) unless future ADR approves it.
+
+================================================================================
+3. Decision Drivers
+================================================================================
+
+- This app’s core value is communication; accessibility is not optional.
+- SwiftUI layouts can silently regress with changes to padding, stack order, or dynamic sizing.
+- Long transcript UIs are uniquely risky for VoiceOver (verbosity, focus fatigue, and performance).
+- A “secure recording” workflow must be accessible without forcing users to compromise privacy.
+- We already have UITests and a build/test automation system; we should leverage XCTest audits.
+
+================================================================================
+4. Considered Options
+================================================================================
+
+Option A: Manual-only accessibility testing
+- Rely on Accessibility Inspector + on-device VoiceOver testing, with developer discipline.
+
+Pros:
+- No engineering overhead in tests.
+Cons:
+- Regressions are discovered late.
+- Hard to ensure consistent labels/identifiers over time.
+- Long-form transcript edge cases get missed.
+
+Option B: XCTest automated accessibility audits + targeted UI tests (Recommended)
+- Add dedicated UI tests that navigate major screens and call `performAccessibilityAudit`.
+- Add targeted assertions for identifiers, labels, values, and transcript behaviors.
+
+Pros:
+- Catches common issues (missing labels, contrast, clipped text, Dynamic Type issues) early.
+- Integrates into CI and existing UI tests.
+- Low dependency footprint (native XCTest feature).
+Cons:
+- Not a complete replacement for real VoiceOver usage tests.
+- Some audits can produce false positives; needs a curated issue handler.
+
+Option C: Add a third-party accessibility testing library
+- Example: rwapp/A11yUITests
+  https://github.com/rwapp/A11yUITests
+
+Pros:
+- Additional checks and patterns beyond the built-in audit.
+Cons:
+- New dependency surface, maintenance, and potential CI friction.
+- May conflict with “no external dependencies” direction.
+
+Option D: Build a custom in-app accessibility “debug overlay”
+- Expose runtime a11y diagnostics, readouts of label/hint/value, focus order, etc.
+
+Pros:
+- Great for rapid iteration while developing UI.
+Cons:
+- Costly to build/maintain; can drift from real a11y behavior.
+
+================================================================================
+5. Decision
+================================================================================
+
+Adopt Option B as the baseline:
+
+1) Implement a consistent accessibility system across all SpeechDictation UI surfaces:
+   - Centralized accessibility identifiers and reusable label/hint/value strings.
+   - Screen-specific “accessibility contracts” that define what must be accessible and how.
+
+2) Add tests at two levels:
+   - Unit tests: protect identifier/string contracts and state formatting logic.
+   - Integration UI tests: run XCTest accessibility audits + key end-to-end assertions.
+
+3) Continue to use manual VoiceOver checks for high-risk flows (long transcript, playback, secure recording),
+   but treat them as a release checklist rather than the only line of defense.
+
+================================================================================
+6. Implementation Plan
+================================================================================
+
+6.1 Add a centralized Accessibility namespace
+- Add a new file (or folder) only after confirming we do not already have an equivalent:
+  Suggested location:
+    SpeechDictation/UI/Accessibility/AccessibilityIdentifiers.swift
+    SpeechDictation/UI/Accessibility/AccessibilityStrings.swift
+
+AccessibilityIdentifiers.swift (concept)
+- Nested types by surface:
+  - Entry
+  - Transcription (ContentView)
+  - Recording
+  - Playback
+  - Settings
+  - Export
+  - Camera
+
+AccessibilityStrings.swift (concept)
+- Use string keys + default English values via NSLocalizedString to stay localization-ready.
+- Keep strings short and meaningful for screen readers.
+
+6.2 Apply consistent accessibility metadata across UI
+General rules (SwiftUI)
+- Every icon-only button: explicit `.accessibilityLabel` (and `.accessibilityHint` if non-obvious).
+- Stateful controls: `.accessibilityValue` reflects state (e.g., “Recording”, “Paused”, “Not recording”).
+- Headings: add header traits for structure (e.g., transcript title, sections).
+- Group related controls to reduce swipe fatigue: `.accessibilityElement(children: .contain)`.
+
+6.3 Long transcript accessibility design
+Risks
+- 1 hour transcript can be thousands of words; listing every word/segment as an element can be exhausting.
+
+Approach
+- Treat transcript as a structured set of “segments” (already present in TimingData/TranscriptionSegment).
+- Present segments in a List where each row is an accessibility element:
+  - Label: the spoken text
+  - Value: timestamp range (“02:13 to 02:18”)
+  - Optional custom action: “Play from here”
+- Provide a “Jump to Live” control with clear label and a value indicating if auto-follow is enabled.
+- Optional feature (toggle): announce newly committed segments (NOT partials), rate-limited.
+
+SwiftUI APIs to consider:
+- `.accessibilityRotor(...)` to navigate by time markers or speakers (if you add speaker separation later).
+- `.accessibilityLiveRegion(...)` sparingly, only for minimal status changes.
+  (Avoid turning a fast-updating transcript into a live region.)
+
+6.4 Secure recording workflow
+- Recording controls must communicate:
+  - Secure mode is active (privacy implication)
+  - Recording state and elapsed duration
+  - Whether transcription is on-device only (if you enforce that)
+- Avoid hidden state: “recording but no visible transcript updates” must be obvious.
+
+6.5 Camera experience (existing emphasis)
+- Continue the existing direction: spoken descriptions and spatial context are good, but ensure:
+  - Toggle controls are labeled and stateful
+  - Spoken announcements are rate-limited and respect user preference toggles
+
+================================================================================
+7. Testing Strategy
+================================================================================
+
+7.1 Unit tests (SpeechDictationTests target)
+Goal: Protect “contracts” that UI tests and VoiceOver rely on.
+
+Recommended unit tests (no third-party libs)
+- Identifier uniqueness test:
+  - Flatten all identifier strings and verify they are unique.
+- Identifier presence tests:
+  - Assert required identifiers exist for each surface contract.
+- Accessibility copy formatting tests:
+  - e.g., “elapsed time” formatter produces readable strings at boundaries (0s, 59s, 1h, etc.).
+- Announcement throttling tests:
+  - If you add “announce new final segments”, unit test the rate limiter.
+
+Note:
+- SwiftUI view introspection is intentionally limited without third-party tools; keep unit tests to logic and
+  constants that you control.
+
+7.2 Integration/UI tests (SpeechDictationUITests target)
+Goal: Catch common a11y regressions and verify critical flows.
+
+A) Automated accessibility audits
+- Use `XCUIApplication.performAccessibilityAudit(...)` after arriving on each major screen.
+- Use an issue handler to:
+  - Fail on real problems (missing labels, clipped text, insufficient contrast).
+  - Filter known false positives with explicit comments (avoid “ignore everything” patterns).
+
+References:
+- WWDC23 session:
+  https://developer.apple.com/videos/play/wwdc2023/10035/
+- Apple docs:
+  https://developer.apple.com/documentation/accessibility/performing-accessibility-audits-for-your-app
+
+B) Run audits across Dynamic Type sizes
+- Force content size category with a launch argument:
+  `-UIPreferredContentSizeCategoryName <UICTContentSizeCategory...>`
+
+Reference:
+- https://www.polpiella.dev/configuring-ui-tests-with-launch-arguments
+
+Suggested matrix (keep it small in CI, expand locally)
+- Default (no override)
+- Large (e.g., UICTContentSizeCategoryXL)
+- Accessibility (e.g., UICTContentSizeCategoryAX3 or AX5)
+
+C) Screen-by-screen UI test assertions (examples)
+- Entry
+  - Both experiences are reachable via accessibility identifiers.
+- Transcription
+  - Start/Stop listening buttons exist and are labeled.
+  - Transcript list exists, is scrollable, and has stable identifiers.
+  - “Jump to Live” appears when you scroll away from bottom.
+- Recording + Playback
+  - Record button label/value changes as state changes.
+  - Playback controls are reachable and report state (playing/paused, position).
+- Settings
+  - Toggles/sliders have labels and values.
+  - Mic sensitivity slider exposes a value (e.g., “0.15”).
+
+D) Manual-only checks (Release checklist)
+Because automated tests cannot fully emulate VoiceOver:
+- On-device VoiceOver:
+  - Navigate the transcript screen for 2-3 minutes; ensure no dead-ends.
+  - Confirm record/playback state reads correctly.
+  - Confirm secure recording warnings are announced and understandable.
+- Accessibility Inspector:
+  - Audit hit targets, labels, and reading order interactively.
+
+================================================================================
+8. Consequences
+================================================================================
+
+Positive
+- Consistent accessibility implementation across both app experiences.
+- Automated audits catch regressions early without needing third-party dependencies.
+- Long transcript UX becomes intentionally designed for screen readers rather than “accidental”.
+
+Negative / Risks
+- Accessibility audits can be noisy initially; requires triage and deliberate filtering.
+- Some improvements (e.g., transcript rotor navigation, segment-level actions) require UI refactors.
+- Performance risk if transcript is rendered as too many accessibility elements (mitigation: segment grouping).
+
+================================================================================
+9. Open Questions / Follow-ups
+================================================================================
+
+- Do we want “announce new transcript segments” as a user-visible toggle?
+- Should transcript “segments” be grouped (sentence-level, time-window) for best VoiceOver ergonomics?
+- What is the minimum CI matrix (OS versions / dynamic type sizes) that balances value vs runtime?
+- Is there already an AccessibilityIdentifiers/Strings file in the repo (must verify before creating)?
+- Should camera and transcription experiences share common identifiers for shared controls?
+
+================================================================================
+10. Next Steps
+================================================================================
+
+1) Inventory current UI surfaces and add/verify identifiers and labels:
+   - EntryView, ContentView, SettingsView, Export UI, Secure Recording UI, Playback UI, Camera UI.
+2) Add the “accessibility contract” constants and unit tests for uniqueness and formatting logic.
+3) Add a UI test suite:
+   - Navigate key screens and call performAccessibilityAudit after each navigation.
+   - Run with 2-3 dynamic type sizes using -UIPreferredContentSizeCategoryName.
+4) Establish a release checklist for on-device VoiceOver testing of long transcript + secure recording.
