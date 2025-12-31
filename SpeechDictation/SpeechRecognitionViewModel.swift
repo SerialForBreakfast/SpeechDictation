@@ -26,7 +26,7 @@ class SpeechRecognizerViewModel: ObservableObject {
     @Published var theme: Theme = .light
     @Published var isRecording: Bool = false
     @Published var isSecureRecordingActive: Bool = false
-    @Published var volume: Float = 10.0
+    @Published var volume: Float = 60.0
     @Published var currentLevel: Float = 0.0
     @Published var showSettings: Bool = false
     

@@ -15,7 +15,7 @@ class SpeechRecognizer: ObservableObject {
     ///
     /// Concurrency: Must be set on main thread (published property)
     @Published var currentLevel: Float = 0.0
-    @Published var volume: Float = 10.0 {
+    @Published var volume: Float = 60.0 {
         didSet {
             adjustVolume()
         }

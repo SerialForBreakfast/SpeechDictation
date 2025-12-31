@@ -26,27 +26,30 @@ struct SettingsView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Settings")
-                .font(.title)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-                .padding()
-                .background(headerBackgroundColor)
-                .cornerRadius(10)
+        ScrollView {
+            VStack(spacing: 20) {
+                Text("Settings")
+                    .font(.title)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(headerBackgroundColor)
+                    .cornerRadius(10)
 
-            TextSizeSettingView(viewModel: viewModel)
-            ThemeSettingView(viewModel: viewModel)
-            MicSensitivityView(viewModel: viewModel)
-            DepthBasedDistanceView()
-            SecureRecordingsSettingsView()
+                TextSizeSettingView(viewModel: viewModel)
+                ThemeSettingView(viewModel: viewModel)
+                MicSensitivityView(viewModel: viewModel)
+                DepthBasedDistanceView()
+                SecureRecordingsSettingsView()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(mainBackgroundColor)
+            .cornerRadius(10)
+            .shadow(color: shadowColor, radius: 10, x: 0, y: 0)
+            .padding()
         }
-        .padding()
-        .background(mainBackgroundColor)
-        .cornerRadius(10)
-        .shadow(color: shadowColor, radius: 10, x: 0, y: 0)
-        .padding()
-        .fixedSize(horizontal: true, vertical: false) // Ensures the width fits the content
     }
     
     // MARK: - Color Helpers
