@@ -210,6 +210,13 @@ class SpeechRecognizerViewModel: ObservableObject {
         isRecording = true
     }
 
+    /// Ensures the input-level monitor is active so UI meters can update while idle.
+    ///
+    /// Concurrency: Safe to call on the main actor; the underlying audio engine work is internal.
+    func ensureLevelMonitoringActive() {
+        speechRecognizer.startLevelMonitoring()
+    }
+
     /// Toggles secure recording workflow that captures audio + transcription with protection.
     func toggleSecureRecording() {
         Task { @MainActor in

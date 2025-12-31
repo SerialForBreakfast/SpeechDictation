@@ -327,6 +327,8 @@ class SpeechRecognizer: ObservableObject {
         audioEngine?.inputNode.removeTap(onBus: 0)
         audioEngine = nil
 
+        startLevelMonitoring()
+
         // Preserve transcript for the UI until the next start.
     }
 

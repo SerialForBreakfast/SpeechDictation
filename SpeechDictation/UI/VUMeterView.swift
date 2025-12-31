@@ -20,19 +20,39 @@ import SwiftUI
 
 /// Visualises the microphone input level in real-time.
 ///
-/// The meter consists of a grey background bar and a coloured foreground bar whose height is
-/// proportional to `level`.  The colour transitions from green → yellow → red as the level
-/// increases to provide an at-a-glance indication of clipping.
+/// The meter uses configurable thresholds to show a traffic-light status: green (safe),
+/// yellow (hot), and red (clipping). This keeps the component reusable across recording
+/// and transcription surfaces.
 struct VUMeterView: View {
     /// Normalised peak/RMS level in the range `0 … 1`.
     let level: Float
+    /// Threshold at which the meter shifts from green to yellow.
+    let warningThreshold: Float
+    /// Threshold at which the meter shifts from yellow to red.
+    let clipThreshold: Float
+    /// Width of the meter bar.
+    let meterWidth: CGFloat
+
+    init(
+        level: Float,
+        warningThreshold: Float = 0.7,
+        clipThreshold: Float = 0.9,
+        meterWidth: CGFloat = 18
+    ) {
+        self.level = level
+        self.warningThreshold = warningThreshold
+        self.clipThreshold = clipThreshold
+        self.meterWidth = meterWidth
+    }
 
     private var clampedLevel: CGFloat { CGFloat(max(0, min(level, 1))) }
+    private var clampedClipThreshold: CGFloat { CGFloat(max(0, min(clipThreshold, 1))) }
 
     var body: some View {
         GeometryReader { geometry in
             let totalHeight = geometry.size.height
             let activeHeight = totalHeight * clampedLevel
+            let clipMarkerHeight = totalHeight * clampedClipThreshold
 
             ZStack(alignment: .bottom) {
                 RoundedRectangle(cornerRadius: 3)
@@ -40,9 +60,13 @@ struct VUMeterView: View {
                 RoundedRectangle(cornerRadius: 3)
                     .fill(barColour)
                     .frame(height: activeHeight)
+                Rectangle()
+                    .fill(Color.red.opacity(0.7))
+                    .frame(height: 1)
+                    .offset(y: -clipMarkerHeight)
             }
         }
-        .frame(width: 14) // Fixed width; height defined by parent.
+        .frame(width: meterWidth) // Fixed width; height defined by parent.
         .animation(.linear(duration: 0.05), value: level)
         .accessibilityLabel("Input level")
         .accessibilityValue(String(format: "%.0f percent", clampedLevel * 100))
@@ -51,9 +75,9 @@ struct VUMeterView: View {
     /// Simple traffic-light colour scale.
     private var barColour: Color {
         switch level {
-        case 0.75...:   return .red
-        case 0.5...:    return .yellow
-        default:        return .green
+        case clipThreshold...:   return .red
+        case warningThreshold...: return .yellow
+        default:                 return .green
         }
     }
 }
