@@ -30,6 +30,11 @@ class SpeechRecognizerViewModel: ObservableObject {
     @Published var currentLevel: Float = 0.0
     @Published var showSettings: Bool = false
     
+    var effectiveLevel: Float {
+        let gain = max(0, min(volume / 100.0, 1.0))
+        return normalizedLevelWithGain(rawLevel: currentLevel, gain: gain)
+    }
+    
     // Timing data properties
     @Published var currentSession: AudioRecordingSession?
     @Published var segments: [TranscriptionSegment] = []
@@ -215,6 +220,14 @@ class SpeechRecognizerViewModel: ObservableObject {
     /// Concurrency: Safe to call on the main actor; the underlying audio engine work is internal.
     func ensureLevelMonitoringActive() {
         speechRecognizer.startLevelMonitoring()
+    }
+    
+    private func normalizedLevelWithGain(rawLevel: Float, gain: Float) -> Float {
+        guard rawLevel > 0, gain > 0 else { return 0 }
+        let rawDb = Double(rawLevel) * 60.0 - 60.0
+        let adjustedDb = rawDb + 20.0 * log10(Double(gain))
+        let normalized = (adjustedDb + 60.0) / 60.0
+        return Float(max(0.0, min(1.0, normalized)))
     }
 
     /// Toggles secure recording workflow that captures audio + transcription with protection.

@@ -35,15 +35,31 @@ struct MicSensitivityView: View {
                     .accessibilityLabel("Recommended mic sensitivity \(Int(recommendedVolume))")
             }
             
-            HStack {
+            HStack(alignment: .bottom, spacing: 12) {
                 sliderWithRecommendedMarker
                     .onChange(of: viewModel.volume) { _ in
                         viewModel.adjustVolume()
                     }
-                
-                VUMeterView(level: viewModel.currentLevel)
-                    .frame(height: 100)
-                    .padding(.leading, 8)
+
+                VStack(spacing: 6) {
+                    Text("Input")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    VUMeterView(level: viewModel.currentLevel)
+                        .frame(height: 100)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Input level meter")
+
+                VStack(spacing: 6) {
+                    Text("Effective")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    VUMeterView(level: viewModel.effectiveLevel)
+                        .frame(height: 100)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Effective level meter")
             }
             .padding(.horizontal)
             
