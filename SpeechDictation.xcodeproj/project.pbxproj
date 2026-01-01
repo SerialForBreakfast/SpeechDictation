@@ -11,6 +11,8 @@
 		181C4C6BED7E47AAA4642AA3 /* SecureRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 181C4C6BED7E47AAA4642AA4 /* SecureRecordingTests.swift */; };
 		4420D05F2C2E4E2500263CF6 /* WaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4420D05E2C2E4E2500263CF6 /* WaveformView.swift */; };
 		4420D0612C2F6A8C00263CF6 /* CacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4420D0602C2F6A8C00263CF6 /* CacheManager.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* AppLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6C /* AppLog.swift */; };
+		A2B3C4D5E6F708192A3B4C5D /* TranscriptAuditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* TranscriptAuditView.swift */; };
 		443B0CA32E2366BD00D292B9 /* LiveCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0C9F2E2366BD00D292B9 /* LiveCameraView.swift */; };
 		443B0CA42E2366BD00D292B9 /* SceneDetectionOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0CA22E2366BD00D292B9 /* SceneDetectionOverlayView.swift */; };
 		443B0CA52E2366BD00D292B9 /* CameraSceneDescriptionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B0C9E2E2366BD00D292B9 /* CameraSceneDescriptionViewModel.swift */; };
@@ -104,6 +106,8 @@
 		2A059F3E93A04D1BB16BC2CF /* LegacyTranscriptionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyTranscriptionEngine.swift; sourceTree = "<group>"; };
 		4420D05E2C2E4E2500263CF6 /* WaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformView.swift; sourceTree = "<group>"; };
 		4420D0602C2F6A8C00263CF6 /* CacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheManager.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5061728394A5B6C /* AppLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLog.swift; sourceTree = "<group>"; };
+		B2C3D4E5F60718293A4B5C6D /* TranscriptAuditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptAuditView.swift; sourceTree = "<group>"; };
 		443B0C9D2E2366BD00D292B9 /* CameraSceneDescriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSceneDescriptionView.swift; sourceTree = "<group>"; };
 		443B0C9E2E2366BD00D292B9 /* CameraSceneDescriptionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSceneDescriptionViewModel.swift; sourceTree = "<group>"; };
 		443B0C9F2E2366BD00D292B9 /* LiveCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCameraView.swift; sourceTree = "<group>"; };
@@ -296,6 +300,7 @@
 				44B427792EE4F41100934762 /* SecurePlaybackView.swift */,
 				44EA2BFE2C4884B500F76CFC /* SettingsView.swift */,
 				83AFD655C028498D8E6ADE20 /* SecureRecordingsView.swift */,
+				B2C3D4E5F60718293A4B5C6D /* TranscriptAuditView.swift */,
 				4420D05E2C2E4E2500263CF6 /* WaveformView.swift */,
 				4500001A2C60000000AAA111 /* VUMeterView.swift */,
 				44CCDA612EEE0B3B008C7912 /* VUMeter2.swift */,
@@ -309,6 +314,7 @@
 		44CE0E8B2C309B600060C2FF /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				B1C2D3E4F5061728394A5B6C /* AppLog.swift */,
 				4420D0602C2F6A8C00263CF6 /* CacheManager.swift */,
 				44CE0E852C30986E0060C2FF /* DownloadManager.swift */,
 				44CE0E8C2C30A1D80060C2FF /* AlertManager.swift */,
@@ -529,6 +535,7 @@
 				44E6EBDA2C2B99D600BBF2F6 /* CameraExperienceView.swift in Sources */,
 				44F6EBCC2C31BB2200BBF2F3 /* NativeStyleShareView.swift in Sources */,
 				4420D0612C2F6A8C00263CF6 /* CacheManager.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* AppLog.swift in Sources */,
 				44CE0E8D2C30A1D80060C2FF /* AlertManager.swift in Sources */,
 				443B0CAE2E2366D900D292B9 /* ObjectDetector.swift in Sources */,
 				443B0CAF2E2366D900D292B9 /* YOLOv3Model.swift in Sources */,
@@ -543,6 +550,7 @@
 				44E6EC002C2B9A7000BBF2F3 /* SpeechRecognizer.swift in Sources */,
 				4420D05F2C2E4E2500263CF6 /* WaveformView.swift in Sources */,
 				44B4277A2EE4F41100934762 /* SecurePlaybackView.swift in Sources */,
+				A2B3C4D5E6F708192A3B4C5D /* TranscriptAuditView.swift in Sources */,
 				4500001B2C60000000AAA112 /* VUMeterView.swift in Sources */,
 				4500003B2C60005000AAA114 /* TextSizeSettingView.swift in Sources */,
 				4500003D2C60005000AAA115 /* ThemeSettingView.swift in Sources */,

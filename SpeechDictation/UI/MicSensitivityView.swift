@@ -52,14 +52,14 @@ struct MicSensitivityView: View {
                 .accessibilityLabel("Input level meter")
 
                 VStack(spacing: 6) {
-                    Text("Effective")
+                    Text("Recording")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     VUMeterView(level: viewModel.effectiveLevel)
                         .frame(height: 100)
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("Effective level meter")
+                .accessibilityLabel("Recording level meter")
             }
             .padding(.horizontal)
             

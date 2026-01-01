@@ -79,7 +79,7 @@ final class LocalAuthenticationManager: ObservableObject {
         let result = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
         
         if let error = error {
-            print("Biometric authentication availability check failed: \(error.localizedDescription)")
+            AppLog.error(.auth, "Biometric authentication availability check failed: \(error.localizedDescription)")
             return false
         }
         
@@ -96,7 +96,7 @@ final class LocalAuthenticationManager: ObservableObject {
             authenticationState = .notEvaluated
         }
         
-        print("Authentication requirement set to: \(enabled)")
+        AppLog.info(.auth, "Authentication requirement set to: \(enabled)")
     }
     
     /// Authenticates the user using biometrics or device passcode
@@ -143,10 +143,10 @@ final class LocalAuthenticationManager: ObservableObject {
             if success {
                 authenticationState = .authenticated
                 recordSuccessfulAuthentication()
-                print("Biometric authentication successful")
+                AppLog.info(.auth, "Biometric authentication successful")
             } else {
                 authenticationState = .denied
-                print("Biometric authentication denied")
+                AppLog.notice(.auth, "Biometric authentication denied")
             }
             
             isAuthenticating = false
@@ -196,10 +196,10 @@ final class LocalAuthenticationManager: ObservableObject {
             if success {
                 authenticationState = .authenticated
                 recordSuccessfulAuthentication()
-                print("Passcode authentication successful")
+                AppLog.info(.auth, "Passcode authentication successful")
             } else {
                 authenticationState = .denied
-                print("Passcode authentication denied")
+                AppLog.notice(.auth, "Passcode authentication denied")
             }
             
             isAuthenticating = false
@@ -216,7 +216,7 @@ final class LocalAuthenticationManager: ObservableObject {
     func resetAuthenticationState() {
         authenticationState = .notEvaluated
         userDefaults.removeObject(forKey: lastAuthenticationTimeKey)
-        print("Authentication state reset")
+        AppLog.info(.auth, "Authentication state reset")
     }
     
     /// Forces a fresh biometric capability check.
@@ -292,19 +292,19 @@ final class LocalAuthenticationManager: ObservableObject {
             switch laError.code {
             case .biometryNotAvailable:
                 authenticationState = .biometricUnavailable
-                print("Biometric authentication not available")
+                AppLog.notice(.auth, "Biometric authentication not available")
                 
             case .biometryNotEnrolled:
                 authenticationState = .biometricNotEnrolled
-                print("Biometric authentication not enrolled")
+                AppLog.notice(.auth, "Biometric authentication not enrolled")
                 
             case .passcodeNotSet:
                 authenticationState = .devicePasscodeNotSet
-                print("Device passcode not set")
+                AppLog.notice(.auth, "Device passcode not set")
                 
             case .userCancel:
                 authenticationState = .denied
-                print("User cancelled authentication")
+                AppLog.notice(.auth, "User cancelled authentication")
                 
             case .userFallback:
                 // User chose to use passcode instead of biometrics
@@ -315,19 +315,19 @@ final class LocalAuthenticationManager: ObservableObject {
                 
             case .systemCancel:
                 authenticationState = .denied
-                print("System cancelled authentication")
+                AppLog.notice(.auth, "System cancelled authentication")
                 
             case .authenticationFailed:
                 authenticationState = .denied
-                print("Authentication failed")
+                AppLog.notice(.auth, "Authentication failed")
                 
             default:
                 authenticationState = .error(laError.localizedDescription)
-                print("Authentication error: \(laError.localizedDescription)")
+                AppLog.error(.auth, "Authentication error: \(laError.localizedDescription)")
             }
         } else {
             authenticationState = .error(error.localizedDescription)
-            print("Authentication error: \(error.localizedDescription)")
+            AppLog.error(.auth, "Authentication error: \(error.localizedDescription)")
         }
     }
 }

@@ -88,18 +88,18 @@ final class SecureRecordingManager: ObservableObject {
     /// - Returns: Session ID if started successfully, nil otherwise
     func startSecureRecording(title: String = "", hasConsent: Bool = true) async -> String? {
         guard !isRecording else {
-            print("Secure recording already in progress")
+            AppLog.notice(.secureRecording, "Secure recording already in progress", dedupeInterval: 2)
             return nil
         }
         
         guard hasConsent else {
-            print("Cannot start secure recording without user consent")
+            AppLog.notice(.secureRecording, "Cannot start secure recording without user consent")
             return nil
         }
         
         // Validate storage space
         guard validateStorageSpace() else {
-            print("Insufficient storage space for secure recording")
+            AppLog.error(.secureRecording, "Insufficient storage space for secure recording")
             return nil
         }
         
@@ -126,7 +126,7 @@ final class SecureRecordingManager: ObservableObject {
         )
         
         guard let currentAudioURL else {
-            print("Failed to start secure audio recording")
+            AppLog.error(.secureRecording, "Failed to start secure audio recording")
             currentSession = nil
             return nil
         }
@@ -174,7 +174,7 @@ final class SecureRecordingManager: ObservableObject {
         // Start duration timer
         startRecordingTimer()
         
-        print("Started secure recording session: \(sessionId)")
+        AppLog.info(.secureRecording, "Started secure recording session: \(sessionId)")
         return sessionId
     }
     
@@ -182,7 +182,7 @@ final class SecureRecordingManager: ObservableObject {
     /// - Returns: The completed session metadata, or nil if no active session
     func stopSecureRecording() async -> SecureRecordingSession? {
         guard isRecording, var session = currentSession else {
-            print("No active secure recording to stop")
+            AppLog.notice(.secureRecording, "No active secure recording to stop", dedupeInterval: 2)
             return nil
         }
         
@@ -228,7 +228,7 @@ final class SecureRecordingManager: ObservableObject {
         transcriptCancellable?.cancel()
         transcriptCancellable = nil
         
-        print("Completed secure recording session: \(session.id)")
+        AppLog.info(.secureRecording, "Completed secure recording session: \(session.id)")
         return session
     }
     
@@ -243,7 +243,7 @@ final class SecureRecordingManager: ObservableObject {
     /// - Returns: True if deletion was successful
     func deleteSession(_ sessionId: String) async -> Bool {
         guard let session = allSessions.first(where: { $0.id == sessionId }) else {
-            print("Session not found: \(sessionId)")
+            AppLog.notice(.secureRecording, "Session not found: \(sessionId)")
             return false
         }
         
@@ -270,14 +270,14 @@ final class SecureRecordingManager: ObservableObject {
         do {
             try FileManager.default.removeItem(at: sessionDirectoryURL)
         } catch {
-            print("Error deleting session directory: \(error)")
+            AppLog.error(.secureRecording, "Error deleting session directory: \(error)")
         }
         
         // Update sessions list
         allSessions.removeAll { $0.id == sessionId }
         
         let success = audioDeleted && transcriptDeleted && metadataDeleted
-        print("Deleted secure recording session: \(sessionId) - success: \(success)")
+        AppLog.info(.secureRecording, "Deleted secure recording session: \(sessionId) - success: \(success)")
         return success
     }
     
@@ -340,12 +340,12 @@ final class SecureRecordingManager: ObservableObject {
             )
             
             if savedURL != nil {
-                print("Saved secure transcript for session: \(sessionId)")
+                AppLog.info(.secureRecording, "Saved secure transcript for session: \(sessionId)")
             } else {
-                print("Failed to save secure transcript for session: \(sessionId)")
+                AppLog.error(.secureRecording, "Failed to save secure transcript for session: \(sessionId)")
             }
         } catch {
-            print("Error serializing transcript data: \(error)")
+            AppLog.error(.secureRecording, "Error serializing transcript data: \(error)")
         }
     }
     
@@ -360,12 +360,12 @@ final class SecureRecordingManager: ObservableObject {
             )
             
             if savedURL != nil {
-                print("Saved secure metadata for session: \(session.id)")
+                AppLog.info(.secureRecording, "Saved secure metadata for session: \(session.id)")
             } else {
-                print("Failed to save secure metadata for session: \(session.id)")
+                AppLog.error(.secureRecording, "Failed to save secure metadata for session: \(session.id)")
             }
         } catch {
-            print("Error encoding session metadata: \(error)")
+            AppLog.error(.secureRecording, "Error encoding session metadata: \(error)")
         }
     }
     
@@ -384,7 +384,7 @@ final class SecureRecordingManager: ObservableObject {
         }
         
         allSessions = sessions.sorted { $0.startTime > $1.startTime }
-        print("Loaded \(allSessions.count) secure recording sessions")
+        AppLog.info(.secureRecording, "Loaded \(allSessions.count) secure recording sessions", dedupeInterval: 2)
     }
 }
 

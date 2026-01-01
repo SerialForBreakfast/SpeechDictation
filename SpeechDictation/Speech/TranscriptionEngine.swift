@@ -174,7 +174,7 @@ enum TranscriptionEngineFactory {
         
         // Current path: Enhanced SFSpeechRecognizer with RMS-based silence detection
         // This works on all iOS versions and handles long-form conversation with pauses
-        print("[TranscriptionEngine] Using LegacyTranscriptionEngine (production-ready)")
+        AppLog.info(.transcription, "[TranscriptionEngine] Using LegacyTranscriptionEngine (production-ready)")
         return LegacyTranscriptionEngine(
             configuration: configuration,
             isExternalAudioSource: isExternalAudioSource

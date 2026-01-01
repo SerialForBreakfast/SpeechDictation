@@ -33,7 +33,7 @@ actor ObjectDetector {
                 return DetectedObject(label: label, confidence: confidence, boundingBox: $0.boundingBox)
             }
         } catch {
-            print("Object detection failed: \(error)")
+            AppLog.error(.camera, "Object detection failed: \(error)")
             return []
         }
     }

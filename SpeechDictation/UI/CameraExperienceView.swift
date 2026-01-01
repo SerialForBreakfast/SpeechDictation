@@ -108,13 +108,13 @@ struct CameraControlsMenu: View {
             device.torchMode = device.isTorchActive ? .off : .on
             device.unlockForConfiguration()
         } catch {
-            print("Flashlight error: \(error)")
+            AppLog.error(.camera, "Flashlight error: \(error)")
         }
     }
     
     private func shareCamera() {
         // TODO: Implement camera sharing functionality
-        print("Share camera functionality - to be implemented")
+        AppLog.debug(.camera, "Share camera functionality - to be implemented", verboseOnly: true)
     }
 }
 
@@ -170,7 +170,7 @@ struct CameraErrorView: View {
     
     private func retryModelLoading() {
         // TODO: Implement model retry logic
-        print("Retry model loading - to be implemented")
+        AppLog.debug(.models, "Retry model loading - to be implemented", verboseOnly: true)
     }
 }
 
@@ -330,7 +330,7 @@ struct CameraSettingsView: View {
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
         
-                    print("Camera settings reset by user")
+        AppLog.info(.camera, "Camera settings reset by user")
     }
 }
 

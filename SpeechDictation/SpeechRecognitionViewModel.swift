@@ -189,7 +189,7 @@ class SpeechRecognizerViewModel: ObservableObject {
         speechRecognizer.startTranscribingWithTiming()
         isRecording = true
         
-        print("Started transcription with timing data and audio recording")
+        AppLog.info(.recording, "Started transcription with timing data and audio recording")
     }
 
     func stopTranscribing() {
@@ -200,7 +200,7 @@ class SpeechRecognizerViewModel: ObservableObject {
         speechRecognizer.stopTranscribingWithTiming(audioFileURL: audioURL)
         isRecording = false
         
-        print("Stopped transcription with timing data and audio recording")
+        AppLog.info(.recording, "Stopped transcription with timing data and audio recording")
     }
     
     func pauseTranscribing() {
@@ -243,7 +243,7 @@ class SpeechRecognizerViewModel: ObservableObject {
 
     private func startSecureRecordingWorkflow() async {
         guard !isRecording else {
-            print("Cannot start secure recording while live transcription is active")
+            AppLog.notice(.secureRecording, "Cannot start secure recording while live transcription is active")
             return
         }
 
@@ -253,7 +253,7 @@ class SpeechRecognizerViewModel: ObservableObject {
         )
         
         guard result != nil else {
-            print("Secure recording failed to start")
+            AppLog.error(.secureRecording, "Secure recording failed to start")
             return
         }
 
@@ -261,12 +261,12 @@ class SpeechRecognizerViewModel: ObservableObject {
         segments.removeAll()
         currentSession = nil
         recordingDuration = 0
-        print("Started secure recording workflow")
+        AppLog.info(.secureRecording, "Started secure recording workflow")
     }
 
     private func stopSecureRecordingWorkflow() async {
         _ = await secureRecordingManager.stopSecureRecording()
-        print("Stopped secure recording workflow")
+        AppLog.info(.secureRecording, "Stopped secure recording workflow")
     }
 
     func adjustVolume() {

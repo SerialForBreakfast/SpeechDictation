@@ -50,6 +50,7 @@ struct SettingsView: View {
             .shadow(color: shadowColor, radius: 10, x: 0, y: 0)
             .padding()
         }
+        .preferredColorScheme(preferredColorScheme)
     }
     
     // MARK: - Color Helpers
@@ -72,6 +73,17 @@ struct SettingsView: View {
     
     private var shadowColor: Color {
         Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1)
+    }
+    
+    private var preferredColorScheme: ColorScheme? {
+        switch viewModel.theme {
+        case .system:
+            return nil
+        case .light, .highContrast:
+            return .light
+        case .dark:
+            return .dark
+        }
     }
 }
 
@@ -398,20 +410,20 @@ struct DepthBasedDistanceView: View {
         if ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) {
             sources.append("LiDAR")
             hasLiDAR = true
-            print("LiDAR scanner detected")
+            AppLog.info(.camera, "LiDAR scanner detected")
         }
         
         // Check ARKit availability (iPhone 6s+, iOS 11+)
         if ARWorldTrackingConfiguration.isSupported {
             sources.append("ARKit")
             hasARKit = true
-            print("ARKit world tracking supported")
+            AppLog.info(.camera, "ARKit world tracking supported")
         }
         
         // Check TrueDepth camera availability (Face ID devices)
         if ARFaceTrackingConfiguration.isSupported {
             sources.append("TrueDepth")
-            print("TrueDepth camera detected")
+            AppLog.info(.camera, "TrueDepth camera detected")
         }
         
         // Check for ML model availability (Depth Anything V2 from ModelCatalog)
@@ -423,7 +435,7 @@ struct DepthBasedDistanceView: View {
         sources.append("Fallback")
         
         availableDepthSources = sources
-                    print("Detected \(sources.count) depth estimation sources: \(sources.joined(separator: ", "))")
+        AppLog.info(.camera, "Detected \(sources.count) depth estimation sources: \(sources.joined(separator: ", "))")
     }
 }
 #else

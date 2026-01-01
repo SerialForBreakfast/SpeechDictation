@@ -126,7 +126,7 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
         state = .running
         eventContinuation?.yield(.stateChange(state: .running))
         
-        print("[LegacyTranscriptionEngine] Started (external=\(isExternalAudioSource))")
+        AppLog.info(.transcription, "Legacy engine started (external=\(isExternalAudioSource))")
     }
     
     func stop() async {
@@ -160,7 +160,7 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
         eventContinuation?.yield(.stateChange(state: .stopped))
         eventContinuation?.finish()
         
-        print("[LegacyTranscriptionEngine] Stopped")
+        AppLog.info(.transcription, "Legacy engine stopped")
     }
     
     func appendAudioBuffer(_ buffer: AVAudioPCMBuffer) async {
@@ -182,10 +182,14 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
                 lastTaskStartAttemptTime = now
                 do {
                     try await startRecognitionTask()
-                    print("[TASK] start (accum=\(accumulatedTranscript.count)ch)")
+                    AppLog.debug(
+                        .transcription,
+                        "[TASK] start (accum=\(accumulatedTranscript.count)ch)",
+                        verboseOnly: true
+                    )
                 } catch {
                     eventContinuation?.yield(.error(error: error))
-                    print("[TASK] start failed: \(error.localizedDescription)")
+                    AppLog.error(.transcription, "[TASK] start failed: \(error.localizedDescription)")
                 }
             }
         }
@@ -227,7 +231,7 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
             }
         }
         
-        print("[LegacyTranscriptionEngine] Recognition task started")
+        AppLog.info(.transcription, "Recognition task started")
     }
     
     private func startAudioEngine() async throws {
@@ -239,7 +243,7 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
         }
         
         let recordingFormat = inputNode.outputFormat(forBus: 0)
-        print("[LegacyTranscriptionEngine] Using native format: \(recordingFormat)")
+        AppLog.debug(.transcription, "Native format: \(recordingFormat)", verboseOnly: true)
         
         // Validate format
         guard recordingFormat.sampleRate > 0, recordingFormat.channelCount > 0 else {
@@ -257,7 +261,7 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
         engine.prepare()
         try engine.start()
         
-        print("[LegacyTranscriptionEngine] Audio engine started")
+        AppLog.info(.transcription, "Audio engine started")
     }
     
     private func stopRecognitionTask() async {
@@ -313,7 +317,11 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
             let textLengthChanged = composedText.count != lastLoggedTextLength
             if textLengthChanged || shouldFinalize {
                 let prefix = shouldFinalize ? "FINAL" : "partial"
-                print("[\(prefix)] text=\(composedText.count)ch accum=\(accumulatedTranscript.count)ch offset=\(String(format: "%.1f", taskOffset))s segs=\(segments.count)")
+                AppLog.debug(
+                    .transcription,
+                    "[\(prefix)] text=\(composedText.count)ch accum=\(accumulatedTranscript.count)ch offset=\(String(format: "%.1f", taskOffset))s segs=\(segments.count)",
+                    verboseOnly: true
+                )
                 lastLoggedTextLength = composedText.count
             }
             
@@ -324,7 +332,10 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
                 currentPartialTranscript = ""
                 lastPartialTranscript = ""
                 
-                print("[COMMIT] accum: \(beforeLen)ch → \(accumulatedTranscript.count)ch (+\(accumulatedTranscript.count - beforeLen))")
+                AppLog.info(
+                    .transcription,
+                    "[COMMIT] accum: \(beforeLen)ch → \(accumulatedTranscript.count)ch (+\(accumulatedTranscript.count - beforeLen))"
+                )
                 
                 eventContinuation?.yield(.final(text: composedText, segments: segments))
                 // Stop the task and wait for the next speech onset (VAD-gated).
@@ -344,7 +355,11 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
             
             // "No speech detected" is expected during long pauses. Do NOT restart in a tight loop.
             if nsError.localizedDescription.localizedCaseInsensitiveContains("no speech detected") {
-                print("[IDLE] no-speech, waiting (accum=\(accumulatedTranscript.count)ch)")
+                AppLog.notice(
+                    .transcription,
+                    "[IDLE] no-speech, waiting (accum=\(accumulatedTranscript.count)ch)",
+                    dedupeInterval: 2
+                )
                 await stopRecognitionTask()
                 isInSilence = true
                 return
@@ -352,7 +367,7 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
             
             // For other errors, stop the task and wait for speech to resume. This avoids thrash
             // and keeps the session alive for long-form recordings.
-            print("[ERROR] \(error.localizedDescription) (accum=\(accumulatedTranscript.count)ch)")
+            AppLog.error(.transcription, "[ERROR] \(error.localizedDescription) (accum=\(accumulatedTranscript.count)ch)")
             eventContinuation?.yield(.error(error: error))
             await stopRecognitionTask()
         }
@@ -402,10 +417,17 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
                     currentPartialTranscript = ""
                     lastPartialTranscript = ""
                     
-                    print("[VAD] commit+stop \(String(format: "%.1f", silenceDuration))s (accum: \(beforeLen)ch → \(accumulatedTranscript.count)ch)")
+                    AppLog.info(
+                        .transcription,
+                        "[VAD] commit+stop \(String(format: "%.1f", silenceDuration))s (accum: \(beforeLen)ch → \(accumulatedTranscript.count)ch)"
+                    )
                     eventContinuation?.yield(.final(text: accumulatedTranscript, segments: lastSegmentsForCurrentTask))
                 } else if recognitionTask != nil {
-                    print("[VAD] stop-task \(String(format: "%.1f", silenceDuration))s (no-new-text)")
+                    AppLog.debug(
+                        .transcription,
+                        "[VAD] stop-task \(String(format: "%.1f", silenceDuration))s (no-new-text)",
+                        verboseOnly: true
+                    )
                 }
                 
                 await stopRecognitionTask()
@@ -421,7 +443,11 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
         state = .restarting
         eventContinuation?.yield(.stateChange(state: .restarting))
         
-        print("[RESTART] accum=\(accumulatedTranscript.count)ch, waiting 350ms...")
+        AppLog.notice(
+            .transcription,
+            "[RESTART] accum=\(accumulatedTranscript.count)ch, waiting 350ms...",
+            dedupeInterval: 1
+        )
         
         // Brief delay to avoid tight restart loops
         try? await Task.sleep(nanoseconds: 350_000_000) // 0.35 seconds
@@ -435,11 +461,11 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
             try await startRecognitionTask()
             state = .running
             eventContinuation?.yield(.stateChange(state: .running))
-            print("[RESTART] SUCCESS, accum still=\(accumulatedTranscript.count)ch")
+            AppLog.notice(.transcription, "[RESTART] SUCCESS, accum still=\(accumulatedTranscript.count)ch")
         } catch {
             // Don't poison the whole engine. Emit error and fall back to idle.
             eventContinuation?.yield(.error(error: error))
-            print("[RESTART] FAILED: \(error.localizedDescription)")
+            AppLog.error(.transcription, "[RESTART] FAILED: \(error.localizedDescription)")
             await stopRecognitionTask()
         }
         
@@ -460,7 +486,11 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
                 if await self.recognitionTask != nil, let taskStart = await self.taskStartTime {
                     let elapsed = Date().timeIntervalSince(taskStart)
                     if elapsed >= configuration.maxTaskDuration {
-                        print("[LegacyTranscriptionEngine] Safety timer: rotating task after \(elapsed)s")
+                        AppLog.notice(
+                            .transcription,
+                            "[LegacyTranscriptionEngine] Safety timer: rotating task after \(elapsed)s",
+                            dedupeInterval: 2
+                        )
                         await self.restartRecognitionTask()
                     }
                 }

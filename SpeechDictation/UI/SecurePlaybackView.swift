@@ -7,6 +7,9 @@
 
 import SwiftUI
 import AVFoundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// View for playing back secure recordings with synchronized transcript
 struct SecurePlaybackView: View {
@@ -27,30 +30,23 @@ struct SecurePlaybackView: View {
             // Transcript View
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 12) {
-                        if segments.isEmpty {
-                            Text("No transcript available")
-                                .foregroundColor(.secondary)
-                                .padding()
-                        } else {
+                    if segments.isEmpty {
+                        Text("No transcript available")
+                            .foregroundColor(.secondary)
+                            .padding()
+                    } else {
+                        FlowLayout(lineSpacing: 8, itemSpacing: 4) {
                             ForEach(segments) { segment in
-                                Text(segment.text)
-                                    .font(.body)
-                                    .foregroundColor(isCurrentSegment(segment) ? .white : .primary)
-                                    .padding(8)
-                                    .background(isCurrentSegment(segment) ? Color.blue : Color.clear)
-                                    .cornerRadius(8)
-                                    .onTapGesture {
-                                        playbackManager.seekToSegment(segment)
-                                    }
+                                wordView(for: segment)
                                     .id(segment.id)
                             }
                         }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding()
                 }
                 .onChange(of: playbackManager.currentSegment?.id) { newId in
-                    if let newId = newId, !isSliderEditing {
+                    if let newId, !isSliderEditing {
                         withAnimation {
                             proxy.scrollTo(newId, anchor: .center)
                         }
@@ -183,14 +179,93 @@ struct SecurePlaybackView: View {
                 
                 playbackManager.loadAudioForPlayback(audioURL: resolvedAudioURL, session: audioSession)
             } else {
-                print("Failed to decode transcript payload")
+                AppLog.error(.secureRecording, "Failed to decode transcript payload")
             }
         } else {
-            print("Failed to retrieve transcript data")
+            AppLog.error(.secureRecording, "Failed to retrieve transcript data")
         }
     }
     
     private func isCurrentSegment(_ segment: TranscriptionSegment) -> Bool {
         return playbackManager.currentSegment?.id == segment.id
+    }
+    
+    private func wordView(for segment: TranscriptionSegment) -> some View {
+        let isCurrent = isCurrentSegment(segment)
+        let fontSize = baseFontSize + (isCurrent ? 2 : 0)
+        let weight: Font.Weight = isCurrent ? .bold : .regular
+        return Text(segment.text + " ")
+            .font(.system(size: fontSize, weight: weight))
+            .foregroundColor(.primary)
+            .onTapGesture {
+                playbackManager.seekToSegment(segment)
+            }
+            .accessibilityLabel(segment.text)
+    }
+    
+    private var baseFontSize: CGFloat {
+        #if canImport(UIKit)
+        return UIFont.preferredFont(forTextStyle: .body).pointSize
+        #else
+        return 16
+        #endif
+    }
+}
+
+/// A simple flow layout that wraps child views across lines.
+struct FlowLayout: Layout {
+    let lineSpacing: CGFloat
+    let itemSpacing: CGFloat
+
+    init(lineSpacing: CGFloat = 8, itemSpacing: CGFloat = 4) {
+        self.lineSpacing = lineSpacing
+        self.itemSpacing = itemSpacing
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? 0
+        var currentLineWidth: CGFloat = 0
+        var currentLineHeight: CGFloat = 0
+        var totalHeight: CGFloat = 0
+        var maxLineWidth: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let requiredWidth = currentLineWidth == 0 ? size.width : currentLineWidth + itemSpacing + size.width
+
+            if maxWidth > 0 && requiredWidth > maxWidth {
+                totalHeight += currentLineHeight + lineSpacing
+                maxLineWidth = max(maxLineWidth, currentLineWidth)
+                currentLineWidth = size.width
+                currentLineHeight = size.height
+            } else {
+                currentLineWidth = requiredWidth
+                currentLineHeight = max(currentLineHeight, size.height)
+            }
+        }
+
+        totalHeight += currentLineHeight
+        maxLineWidth = max(maxLineWidth, currentLineWidth)
+
+        return CGSize(width: maxWidth > 0 ? maxWidth : maxLineWidth, height: totalHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var lineHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x != bounds.minX && x + size.width > bounds.maxX {
+                x = bounds.minX
+                y += lineHeight + lineSpacing
+                lineHeight = 0
+            }
+
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + itemSpacing
+            lineHeight = max(lineHeight, size.height)
+        }
     }
 }

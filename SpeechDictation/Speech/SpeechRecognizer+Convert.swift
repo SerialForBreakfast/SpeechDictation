@@ -21,7 +21,7 @@ extension SpeechRecognizer {
         // Open the input file
         var status: OSStatus = ExtAudioFileOpenURL(mp3URL as CFURL, &inputFile)
         if status != noErr {
-            print("Error opening input file: \(status)")
+            AppLog.error(.export, "Error opening input file: \(status)")
             completion(nil)
             return
         }
@@ -30,7 +30,7 @@ extension SpeechRecognizer {
         var size = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
         status = ExtAudioFileGetProperty(inputFile!, kExtAudioFileProperty_FileDataFormat, &size, &inputDesc)
         if status != noErr {
-            print("Error getting input file format: \(status)")
+            AppLog.error(.export, "Error getting input file format: \(status)")
             ExtAudioFileDispose(inputFile!)
             completion(nil)
             return
@@ -49,7 +49,7 @@ extension SpeechRecognizer {
         // Create the output file
         status = ExtAudioFileCreateWithURL(outputURL as CFURL, kAudioFileM4AType, &outputDesc, nil, AudioFileFlags.eraseFile.rawValue, &outputFile)
         if status != noErr {
-            print("Error creating output file: (status)")
+            AppLog.error(.export, "Error creating output file: \(status)")
             ExtAudioFileDispose(inputFile!)
             completion(nil)
             return
@@ -70,7 +70,7 @@ extension SpeechRecognizer {
         // Set the client format for input and output files
         status = ExtAudioFileSetProperty(inputFile!, kExtAudioFileProperty_ClientDataFormat, size, &clientFormat)
         if status != noErr {
-            print("Error setting input file client format: \(status)")
+            AppLog.error(.export, "Error setting input file client format: \(status)")
             ExtAudioFileDispose(inputFile!)
             ExtAudioFileDispose(outputFile!)
             completion(nil)
@@ -79,7 +79,7 @@ extension SpeechRecognizer {
         
         status = ExtAudioFileSetProperty(outputFile!, kExtAudioFileProperty_ClientDataFormat, size, &clientFormat)
         if status != noErr {
-            print("Error setting output file client format: \(status)")
+            AppLog.error(.export, "Error setting output file client format: \(status)")
             ExtAudioFileDispose(inputFile!)
             ExtAudioFileDispose(outputFile!)
             completion(nil)
@@ -109,7 +109,7 @@ extension SpeechRecognizer {
             }
             status = ExtAudioFileWrite(outputFile!, frameCount, &convertedData)
             if status != noErr {
-                print("Error writing to output file: \(status)")
+                AppLog.error(.export, "Error writing to output file: \(status)")
                 ExtAudioFileDispose(inputFile!)
                 ExtAudioFileDispose(outputFile!)
                 completion(nil)
@@ -120,7 +120,12 @@ extension SpeechRecognizer {
             if totalFrames > 0 {
                 let progress = Double(completedFrames) / Double(totalFrames)
                 if Int(progress * 100) % 10 == 0 {
-                    print("Conversion progress: \(Int(progress * 100))%")
+                    AppLog.debug(
+                        .export,
+                        "Conversion progress: \(Int(progress * 100))%",
+                        dedupeInterval: 0.5,
+                        verboseOnly: true
+                    )
                 }
             }
         }
@@ -129,10 +134,10 @@ extension SpeechRecognizer {
         ExtAudioFileDispose(outputFile!)
         
         if status == noErr {
-            print("Successfully converted MP3 to M4A: \(outputURL)")
+            AppLog.info(.export, "Successfully converted MP3 to M4A: \(outputURL)")
             completion(outputURL)
         } else {
-            print("Error during conversion: \(status)")
+            AppLog.error(.export, "Error during conversion: \(status)")
             completion(nil)
         }
     }

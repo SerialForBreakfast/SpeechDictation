@@ -24,8 +24,9 @@ struct ThemeSettingView: View {
                 ForEach(Theme.allCases) { theme in
                     Button(action: {
                         viewModel.theme = theme
+                        AppLog.info(.ui, "Theme selected: \(theme.displayName)")
                     }) {
-                        Text(theme.rawValue.capitalized)
+                        Text(theme.displayName)
                             .font(.system(size: 16, weight: .medium))
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)

@@ -524,7 +524,7 @@ class ExportManager {
         do {
             try content.write(to: fileURL, atomically: true, encoding: .utf8)
         } catch {
-            print("Error creating temporary file: \(error)")
+            AppLog.error(.export, "Error creating temporary file: \(error)")
         }
         
         return fileURL
@@ -537,7 +537,7 @@ class ExportManager {
         do {
             try content.write(to: fileURL, atomically: true, encoding: .utf8)
         } catch {
-            print("Error creating temporary timing file: \(error)")
+            AppLog.error(.export, "Error creating temporary timing file: \(error)")
         }
         
         return fileURL

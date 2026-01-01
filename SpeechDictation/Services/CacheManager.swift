@@ -47,10 +47,10 @@ class CacheManager {
         let fileURL = cacheDirectory.appendingPathComponent(key)
         do {
             try data.write(to: fileURL)
-            print("Saved file to: \(fileURL)")
+            AppLog.info(.storage, "Saved file to: \(fileURL)")
             return fileURL
         } catch {
-            print("Error saving file: \(error)")
+            AppLog.error(.storage, "Error saving file: \(error)")
             return nil
         }
     }
@@ -62,10 +62,10 @@ class CacheManager {
         let fileURL = cacheDirectory.appendingPathComponent(key)
         do {
             let data = try Data(contentsOf: fileURL)
-            print("Retrieved file from: \(fileURL)")
+            AppLog.debug(.storage, "Retrieved file from: \(fileURL)", verboseOnly: true)
             return data
         } catch {
-            print("Error retrieving file: \(error)")
+            AppLog.error(.storage, "Error retrieving file: \(error)")
             return nil
         }
     }
@@ -76,9 +76,9 @@ class CacheManager {
         let fileURL = cacheDirectory.appendingPathComponent(key)
         do {
             try FileManager.default.removeItem(at: fileURL)
-            print("Deleted file at: \(fileURL)")
+            AppLog.info(.storage, "Deleted file at: \(fileURL)")
         } catch {
-            print("Error deleting file: \(error)")
+            AppLog.error(.storage, "Error deleting file: \(error)")
         }
     }
     
@@ -110,10 +110,10 @@ class CacheManager {
                 ofItemAtPath: fileURL.path
             )
             
-            print("Securely saved file to: \(fileURL) with complete file protection")
+            AppLog.info(.storage, "Securely saved file to: \(fileURL) with complete file protection")
             return fileURL
         } catch {
-            print("Error saving secure file: \(error)")
+            AppLog.error(.storage, "Error saving secure file: \(error)")
             return nil
         }
     }
@@ -134,10 +134,10 @@ class CacheManager {
         
         do {
             let data = try Data(contentsOf: fileURL)
-            print("Retrieved secure file from: \(fileURL)")
+            AppLog.debug(.storage, "Retrieved secure file from: \(fileURL)", verboseOnly: true)
             return data
         } catch {
-            print("Error retrieving secure file: \(error)")
+            AppLog.error(.storage, "Error retrieving secure file: \(error)")
             return nil
         }
     }
@@ -159,10 +159,10 @@ class CacheManager {
         
         do {
             try FileManager.default.removeItem(at: fileURL)
-            print("Deleted secure file at: \(fileURL)")
+            AppLog.info(.storage, "Deleted secure file at: \(fileURL)")
             return true
         } catch {
-            print("Error deleting secure file: \(error)")
+            AppLog.error(.storage, "Error deleting secure file: \(error)")
             return false
         }
     }
@@ -185,7 +185,7 @@ class CacheManager {
             )
             return fileURLs.sorted { $0.lastPathComponent > $1.lastPathComponent }
         } catch {
-            print("Error listing secure files: \(error)")
+            AppLog.error(.storage, "Error listing secure files: \(error)")
             return []
         }
     }
@@ -206,9 +206,9 @@ class CacheManager {
                     [.protectionKey: protection],
                     ofItemAtPath: url.path
                 )
-                print("Created secure directory: \(url.path)")
+                AppLog.info(.storage, "Created secure directory: \(url.path)")
             } catch {
-                print("Error creating secure directory: \(error)")
+                AppLog.error(.storage, "Error creating secure directory: \(error)")
             }
         }
     }
@@ -238,7 +238,7 @@ class CacheManager {
             let attributes = try FileManager.default.attributesOfFileSystem(forPath: secureDocumentsDirectory.path)
             return attributes[.systemFreeSize] as? Int64
         } catch {
-            print("Error getting storage space: \(error)")
+            AppLog.error(.storage, "Error getting storage space: \(error)")
             return nil
         }
     }

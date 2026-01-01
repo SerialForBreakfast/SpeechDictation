@@ -161,9 +161,9 @@ actor DepthEstimationService {
         if let modelURL = await modelCatalog.getInstalledModelURL(for: "depth-anything-v2") {
             do {
                 depthAnythingModel = try MLModel(contentsOf: modelURL)
-                print("Loaded Depth Anything V2 model for depth estimation")
+                AppLog.info(.models, "Loaded Depth Anything V2 model for depth estimation")
             } catch {
-                print("Failed to load Depth Anything V2 model: \(error)")
+                AppLog.error(.models, "Failed to load Depth Anything V2 model: \(error)")
             }
         }
     }
@@ -225,7 +225,7 @@ actor DepthEstimationService {
             return categorizeDistance(depthValue)
             
         } catch {
-            print("ML model depth estimation failed: \(error)")
+            AppLog.error(.models, "ML model depth estimation failed: \(error)")
             return nil
         }
     }

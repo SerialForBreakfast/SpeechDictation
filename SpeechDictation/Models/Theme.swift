@@ -14,7 +14,23 @@
 import Foundation
 
 public enum Theme: String, CaseIterable, Identifiable {
-    case light, dark, highContrast
+    case system
+    case light
+    case dark
+    case highContrast
 
     public var id: String { rawValue }
-} 
+    
+    public var displayName: String {
+        switch self {
+        case .system:
+            return "System"
+        case .light:
+            return "Light"
+        case .dark:
+            return "Dark"
+        case .highContrast:
+            return "High Contrast"
+        }
+    }
+}

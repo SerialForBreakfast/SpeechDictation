@@ -16,16 +16,16 @@ extension SpeechRecognizer {
         // finishes configuring to avoid race conditions before transcription starts.
         let success = AudioSessionManager.shared.configureForSpeechRecognitionSync()
         guard success else {
-            print("Warning: Failed to configure audio session for speech recognition")
+            AppLog.notice(.audioSession, "Audio session configuration for speech recognition failed via manager")
             // Final fallback with minimal configuration
             do {
                 let audioSession = AVAudioSession.sharedInstance()
                 // Don't try to deactivate again if it failed before
                 try audioSession.setCategory(.playAndRecord, mode: .default, options: [])
                 try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-                print("Audio session configured with minimal settings")
+                AppLog.info(.audioSession, "Audio session configured with minimal settings")
             } catch {
-                print("Critical error: Unable to configure audio session for speech recognition: \(error)")
+                AppLog.fault(.audioSession, "Unable to configure audio session for speech recognition: \(error.localizedDescription)")
             }
             return
         }
@@ -56,8 +56,10 @@ extension SpeechRecognizer {
         
         // Validate the format is supported before installing tap
         guard format.sampleRate > 0 && format.channelCount > 0 else {
-            print("Invalid mixer format detected: sampleRate=\(format.sampleRate), channels=\(format.channelCount)")
-            print("Skipping audio tap installation due to invalid format")
+            AppLog.error(
+                .recording,
+                "Invalid mixer format: sampleRate=\(format.sampleRate), channels=\(format.channelCount)"
+            )
             return
         }
         
@@ -71,7 +73,7 @@ extension SpeechRecognizer {
             playerNode.scheduleFile(try AVAudioFile(forReading: audioPlayer.url!), at: nil, completionHandler: nil)
             playerNode.play()
         } catch {
-            print("Audio engine failed to start: \(error)")
+            AppLog.error(.recording, "Audio engine failed to start: \(error.localizedDescription)")
         }
     }
     

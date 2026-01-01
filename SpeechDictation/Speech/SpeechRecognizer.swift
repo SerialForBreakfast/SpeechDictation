@@ -116,7 +116,7 @@ class SpeechRecognizer: ObservableObject {
     }
     
     func startTranscribing(isExternalAudioSource: Bool = false) {
-        print("Starting transcription with engine... (external source: \(isExternalAudioSource))")
+        AppLog.info(.transcription, "Start transcription (external source: \(isExternalAudioSource))")
 
         // Reset per-session accumulation so each new transcription starts clean.
         resetTranscriptAccumulationForNewSession(isExternalAudioSource: isExternalAudioSource)
@@ -157,7 +157,7 @@ class SpeechRecognizer: ObservableObject {
                     await self?.handleEngineEvent(event)
                 }
             } catch {
-                print("Engine start failed: \(error)")
+                AppLog.error(.transcription, "Engine start failed: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self?.transcribedText = "Error: \(error.localizedDescription)"
                 }
@@ -180,7 +180,7 @@ class SpeechRecognizer: ObservableObject {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self, !text.isEmpty else { return }
                 self.transcribedText = text
-                print("Final transcription result: \(text)")
+                AppLog.debug(.transcription, "Final transcription result length: \(text.count)", verboseOnly: true)
             }
             
         case .audioLevel(let level):
@@ -189,10 +189,10 @@ class SpeechRecognizer: ObservableObject {
             }
             
         case .error(let error):
-            print("Engine error: \(error)")
+            AppLog.error(.transcription, "Engine error: \(error.localizedDescription)")
             
         case .stateChange(let state):
-            print("Engine state: \(state)")
+            AppLog.debug(.transcription, "Engine state: \(state)", dedupeInterval: 1)
         }
     }
     
@@ -298,10 +298,10 @@ class SpeechRecognizer: ObservableObject {
             if session.isInputGainSettable {
                 do {
                     try session.setInputGain(gain)
-                    print("Hardware mic gain set to \(gain)")
+                    AppLog.info(.recording, "Hardware mic gain set to \(gain)", dedupeInterval: 2)
                     return
                 } catch {
-                    print("Failed to set hardware mic gain: \(error). Falling back to software gain.")
+                    AppLog.notice(.recording, "Failed to set hardware mic gain: \(error.localizedDescription). Falling back to software gain.", dedupeInterval: 2)
                 }
             }
             #endif
@@ -309,13 +309,13 @@ class SpeechRecognizer: ObservableObject {
             // 2 Software gain fallback via inputNode.volume
             if let inputNode = self.audioEngine?.inputNode {
                 inputNode.volume = gain
-                print("Software mic gain set to \(gain)")
+                AppLog.info(.recording, "Software mic gain set to \(gain)", dedupeInterval: 2)
             }
         }
     }
     
     func stopTranscribing() {
-        print("Stopping transcription with engine...")
+        AppLog.info(.transcription, "Stop transcription")
 
         markRecognitionStopping()
         
@@ -409,9 +409,9 @@ class SpeechRecognizer: ObservableObject {
         }
 
         if isUsingExternalAudioSourceForTranscription {
-            print("Restarted recognition task (external audio source)")
+            AppLog.debug(.transcription, "Restarted recognition task (external audio source)", dedupeInterval: 1)
         } else {
-            print("Restarted recognition task")
+            AppLog.debug(.transcription, "Restarted recognition task", dedupeInterval: 1)
         }
     }
     
@@ -428,17 +428,21 @@ class SpeechRecognizer: ObservableObject {
         audioEngine = AVAudioEngine()
 
         guard let inputNode = audioEngine?.inputNode else {
-            print("Audio engine has no input node (level monitoring)")
+            AppLog.error(.recording, "Audio engine has no input node for level monitoring")
             return
         }
 
         // Use the native format from the input node for better compatibility
         let format = inputNode.outputFormat(forBus: 0)
-        print("Using native input format for level monitoring: \(format)")
+        AppLog.debug(.recording, "Native input format for level monitoring: \(format)", verboseOnly: true)
         
         #if targetEnvironment(simulator)
         if format.sampleRate <= 0 || format.channelCount <= 0 {
-            print("[Simulator] Invalid input format for level monitoring: sampleRate=\(format.sampleRate), channels=\(format.channelCount). Skipping audio tap.")
+            AppLog.notice(
+                .recording,
+                "Simulator invalid input format for level monitoring: sampleRate=\(format.sampleRate), channels=\(format.channelCount)",
+                dedupeInterval: 5
+            )
             return
         }
         #endif
@@ -452,11 +456,11 @@ class SpeechRecognizer: ObservableObject {
 
         do {
             try audioEngine?.start()
-            print("Audio engine started (level monitoring)")
+            AppLog.info(.recording, "Audio engine started (level monitoring)")
         } catch {
-            print("Audio engine failed to start (level monitoring): \(error)")
+            AppLog.error(.recording, "Audio engine failed to start (level monitoring): \(error.localizedDescription)")
             #if targetEnvironment(simulator)
-            print("Audio engine failure in simulator is expected for level monitoring")
+            AppLog.notice(.recording, "Audio engine failure in simulator is expected for level monitoring", dedupeInterval: 5)
             #endif
         }
 

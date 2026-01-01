@@ -23,15 +23,15 @@ final class YOLOv3Model: ObjectDetectionModel {
             
             // Load the YOLOv3Tiny model from the bundle
             guard let modelURL = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") else {
-                print("ERROR: YOLOv3Tiny model not found in bundle")
+                AppLog.error(.models, "YOLOv3Tiny model not found in bundle")
                 return nil
             }
             
             let mlModel = try MLModel(contentsOf: modelURL, configuration: config)
             self.model = try VNCoreMLModel(for: mlModel)
-            print("YOLOv3Tiny model loaded successfully")
+            AppLog.info(.models, "YOLOv3Tiny model loaded successfully")
         } catch {
-            print("ERROR: YOLOv3Model initialization failed: \(error)")
+            AppLog.error(.models, "YOLOv3Model initialization failed: \(error)")
             return nil
         }
     }
@@ -46,7 +46,7 @@ final class YOLOv3Model: ObjectDetectionModel {
         return try await withCheckedThrowingContinuation { continuation in
             let request = VNCoreMLRequest(model: model) { request, error in
                 if let error = error {
-                    print("ERROR: YOLOv3 object detection failed: \(error)")
+                    AppLog.error(.camera, "YOLOv3 object detection failed: \(error)")
                     continuation.resume(throwing: error)
                     return
                 }
@@ -71,13 +71,21 @@ final class YOLOv3Model: ObjectDetectionModel {
                 
                 if currentDetectionCount != self.lastDetectionCount || currentDetectionState != self.lastDetectionState {
                     if currentDetectionCount == 0 {
-                        print("No objects detected")
+                        AppLog.debug(.camera, "No objects detected", dedupeInterval: 1, verboseOnly: true)
                     } else {
-                        print("YOLOv3 detected \(currentDetectionCount) objects with >\(Int(testThreshold * 100))% confidence")
+                        AppLog.debug(
+                            .camera,
+                            "YOLOv3 detected \(currentDetectionCount) objects with >\(Int(testThreshold * 100))% confidence",
+                            verboseOnly: true
+                        )
                         // Log detected objects
                         for (index, object) in filteredObjects.enumerated() {
                             let topLabel = object.labels.first
-                            print("  \(index + 1). \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%")
+                            AppLog.debug(
+                                .camera,
+                                "  \(index + 1). \(topLabel?.identifier ?? "Unknown") - \(Int(object.confidence * 100))%",
+                                verboseOnly: true
+                            )
                         }
                     }
                     
@@ -98,7 +106,7 @@ final class YOLOv3Model: ObjectDetectionModel {
                 do {
                     try handler.perform([request])
                 } catch {
-                    print("YOLOv3 request handler failed: \(error)")
+                    AppLog.error(.camera, "YOLOv3 request handler failed: \(error)")
                     continuation.resume(throwing: error)
                 }
             }

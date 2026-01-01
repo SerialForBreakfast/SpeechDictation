@@ -109,7 +109,7 @@ actor ModernTranscriptionEngine: TranscriptionEngine {
         state = .running
         eventContinuation?.yield(.stateChange(state: .running))
         
-        print("[ModernTranscriptionEngine] Started successfully")
+        AppLog.info(.transcription, "[ModernTranscriptionEngine] Started successfully")
     }
     
     func stop() async {
@@ -135,7 +135,7 @@ actor ModernTranscriptionEngine: TranscriptionEngine {
         eventContinuation?.yield(.stateChange(state: .stopped))
         eventContinuation?.finish()
         
-        print("[ModernTranscriptionEngine] Stopped")
+        AppLog.info(.transcription, "[ModernTranscriptionEngine] Stopped")
     }
     
     func appendAudioBuffer(_ buffer: AVAudioPCMBuffer) async {
@@ -161,7 +161,7 @@ actor ModernTranscriptionEngine: TranscriptionEngine {
         }
         
         let recordingFormat = inputNode.outputFormat(forBus: 0)
-        print("[ModernTranscriptionEngine] Using native format: \(recordingFormat)")
+        AppLog.debug(.transcription, "[ModernTranscriptionEngine] Using native format: \(recordingFormat)", verboseOnly: true)
         
         // Validate format
         guard recordingFormat.sampleRate > 0, recordingFormat.channelCount > 0 else {
@@ -178,7 +178,7 @@ actor ModernTranscriptionEngine: TranscriptionEngine {
         engine.prepare()
         try engine.start()
         
-        print("[ModernTranscriptionEngine] Audio engine started")
+        AppLog.info(.transcription, "[ModernTranscriptionEngine] Audio engine started")
     }
     
     private func startProcessingTranscriptionResults() {
@@ -213,7 +213,11 @@ actor ModernTranscriptionEngine: TranscriptionEngine {
             currentPartialTranscript = ""
             
             eventContinuation?.yield(.final(text: accumulatedTranscript, segments: segments))
-            print("[ModernTranscriptionEngine] Final result: \(accumulatedTranscript)")
+            AppLog.debug(
+                .transcription,
+                "[ModernTranscriptionEngine] Final result: \(accumulatedTranscript)",
+                verboseOnly: true
+            )
         } else {
             // Update current partial
             currentPartialTranscript = newText

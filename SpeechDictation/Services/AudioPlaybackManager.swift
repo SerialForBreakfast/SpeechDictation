@@ -49,9 +49,9 @@ class AudioPlaybackManager: NSObject, ObservableObject { // Inherit NSObject for
             currentTime = 0
             currentSegment = nil
             
-            print("Loaded audio for playback: \(audioURL.lastPathComponent)")
+            AppLog.info(.playback, "Loaded audio for playback: \(audioURL.lastPathComponent)")
         } catch {
-            print("Error loading audio for playback: \(error)")
+            AppLog.error(.playback, "Error loading audio for playback: \(error)")
         }
     }
     
@@ -63,16 +63,16 @@ class AudioPlaybackManager: NSObject, ObservableObject { // Inherit NSObject for
             // Ensure a consistent session configuration via the centralized manager.
             let configured = AudioSessionManager.shared.configureForPlaybackSync()
             guard configured else {
-                print("Error starting playback: audio session failed to configure for playback")
+                AppLog.error(.playback, "Error starting playback: audio session failed to configure for playback")
                 return
             }
             try AVAudioSession.sharedInstance().setActive(true)
             player.play()
             playbackState = .playing
             startPlaybackTimer()
-            print("Started audio playback")
+            AppLog.info(.playback, "Started audio playback")
         } catch {
-            print("Error starting playback: \(error)")
+            AppLog.error(.playback, "Error starting playback: \(error)")
         }
     }
     
@@ -81,7 +81,7 @@ class AudioPlaybackManager: NSObject, ObservableObject { // Inherit NSObject for
         audioPlayer?.pause()
         playbackState = .paused
         stopPlaybackTimer()
-        print("Paused audio playback")
+        AppLog.info(.playback, "Paused audio playback")
     }
     
     /// Stops playback and resets to beginning
@@ -92,7 +92,7 @@ class AudioPlaybackManager: NSObject, ObservableObject { // Inherit NSObject for
         currentTime = 0
         currentSegment = nil
         stopPlaybackTimer()
-        print("Stopped audio playback")
+        AppLog.info(.playback, "Stopped audio playback")
     }
     
     /// Seeks to a specific time position
@@ -105,7 +105,7 @@ class AudioPlaybackManager: NSObject, ObservableObject { // Inherit NSObject for
         currentTime = clampedTime
         updateCurrentSegment()
         
-        print("Seeked to time: \(clampedTime)s")
+        AppLog.debug(.playback, "Seeked to time: \(clampedTime)s", verboseOnly: true)
     }
     
     /// Seeks to the beginning of a specific segment
@@ -131,7 +131,7 @@ class AudioPlaybackManager: NSObject, ObservableObject { // Inherit NSObject for
     func setPlaybackSpeed(_ speed: PlaybackSpeed) {
         playbackSpeed = speed
         audioPlayer?.rate = Float(speed.rawValue)
-        print("Set playback speed to: \(speed.displayName)")
+        AppLog.info(.playback, "Set playback speed to: \(speed.displayName)")
     }
     
     // MARK: - Segment Navigation
@@ -249,14 +249,14 @@ extension AudioPlaybackManager: AVAudioPlayerDelegate {
             self.currentTime = 0
             self.currentSegment = nil
             self.stopPlaybackTimer()
-            print("Audio playback finished")
+            AppLog.info(.playback, "Audio playback finished")
         }
     }
     
     func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
         DispatchQueue.main.async {
             self.playbackState = .stopped
-            print("Audio playback decode error: \(error?.localizedDescription ?? "Unknown error")")
+            AppLog.error(.playback, "Audio playback decode error: \(error?.localizedDescription ?? "Unknown error")")
         }
     }
 } 

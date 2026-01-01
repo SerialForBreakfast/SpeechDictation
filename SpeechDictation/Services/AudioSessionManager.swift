@@ -95,9 +95,9 @@ final class AudioSessionManager: ObservableObject {
                         try session.setActive(false, options: .notifyOthersOnDeactivation)
                     }
                     self.currentConfiguration = .none
-                    print("Audio session reset to default state")
+                    AppLog.info(.audioSession, "Reset audio session to default state")
                 } catch {
-                    print("Error resetting audio session: \(error)")
+                    AppLog.error(.audioSession, "Failed to reset audio session: \(error.localizedDescription)")
                 }
                 #endif
                 continuation.resume()
@@ -129,7 +129,7 @@ final class AudioSessionManager: ObservableObject {
         #if os(iOS)
         // Prevent concurrent configuration attempts
         guard !isConfiguring else {
-            print("Audio session configuration already in progress, skipping")
+            AppLog.debug(.audioSession, "Configuration already in progress; skipping", dedupeInterval: 2)
             return false
         }
         
@@ -141,7 +141,7 @@ final class AudioSessionManager: ObservableObject {
             
             // Only reconfigure if the configuration has changed
             guard currentConfiguration != configuration else {
-                print("Audio session already configured for \(configuration)")
+                AppLog.debug(.audioSession, "Already configured for \(configuration)", dedupeInterval: 2)
                 return true
             }
             
@@ -151,13 +151,12 @@ final class AudioSessionManager: ObservableObject {
             if shouldDeactivate {
                 do {
                     try session.setActive(false, options: .notifyOthersOnDeactivation)
-                    print("Deactivated current audio session for new configuration.")
+                    AppLog.info(.audioSession, "Deactivated current audio session for reconfiguration")
                 } catch {
-                    // Continue and attempt to set category anyway; failures can be transient depending on audio route.
-                    print("Warning: Failed to deactivate audio session before reconfiguration: \(error)")
+                    AppLog.notice(.audioSession, "Failed to deactivate audio session before reconfiguration: \(error.localizedDescription)")
                 }
             } else {
-                print("Current audio session is already playAndRecord, skipping deactivation.")
+                AppLog.debug(.audioSession, "Session already playAndRecord; skipping deactivation", dedupeInterval: 2)
             }
             
             // Configure based on the requested configuration
@@ -178,15 +177,15 @@ final class AudioSessionManager: ObservableObject {
             try session.setActive(true, options: .notifyOthersOnDeactivation)
             
             currentConfiguration = configuration
-            print("Audio session configured for \(configuration)")
+            AppLog.info(.audioSession, "Configured session for \(configuration)")
             return true
         } catch {
-            print("Error configuring audio session for \(configuration): \(error)")
+            AppLog.error(.audioSession, "Failed to configure session for \(configuration): \(error.localizedDescription)")
             currentConfiguration = .none // Reset on error
             return false
         }
         #else
-        print("Audio session configuration skipped – not available on this platform.")
+        AppLog.debug(.audioSession, "Audio session configuration skipped on this platform")
         return true
         #endif
     }
@@ -202,12 +201,12 @@ final class AudioSessionManager: ObservableObject {
         // Try measurement mode first for better speech recognition
         do {
             try session.setCategory(.playAndRecord, mode: .measurement, options: options)
-            print("Audio session configured for speech recognition with measurement mode")
+            AppLog.info(.audioSession, "Configured speech recognition (measurement mode)")
         } catch {
-            print("Measurement mode failed, trying default mode: \(error)")
+            AppLog.notice(.audioSession, "Measurement mode failed; falling back to default: \(error.localizedDescription)")
             // Fallback to default mode if measurement fails
             try session.setCategory(.playAndRecord, mode: .default, options: options)
-            print("Audio session configured for speech recognition with default mode")
+            AppLog.info(.audioSession, "Configured speech recognition (default mode)")
         }
         #endif
     }
@@ -222,11 +221,11 @@ final class AudioSessionManager: ObservableObject {
         // Try measurement mode first for better quality
         do {
             try session.setCategory(.playAndRecord, mode: .measurement, options: options)
-            print("Audio session configured for recording with measurement mode")
+            AppLog.info(.audioSession, "Configured recording (measurement mode)")
         } catch {
-            print("Measurement mode failed, trying default mode: \(error)")
+            AppLog.notice(.audioSession, "Measurement mode failed; falling back to default: \(error.localizedDescription)")
             try session.setCategory(.playAndRecord, mode: .default, options: options)
-            print("Audio session configured for recording with default mode")
+            AppLog.info(.audioSession, "Configured recording (default mode)")
         }
         #endif
     }
@@ -238,14 +237,14 @@ final class AudioSessionManager: ObservableObject {
         #else
         let options: AVAudioSession.CategoryOptions = [.allowBluetooth, .defaultToSpeaker]
         try session.setCategory(.playAndRecord, mode: .default, options: options)
-        print("Audio session configured for level monitoring")
+        AppLog.info(.audioSession, "Configured level monitoring")
         #endif
     }
     
     /// Configures audio session for playback
     private func configureForPlayback(_ session: AVAudioSession) throws {
         try session.setCategory(.playback, mode: .default, options: [])
-        print("Audio session configured for playback")
+        AppLog.info(.audioSession, "Configured playback")
     }
     #endif
 } 

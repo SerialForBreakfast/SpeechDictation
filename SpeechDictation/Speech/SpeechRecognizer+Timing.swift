@@ -20,7 +20,7 @@ extension SpeechRecognizer {
     ///
     /// Concurrency: Engine handles async/await, this method coordinates timing session and event stream
     func startTranscribingWithTiming(sessionId: String? = nil, isExternalAudioSource: Bool = false) {
-        print("Starting transcription with timing data via engine... (external source: \(isExternalAudioSource))")
+        AppLog.info(.transcription, "Start transcription with timing (external source: \(isExternalAudioSource))")
 
         // Reset per-session accumulation so each new timing transcription starts clean.
         resetTranscriptAccumulationForNewSession(isExternalAudioSource: isExternalAudioSource)
@@ -68,7 +68,7 @@ extension SpeechRecognizer {
                     await self?.handleEngineEventWithTiming(event)
                 }
             } catch {
-                print("Engine start failed: \(error)")
+                AppLog.error(.transcription, "Engine start failed: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self?.transcribedText = "Error: \(error.localizedDescription)"
                 }
@@ -85,27 +85,45 @@ extension SpeechRecognizer {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self, !text.isEmpty else { return }
                 self.transcribedText = text
-                
-                // Merge partial segments for real-time UI updates
+
+                let storedBefore = TimingDataManager.shared.segments.count
                 if !segments.isEmpty {
                     TimingDataManager.shared.mergeSegments(segments)
                 }
+                let storedAfter = TimingDataManager.shared.segments.count
+
+                TimingDataManager.shared.recordAudit(
+                    event: .partial,
+                    text: text,
+                    incomingSegmentCount: segments.count,
+                    storedSegmentCount: storedAfter,
+                    storedSegmentDelta: storedAfter - storedBefore,
+                    note: nil
+                )
             }
             
         case .final(let text, let segments):
             DispatchQueue.main.async { [weak self] in
                 guard let self = self, !text.isEmpty else { return }
-                
-                print("[UI-FINAL] Setting text=\(text.count)ch, merging \(segments.count) segs")
+
+                AppLog.debug(.timing, "UI final: text=\(text.count)ch, merging \(segments.count) segments", verboseOnly: true)
                 self.transcribedText = text
-                
-                // Merge final segments
+
+                let storedBefore = TimingDataManager.shared.segments.count
                 if !segments.isEmpty {
-                    let before = TimingDataManager.shared.segments.count
                     TimingDataManager.shared.mergeSegments(segments)
-                    let after = TimingDataManager.shared.segments.count
-                    print("[UI-FINAL] Segments: \(before) → \(after) (Δ\(after - before))")
                 }
+                let storedAfter = TimingDataManager.shared.segments.count
+                AppLog.debug(.timing, "UI final: segments \(storedBefore) -> \(storedAfter) (delta \(storedAfter - storedBefore))", verboseOnly: true)
+
+                TimingDataManager.shared.recordAudit(
+                    event: .final,
+                    text: text,
+                    incomingSegmentCount: segments.count,
+                    storedSegmentCount: storedAfter,
+                    storedSegmentDelta: storedAfter - storedBefore,
+                    note: nil
+                )
             }
             
         case .audioLevel(let level):
@@ -114,11 +132,33 @@ extension SpeechRecognizer {
             }
             
         case .error(let error):
-            print("[ENGINE-ERROR] \(error)")
+            AppLog.error(.transcription, "Engine error: \(error.localizedDescription)")
+            await MainActor.run {
+                let storedCount = TimingDataManager.shared.segments.count
+                TimingDataManager.shared.recordAudit(
+                    event: .error,
+                    text: self.transcribedText.isEmpty ? nil : self.transcribedText,
+                    incomingSegmentCount: 0,
+                    storedSegmentCount: storedCount,
+                    storedSegmentDelta: 0,
+                    note: error.localizedDescription
+                )
+            }
             
         case .stateChange(let state):
             if state == .restarting || state == .running {
-                print("[ENGINE-STATE] \(state)")
+                AppLog.debug(.transcription, "Engine state: \(state)", dedupeInterval: 1)
+            }
+            await MainActor.run {
+                let storedCount = TimingDataManager.shared.segments.count
+                TimingDataManager.shared.recordAudit(
+                    event: .stateChange,
+                    text: nil,
+                    incomingSegmentCount: 0,
+                    storedSegmentCount: storedCount,
+                    storedSegmentDelta: 0,
+                    note: "\(state)"
+                )
             }
         }
     }
@@ -138,7 +178,7 @@ extension SpeechRecognizer {
     /// Concurrency: This must await `engine.stop()` so final transcript/segments are delivered
     /// through the event stream before we persist them.
     func stopTranscribingWithTimingAndWait(audioFileURL: URL? = nil) async {
-        print("Stopping transcription with timing data via engine...")
+        AppLog.info(.transcription, "Stop transcription with timing")
 
         markRecognitionStopping()
 

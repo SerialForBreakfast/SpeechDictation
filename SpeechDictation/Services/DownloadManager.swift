@@ -18,16 +18,16 @@ class DownloadManager {
     func downloadAudioFile(from url: URL, completion: @escaping (URL?) -> Void) {
         let task: URLSessionDownloadTask = URLSession.shared.downloadTask(with: url) { localURL, response, error in
             if let error = error {
-                print("Download error: \(error.localizedDescription)")
+                AppLog.error(.download, "Download error: \(error.localizedDescription)")
                 completion(nil)
                 return
             }
             guard let localURL = localURL else {
-                print("No local URL after download.")
+                AppLog.error(.download, "No local URL after download.")
                 completion(nil)
                 return
             }
-            print("Downloaded file to: \(localURL)")
+            AppLog.info(.download, "Downloaded file to: \(localURL)")
             completion(localURL)
         }
         task.resume()
@@ -40,10 +40,10 @@ class DownloadManager {
             let status: AVKeyValueStatus = asset.statusOfValue(forKey: "playable", error: &error)
             DispatchQueue.main.async {
                 if status == .loaded {
-                    print("Audio file is playable.")
+                    AppLog.info(.download, "Audio file is playable.")
                     completion(true)
                 } else {
-                    print("Error verifying audio file: \(String(describing: error))")
+                    AppLog.error(.download, "Error verifying audio file: \(String(describing: error))")
                     completion(false)
                 }
             }

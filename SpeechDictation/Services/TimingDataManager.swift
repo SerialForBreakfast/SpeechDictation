@@ -8,6 +8,34 @@
 import Foundation
 import Speech
 
+enum TranscriptAuditEvent: String, Codable {
+    case sessionStart
+    case sessionStop
+    case partial
+    case final
+    case error
+    case stateChange
+}
+
+struct TranscriptAuditEntry: Identifiable, Codable {
+    let id: UUID
+    let sequence: Int
+    let timestamp: Date
+    let sessionId: String?
+    let event: TranscriptAuditEvent
+    let textLength: Int
+    let textDelta: Int
+    let incomingSegmentCount: Int
+    let storedSegmentCount: Int
+    let storedSegmentDelta: Int
+    let firstSegmentStart: TimeInterval?
+    let lastSegmentEnd: TimeInterval?
+    let replacedPriorText: Bool
+    let text: String?
+    let wasTruncated: Bool
+    let note: String?
+}
+
 /// Service responsible for managing timing data for audio recordings and transcriptions
 /// Handles storage, retrieval, and export of timing metadata with millisecond precision
 class TimingDataManager: ObservableObject {
@@ -16,16 +44,28 @@ class TimingDataManager: ObservableObject {
     @Published private(set) var currentSession: AudioRecordingSession?
     @Published private(set) var segments: [TranscriptionSegment] = []
     @Published private(set) var isRecording = false
+    @Published private(set) var auditEntries: [TranscriptAuditEntry] = []
+    @Published private(set) var auditLogPath: String = ""
     
     private let fileManager = FileManager.default
     private let documentsDirectory: URL
     private let sessionsDirectory: URL
+    private let auditLogsDirectory: URL
     private let timingDataQueue = DispatchQueue(label: "timingDataQueue", qos: .userInitiated)
+    private let auditQueue = DispatchQueue(label: "timingAuditQueue", qos: .utility)
+    private var auditSequence = 0
+    private var lastAuditTextLength = 0
+    private var lastAuditSegmentCount = 0
+    private var auditLogURL: URL?
+    private let maxAuditEntries = 300
+    private let maxAuditTextLength = 500
     
     private init() {
         documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
         sessionsDirectory = documentsDirectory.appendingPathComponent("Sessions")
+        auditLogsDirectory = documentsDirectory.appendingPathComponent("AuditLogs")
         createSessionsDirectoryIfNeeded()
+        createAuditLogsDirectoryIfNeeded()
     }
     
     // MARK: - Session Management
@@ -49,8 +89,17 @@ class TimingDataManager: ObservableObject {
         currentSession = session
         segments = []
         isRecording = true
+        resetAuditState(sessionId: id)
+        recordAudit(
+            event: .sessionStart,
+            text: nil,
+            incomingSegmentCount: 0,
+            storedSegmentCount: 0,
+            storedSegmentDelta: 0,
+            note: nil
+        )
         
-        print("Started recording session: \(id)")
+        AppLog.info(.timing, "Started recording session: \(id)")
         return id
     }
     
@@ -59,7 +108,7 @@ class TimingDataManager: ObservableObject {
     @MainActor
     func stopSession(audioFileURL: URL? = nil) {
         guard var session = currentSession else {
-            print("No active session to stop")
+            AppLog.notice(.timing, "Stop ignored; no active timing session")
             return
         }
         
@@ -76,10 +125,19 @@ class TimingDataManager: ObservableObject {
         currentSession = session
         isRecording = false
         
+        recordAudit(
+            event: .sessionStop,
+            text: nil,
+            incomingSegmentCount: 0,
+            storedSegmentCount: segments.count,
+            storedSegmentDelta: 0,
+            note: nil
+        )
+
         // Save session data
         saveSession(session)
         
-        print("Stopped recording session: \(session.sessionId)")
+        AppLog.info(.timing, "Stopped recording session: \(session.sessionId)")
     }
     
     // MARK: - Segment Management
@@ -104,7 +162,7 @@ class TimingDataManager: ObservableObject {
             currentSession = session
         }
         
-        print("Updated segments: count=\(segments.count)")
+        AppLog.debug(.timing, "Updated segments count=\(segments.count)", verboseOnly: true)
     }
 
     /// Merges segments into the current list without deleting previously-seen content.
@@ -158,6 +216,77 @@ class TimingDataManager: ObservableObject {
         let mergedSegments = mergedByStartTime.values.sorted { $0.startTime < $1.startTime }
         updateSegments(mergedSegments)
     }
+
+    // MARK: - Transcript Audit
+
+    @MainActor
+    func recordAudit(
+        event: TranscriptAuditEvent,
+        text: String?,
+        incomingSegmentCount: Int,
+        storedSegmentCount: Int,
+        storedSegmentDelta: Int,
+        note: String?
+    ) {
+        let effectiveTextLength = text?.count ?? lastAuditTextLength
+        let textDelta = text == nil ? 0 : effectiveTextLength - lastAuditTextLength
+        let replacedPriorText = textDelta < 0
+
+        let trimmedText: String?
+        let wasTruncated: Bool
+        if let text = text, text.count > maxAuditTextLength {
+            trimmedText = String(text.prefix(maxAuditTextLength)) + "..."
+            wasTruncated = true
+        } else {
+            trimmedText = text
+            wasTruncated = false
+        }
+
+        let entry = TranscriptAuditEntry(
+            id: UUID(),
+            sequence: auditSequence + 1,
+            timestamp: Date(),
+            sessionId: currentSession?.sessionId,
+            event: event,
+            textLength: effectiveTextLength,
+            textDelta: textDelta,
+            incomingSegmentCount: incomingSegmentCount,
+            storedSegmentCount: storedSegmentCount,
+            storedSegmentDelta: storedSegmentDelta,
+            firstSegmentStart: segments.first?.startTime,
+            lastSegmentEnd: segments.last?.endTime,
+            replacedPriorText: replacedPriorText,
+            text: trimmedText,
+            wasTruncated: wasTruncated,
+            note: note
+        )
+
+        auditSequence += 1
+        lastAuditTextLength = effectiveTextLength
+        lastAuditSegmentCount = storedSegmentCount
+
+        auditEntries.append(entry)
+        if auditEntries.count > maxAuditEntries {
+            auditEntries.removeFirst(auditEntries.count - maxAuditEntries)
+        }
+
+        appendAuditLog(entry)
+    }
+
+    @MainActor
+    func clearAudit() {
+        auditEntries.removeAll()
+        auditSequence = 0
+        lastAuditTextLength = 0
+        lastAuditSegmentCount = 0
+
+        if let auditLogURL {
+            let url = auditLogURL
+            auditQueue.async {
+                try? self.fileManager.removeItem(at: url)
+            }
+        }
+    }
     
     /// Gets the segment at a specific time position
     /// - Parameter time: Time in seconds from session start
@@ -199,9 +328,9 @@ class TimingDataManager: ObservableObject {
                 encoder.dateEncodingStrategy = .iso8601
                 let data = try encoder.encode(session)
                 try data.write(to: sessionURL)
-                print("Saved session: \(session.sessionId)")
+                AppLog.info(.storage, "Saved session: \(session.sessionId)")
             } catch {
-                print("Error saving session: \(error)")
+                AppLog.error(.storage, "Failed to save session: \(error.localizedDescription)")
             }
         }
     }
@@ -221,10 +350,10 @@ class TimingDataManager: ObservableObject {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             let session = try decoder.decode(AudioRecordingSession.self, from: data)
-            print("Loaded session: \(sessionId)")
+            AppLog.info(.storage, "Loaded session: \(sessionId)")
             return session
         } catch {
-            print("Error loading session: \(error)")
+            AppLog.error(.storage, "Failed to load session: \(error.localizedDescription)")
             return nil
         }
     }
@@ -240,7 +369,7 @@ class TimingDataManager: ObservableObject {
                 loadSession(sessionId: url.deletingPathExtension().lastPathComponent)
             }.sorted { $0.startTime > $1.startTime }
         } catch {
-            print("Error loading sessions: \(error)")
+            AppLog.error(.storage, "Failed to load sessions: \(error.localizedDescription)")
             return []
         }
     }
@@ -253,10 +382,10 @@ class TimingDataManager: ObservableObject {
         
         do {
             try fileManager.removeItem(at: sessionURL)
-            print("Deleted session: \(sessionId)")
+            AppLog.info(.storage, "Deleted session: \(sessionId)")
             return true
         } catch {
-            print("Error deleting session: \(error)")
+            AppLog.error(.storage, "Failed to delete session: \(error.localizedDescription)")
             return false
         }
     }
@@ -287,9 +416,55 @@ class TimingDataManager: ObservableObject {
         if !fileManager.fileExists(atPath: sessionsDirectory.path) {
             do {
                 try fileManager.createDirectory(at: sessionsDirectory, withIntermediateDirectories: true)
-                print("Created sessions directory")
+                AppLog.info(.storage, "Created sessions directory")
             } catch {
-                print("Error creating sessions directory: \(error)")
+                AppLog.error(.storage, "Failed to create sessions directory: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func createAuditLogsDirectoryIfNeeded() {
+        if !fileManager.fileExists(atPath: auditLogsDirectory.path) {
+            do {
+                try fileManager.createDirectory(at: auditLogsDirectory, withIntermediateDirectories: true)
+                AppLog.info(.storage, "Created audit logs directory")
+            } catch {
+                AppLog.error(.storage, "Failed to create audit logs directory: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    @MainActor
+    private func resetAuditState(sessionId: String) {
+        auditEntries.removeAll()
+        auditSequence = 0
+        lastAuditTextLength = 0
+        lastAuditSegmentCount = 0
+        auditLogURL = auditLogsDirectory.appendingPathComponent("audit_\(sessionId).jsonl")
+        auditLogPath = auditLogURL?.path ?? ""
+    }
+
+    private func appendAuditLog(_ entry: TranscriptAuditEntry) {
+        guard let url = auditLogURL else { return }
+
+        auditQueue.async {
+            do {
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601
+                let data = try encoder.encode(entry)
+                var line = data
+                line.append(0x0A)
+
+                if self.fileManager.fileExists(atPath: url.path) {
+                    let handle = try FileHandle(forWritingTo: url)
+                    try handle.seekToEnd()
+                    try handle.write(contentsOf: line)
+                    try handle.close()
+                } else {
+                    try line.write(to: url)
+                }
+            } catch {
+                AppLog.error(.storage, "Failed to append audit log: \(error.localizedDescription)")
             }
         }
     }
@@ -360,7 +535,7 @@ class TimingDataManager: ObservableObject {
             let data = try encoder.encode(session)
             return String(data: data, encoding: .utf8) ?? ""
         } catch {
-            print("Error encoding session to JSON: \(error)")
+            AppLog.error(.export, "Failed to encode session to JSON: \(error.localizedDescription)")
             return ""
         }
     }

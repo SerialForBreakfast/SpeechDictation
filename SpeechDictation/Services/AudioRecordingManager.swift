@@ -103,12 +103,27 @@ class AudioRecordingManager: ObservableObject {
     /// - Returns: URL to the audio file being recorded, or nil if failed
     private func startRecording(mode: RecordingMode, quality: AudioQualitySettings, sessionId: String?) -> URL? {
         guard !isRecording else {
-            print("Already recording")
+            AppLog.notice(.recording, "Start ignored; already recording")
             return nil
         }
         
         qualitySettings = quality
         currentRecordingMode = mode
+        
+        // Reconfigure the audio session each time to recover from playback-only states.
+        let configured = AudioSessionManager.shared.configureForRecordingSync()
+        if !configured {
+            AppLog.notice(.recording, "Audio session configuration for recording failed via manager")
+            do {
+                let session = AVAudioSession.sharedInstance()
+                try session.setCategory(.playAndRecord, mode: .default, options: [])
+                try session.setActive(true, options: .notifyOthersOnDeactivation)
+                AppLog.info(.recording, "Audio session configured with fallback settings")
+            } catch {
+                AppLog.error(.recording, "Audio session fallback configuration failed: \(error.localizedDescription)")
+                return nil
+            }
+        }
         
         do {
             try setupAudioEngine(mode: mode, sessionId: sessionId)
@@ -121,10 +136,10 @@ class AudioRecordingManager: ObservableObject {
             startRecordingTimer()
             
             let modeDescription = mode == .secure ? "secure" : "standard"
-            print("Started \(modeDescription) audio recording with quality: \(quality.sampleRate)Hz, \(quality.bitDepth)bit")
+            AppLog.info(.recording, "Started \(modeDescription) recording (\(quality.sampleRate)Hz, \(quality.bitDepth)bit)")
             return currentAudioFileURL
         } catch {
-            print("Failed to start recording: \(error)")
+            AppLog.error(.recording, "Failed to start recording: \(error.localizedDescription)")
             return nil
         }
     }
@@ -133,7 +148,7 @@ class AudioRecordingManager: ObservableObject {
     /// - Returns: URL to the recorded audio file, or nil if no recording was active
     func stopRecording() -> URL? {
         guard isRecording else {
-            print("No active recording to stop")
+            AppLog.notice(.recording, "Stop ignored; no active recording")
             return nil
         }
         
@@ -154,10 +169,10 @@ class AudioRecordingManager: ObservableObject {
             recordingStartTime = nil
             currentRecordingMode = .standard
             
-            print("Stopped audio recording")
+            AppLog.info(.recording, "Stopped audio recording")
             return audioFileURL
         } catch {
-            print("Error stopping recording: \(error)")
+            AppLog.error(.recording, "Failed to stop recording: \(error.localizedDescription)")
             return nil
         }
     }
@@ -168,7 +183,7 @@ class AudioRecordingManager: ObservableObject {
         
         stopRecordingTimer()
         audioEngine?.pause()
-        print("Paused audio recording")
+        AppLog.info(.recording, "Paused audio recording")
     }
     
     /// Resumes a paused recording
@@ -178,9 +193,9 @@ class AudioRecordingManager: ObservableObject {
         do {
             try audioEngine?.start()
             startRecordingTimer()
-            print("Resumed audio recording")
+            AppLog.info(.recording, "Resumed audio recording")
         } catch {
-            print("Error resuming recording: \(error)")
+            AppLog.error(.recording, "Failed to resume recording: \(error.localizedDescription)")
         }
     }
     
@@ -194,16 +209,16 @@ class AudioRecordingManager: ObservableObject {
         // to avoid a race where recording begins before the audio session is ready.
         let success = AudioSessionManager.shared.configureForRecordingSync()
         guard success else {
-            print("Warning: Failed to configure audio session for recording via manager")
+            AppLog.notice(.recording, "Audio session setup for recording failed via manager")
             // Try a simpler configuration as fallback
             do {
                 let session = AVAudioSession.sharedInstance()
                 // Don't try to deactivate again if it failed before
                 try session.setCategory(.playAndRecord, mode: .default, options: [])
                 try session.setActive(true, options: .notifyOthersOnDeactivation)
-                print("Audio session configured with fallback settings")
+                AppLog.info(.recording, "Audio session configured with fallback settings")
             } catch {
-                print("Failed to configure audio session even with fallback: \(error)")
+                AppLog.error(.recording, "Audio session fallback configuration failed: \(error.localizedDescription)")
             }
             return
         }
@@ -211,7 +226,7 @@ class AudioRecordingManager: ObservableObject {
     #else
     /// Audio session is only relevant on iOS. On macOS builds we provide a no-op implementation.
     private func setupAudioSession() {
-        print("Audio session setup skipped – not available on this platform.")
+        AppLog.debug(.recording, "Audio session setup skipped on this platform")
     }
     #endif
     
@@ -224,12 +239,14 @@ class AudioRecordingManager: ObservableObject {
         
         // Get the input node's native format first
         let nativeFormat = inputNode.inputFormat(forBus: 0)
-        print("Native input format: \(nativeFormat)")
+        AppLog.debug(.recording, "Native input format: \(nativeFormat)", verboseOnly: true)
         
         // CRITICAL: Validate native format before proceeding
         guard nativeFormat.sampleRate > 0, nativeFormat.channelCount > 0 else {
-            print("ERROR: Invalid native audio format detected: sampleRate=\(nativeFormat.sampleRate), channels=\(nativeFormat.channelCount)")
-            print("This typically indicates a hardware audio configuration issue on the device.")
+            AppLog.error(
+                .recording,
+                "Invalid native audio format: sampleRate=\(nativeFormat.sampleRate), channels=\(nativeFormat.channelCount)"
+            )
             throw AudioRecordingError.invalidFormat
         }
         
@@ -237,7 +254,7 @@ class AudioRecordingManager: ObservableObject {
         // The hardware format (e.g., 24000 Hz) must match what we use for the tap
         let recordingFormat = nativeFormat
         
-        print("Using recording format: \(recordingFormat)")
+        AppLog.debug(.recording, "Using recording format: \(recordingFormat)", verboseOnly: true)
         
         // Create audio file for recording
         // We currently write PCM buffers directly via `AVAudioFile.write(from:)`.
@@ -259,7 +276,10 @@ class AudioRecordingManager: ObservableObject {
                 interleaved: false
             )
         } catch {
-            print("Failed to create audio file with format: \(recordingFormat.settings). Falling back to 44.1 kHz mono.")
+            AppLog.notice(
+                .recording,
+                "Failed to create file with format \(recordingFormat.settings). Falling back to 44.1 kHz mono."
+            )
             // Fallback to a simpler format if the preferred one is unsupported
             let fallbackFormat = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
             audioFile = try AVAudioFile(
@@ -277,9 +297,9 @@ class AudioRecordingManager: ObservableObject {
                     [.protectionKey: FileProtectionType.complete],
                     ofItemAtPath: audioFileURL.path
                 )
-                print("Applied complete file protection to: \(audioFileURL.lastPathComponent)")
+                AppLog.info(.recording, "Applied complete file protection: \(audioFileURL.lastPathComponent)")
             } catch {
-                print("Warning: Failed to apply file protection to audio file: \(error)")
+                AppLog.notice(.recording, "Failed to apply file protection: \(error.localizedDescription)")
                 // Continue recording even if protection fails, but log the issue
             }
         }
@@ -299,19 +319,19 @@ class AudioRecordingManager: ObservableObject {
         #if targetEnvironment(simulator)
         // In simulator, we might not be able to actually record audio
         // but we can still set up the engine for testing purposes
-        print("Starting audio capture in simulator (may not record actual audio)")
+        AppLog.debug(.recording, "Starting audio capture in simulator (audio may be unavailable)", dedupeInterval: 5)
         #endif
         
         do {
             try audioEngine?.start()
         } catch {
-            print("Failed to start audio engine: \(error)")
+            AppLog.error(.recording, "Failed to start audio engine: \(error.localizedDescription)")
             #if targetEnvironment(simulator)
             // In simulator, we'll continue anyway for testing
-            print("Continuing in simulator despite audio engine failure")
+            AppLog.notice(.recording, "Continuing in simulator despite audio engine failure", dedupeInterval: 5)
             #else
             // On real device, this is a critical error that should be reported
-            print("CRITICAL: Audio engine failed to start on device. This may indicate a hardware issue.")
+            AppLog.fault(.recording, "Audio engine failed to start on device")
             throw error
             #endif
         }
@@ -335,7 +355,7 @@ class AudioRecordingManager: ObservableObject {
         do {
             try audioFile.write(from: buffer)
         } catch {
-            print("Error writing audio buffer: \(error)")
+            AppLog.error(.recording, "Failed to write audio buffer: \(error.localizedDescription)", dedupeInterval: 2)
         }
     }
     
@@ -371,7 +391,7 @@ class AudioRecordingManager: ObservableObject {
                 .filter { ["caf", "m4a"].contains($0.pathExtension.lowercased()) }
                 .sorted { $0.lastPathComponent > $1.lastPathComponent }
         } catch {
-            print("Error getting audio files: \(error)")
+            AppLog.error(.recording, "Failed to list audio files: \(error.localizedDescription)")
             return []
         }
     }
@@ -382,10 +402,10 @@ class AudioRecordingManager: ObservableObject {
     func deleteAudioFile(url: URL) -> Bool {
         do {
             try FileManager.default.removeItem(at: url)
-            print("Deleted audio file: \(url.lastPathComponent)")
+            AppLog.info(.recording, "Deleted audio file: \(url.lastPathComponent)")
             return true
         } catch {
-            print("Error deleting audio file: \(error)")
+            AppLog.error(.recording, "Failed to delete audio file: \(error.localizedDescription)")
             return false
         }
     }
@@ -398,7 +418,7 @@ class AudioRecordingManager: ObservableObject {
             let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
             return attributes[.size] as? Int64
         } catch {
-            print("Error getting file size: \(error)")
+            AppLog.error(.recording, "Failed to get file size: \(error.localizedDescription)")
             return nil
         }
     }
@@ -413,7 +433,7 @@ class AudioRecordingManager: ObservableObject {
             let frameCount = Double(audioFile.length)
             return frameCount / format.sampleRate
         } catch {
-            print("Error getting audio duration: \(error)")
+            AppLog.error(.recording, "Failed to get audio duration: \(error.localizedDescription)")
             return nil
         }
     }
@@ -456,9 +476,9 @@ class AudioRecordingManager: ObservableObject {
     private func validateSecureFileProtection(at url: URL) {
         do {
             try CacheManager.shared.validateFileProtection(at: url)
-            print("Secure file protection validated: \(url.lastPathComponent)")
+            AppLog.info(.recording, "Secure file protection validated: \(url.lastPathComponent)")
         } catch {
-            print("Error validating secure file protection: \(error)")
+            AppLog.error(.recording, "Secure file protection validation failed: \(error.localizedDescription)")
             // Optionally, you might want to delete the file if protection fails
             // try? FileManager.default.removeItem(at: url)
         }

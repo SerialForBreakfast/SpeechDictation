@@ -130,7 +130,7 @@ final class ModelDownloadManager: NSObject, ObservableObject {
         
         // Check if already downloading
         if activeDownloads[modelId] != nil {
-            print("Model \(modelId) is already downloading")
+            AppLog.notice(.download, "Model \(modelId) is already downloading", dedupeInterval: 2)
             return await waitForDownload(modelId)
         }
         
@@ -172,7 +172,7 @@ final class ModelDownloadManager: NSObject, ObservableObject {
         // Process next in queue
         processQueue()
         
-                    print("Cancelled download for model: \(modelId)")
+        AppLog.info(.download, "Cancelled download for model: \(modelId)")
     }
     
     /// Pauses all downloads
@@ -226,7 +226,7 @@ final class ModelDownloadManager: NSObject, ObservableObject {
             try fileManager.createDirectory(at: modelsDirectory, withIntermediateDirectories: true)
             try fileManager.createDirectory(at: tempDownloadsDirectory, withIntermediateDirectories: true)
         } catch {
-            print("Failed to create directories: \(error)")
+            AppLog.error(.download, "Failed to create directories: \(error)")
         }
     }
     
@@ -315,7 +315,7 @@ final class ModelDownloadManager: NSObject, ObservableObject {
                 processQueue()
             }
             
-            print("Successfully installed model: \(model.name)")
+            AppLog.info(.download, "Successfully installed model: \(model.name)")
             return .success(modelId: model.id, localURL: finalURL)
             
         } catch {
@@ -336,7 +336,7 @@ final class ModelDownloadManager: NSObject, ObservableObject {
             let hashString = hash.compactMap { String(format: "%02x", $0) }.joined()
             return hashString.lowercased() == expectedChecksum.lowercased()
         } catch {
-            print("Checksum verification failed: \(error)")
+            AppLog.error(.download, "Checksum verification failed: \(error)")
             return false
         }
     }

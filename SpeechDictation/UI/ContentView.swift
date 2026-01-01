@@ -14,9 +14,10 @@ import UIKit
 #endif
 
 struct ContentView: View {
-    @ObservedObject var viewModel = SpeechRecognizerViewModel()
+    @StateObject private var viewModel = SpeechRecognizerViewModel()
     @State private var showingCustomShare = false
     @State private var showingSecureRecordings = false
+    @State private var showingTranscriptAudit = false
     @State private var isUserScrolling = false
     @State private var showJumpToLiveButton = false
     @State private var lastTranscriptLength = 0
@@ -46,6 +47,10 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(transcriptBackgroundColor)
                         .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(transcriptBorderColor, lineWidth: 1)
+                        )
                         .shadow(color: shadowColor, radius: 5, x: 0, y: 0)
                         .simultaneousGesture(
                             DragGesture()
@@ -103,7 +108,7 @@ struct ContentView: View {
 
                 SettingsView(viewModel: viewModel)
                     .transition(.move(edge: .bottom))
-                    .animation(.easeInOut)
+                    .animation(.easeInOut, value: viewModel.showSettings)
             }
         }
         .onAppear {
@@ -115,16 +120,29 @@ struct ContentView: View {
                 timingSession: viewModel.currentSession,
                 isPresented: $showingCustomShare
             )
+            .preferredColorScheme(preferredColorScheme)
         }
         .sheet(isPresented: $showingSecureRecordings) {
             SecureRecordingsView(isPresented: $showingSecureRecordings)
+                .preferredColorScheme(preferredColorScheme)
         }
+        .sheet(isPresented: $showingTranscriptAudit) {
+            TranscriptAuditView()
+                .preferredColorScheme(preferredColorScheme)
+        }
+        .preferredColorScheme(preferredColorScheme)
     }
 
     // MARK: - Color Helpers
     
     private var transcriptBackgroundColor: Color {
         switch viewModel.theme {
+        case .system:
+            #if canImport(UIKit)
+            return Color(UIColor.systemBackground)
+            #else
+            return Color.gray.opacity(0.1)
+            #endif
         case .light:
             return Color.white
         case .dark:
@@ -137,10 +155,27 @@ struct ContentView: View {
     /// Color used for transcript text to ensure readability regardless of system-wide color scheme.
     private var transcriptTextColor: Color {
         switch viewModel.theme {
+        case .system:
+            return Color.primary
         case .light, .highContrast:
             return Color.black
         case .dark:
             return Color.white
+        }
+    }
+
+    private var transcriptBorderColor: Color {
+        Color.primary.opacity(colorScheme == .dark ? 0.4 : 0.25)
+    }
+
+    private var preferredColorScheme: ColorScheme? {
+        switch viewModel.theme {
+        case .system:
+            return nil
+        case .light, .highContrast:
+            return .light
+        case .dark:
+            return .dark
         }
     }
     
@@ -182,6 +217,12 @@ struct ContentView: View {
             systemImage: "square.and.arrow.up",
             action: { showingCustomShare = true },
             isDisabled: !canExport
+        )
+
+        utilityButton(
+            title: "Audit",
+            systemImage: "doc.text.magnifyingglass",
+            action: { showingTranscriptAudit = true }
         )
         
         utilityButton(

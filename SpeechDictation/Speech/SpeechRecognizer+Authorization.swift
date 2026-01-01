@@ -13,7 +13,7 @@ extension SpeechRecognizer {
             DispatchQueue.main.async {
                 switch authStatus {
                 case .authorized:
-                    print("Speech recognition authorized")
+                    AppLog.info(.transcription, "Speech recognition authorized")
                 case .denied:
                     self.transcribedText = "Speech recognition authorization denied"
                 case .restricted:
@@ -29,7 +29,7 @@ extension SpeechRecognizer {
         AVAudioSession.sharedInstance().requestRecordPermission { granted in
             DispatchQueue.main.async {
                 if granted {
-                    print("Microphone access granted")
+                    AppLog.info(.recording, "Microphone access granted")
                 } else {
                     self.transcribedText = "Microphone access denied"
                 }
