@@ -1,0 +1,3 @@
+display_name: Swift Accessibility Agent
+short_description: Apple-platform accessibility guidance for SwiftUI, UIKit, tvOS, macOS, and visionOS.
+default_prompt: Review or update this Apple-platform UI for accessibility using the skill guidance and provide concrete fixes plus verification steps.

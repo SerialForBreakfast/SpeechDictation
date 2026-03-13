@@ -206,10 +206,27 @@ class AudioPlaybackManager: NSObject, ObservableObject { // Inherit NSObject for
     }
     
     private func updateCurrentSegment() {
-        // Find the segment that contains the current playback time
-        currentSegment = segments.first { segment in
-            currentTime >= segment.startTime && currentTime <= segment.endTime
+        guard !segments.isEmpty else {
+            currentSegment = nil
+            return
         }
+
+        // Find the segment that contains the current playback time.
+        if let matching = segments.first(where: { currentTime >= $0.startTime && currentTime <= $0.endTime }) {
+            currentSegment = matching
+            return
+        }
+
+        // Grace window for gaps between segments.
+        let graceWindow: TimeInterval = 0.25
+        if let lastStarted = segments.last(where: { currentTime >= $0.startTime }) {
+            if currentTime - lastStarted.endTime <= graceWindow {
+                currentSegment = lastStarted
+                return
+            }
+        }
+
+        currentSegment = nil
     }
     
     /// Formats current time for display

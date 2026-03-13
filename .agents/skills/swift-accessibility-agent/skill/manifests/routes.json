@@ -1,0 +1,58 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-07",
+  "routes": {
+    "ios:swiftui": {
+      "backlog": "docs/swiftui/guidelines/topic-backlog.md",
+      "guideline_root": "docs/swiftui/guidelines/",
+      "fallback_roots": ["docs/uikit/guidelines/"]
+    },
+    "ipados:swiftui": {
+      "backlog": "docs/swiftui/guidelines/topic-backlog.md",
+      "guideline_root": "docs/swiftui/guidelines/",
+      "fallback_roots": ["docs/uikit/guidelines/"]
+    },
+    "ios:uikit": {
+      "backlog": "docs/uikit/guidelines/topic-backlog.md",
+      "guideline_root": "docs/uikit/guidelines/",
+      "fallback_roots": ["docs/swiftui/guidelines/"]
+    },
+    "ipados:uikit": {
+      "backlog": "docs/uikit/guidelines/topic-backlog.md",
+      "guideline_root": "docs/uikit/guidelines/",
+      "fallback_roots": ["docs/swiftui/guidelines/"]
+    },
+    "tvos:swiftui": {
+      "backlog": "docs/tvos/guidelines/topic-backlog.md",
+      "guideline_root": "docs/tvos/guidelines/",
+      "fallback_roots": ["docs/uikit/guidelines/"]
+    },
+    "tvos:uikit": {
+      "backlog": "docs/tvos/guidelines/topic-backlog.md",
+      "guideline_root": "docs/tvos/guidelines/",
+      "fallback_roots": ["docs/uikit/guidelines/"]
+    },
+    "macos:swiftui": {
+      "backlog": "docs/macos/guidelines/topic-backlog.md",
+      "guideline_root": "docs/macos/guidelines/",
+      "fallback_roots": ["docs/swiftui/guidelines/"]
+    },
+    "macos:appkit": {
+      "backlog": "docs/macos/guidelines/topic-backlog.md",
+      "guideline_root": "docs/macos/guidelines/",
+      "fallback_roots": []
+    },
+    "macos:uikit": {
+      "backlog": "docs/macos/guidelines/topic-backlog.md",
+      "guideline_root": "docs/macos/guidelines/",
+      "fallback_roots": ["docs/uikit/guidelines/"],
+      "notes": ["Use for Mac Catalyst-style UIKit guidance only."]
+    },
+    "visionos:swiftui": {
+      "backlog": "docs/visionos/guidelines/topic-backlog.md",
+      "guideline_root": "docs/visionos/guidelines/",
+      "fallback_roots": ["docs/swiftui/guidelines/"],
+      "notes": ["visionOS track is scaffolded; rely on SwiftUI fallback guidance until V-series guidelines are drafted."]
+    }
+  }
+}

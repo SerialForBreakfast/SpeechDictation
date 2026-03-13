@@ -1,0 +1,83 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-07",
+  "task_presets": {
+    "ui_change": {
+      "required": [
+        "docs/core/pattern-review-rubric.md",
+        "docs/core/templates/guideline-template.md"
+      ],
+      "optional": [
+        "docs/testing/manual-test-scripts.md"
+      ]
+    },
+    "code_review": {
+      "required": [
+        "docs/core/architecture/architecture-principles.md",
+        "docs/core/pattern-review-rubric.md",
+        "docs/core/decision-matrix.md",
+        "docs/testing/platform-coverage-matrix.md",
+        "docs/testing/inspector-audit-checklist.md",
+        "docs/testing/xcuitest-hooks.md"
+      ],
+      "optional": [
+        "docs/core/templates/interop-boundary-contract-template.md",
+        "docs/testing/manual-test-scripts.md"
+      ]
+    },
+    "new_guideline": {
+      "required": [
+        "docs/core/architecture/architecture-principles.md",
+        "docs/core/decision-matrix.md",
+        "docs/core/templates/guideline-template.md",
+        "docs/core/templates/component-contract-template.md",
+        "docs/core/templates/interop-boundary-contract-template.md",
+        "docs/core/sources/registry.md"
+      ],
+      "optional": [
+        "docs/core/cookbook/semantics-cookbook.md",
+        "docs/core/known-os-issues.md",
+        "docs/testing/manual-test-scripts.md",
+        "docs/testing/inspector-audit-checklist.md"
+      ]
+    },
+    "test_plan": {
+      "required": [
+        "docs/testing/platform-coverage-matrix.md",
+        "docs/testing/manual-test-scripts.md",
+        "docs/testing/inspector-audit-checklist.md"
+      ],
+      "optional": [
+        "docs/testing/xcuitest-hooks.md"
+      ]
+    },
+    "regression_triage": {
+      "required": [
+        "docs/core/known-os-issues.md",
+        "docs/core/version-matrix.md",
+        "docs/core/pattern-review-rubric.md",
+        "docs/testing/regression-triage-playbook.md",
+        "docs/testing/xcuitest-hooks.md",
+        "docs/testing/inspector-audit-checklist.md"
+      ],
+      "optional": [
+        "docs/testing/manual-test-scripts.md"
+      ]
+    },
+    "architecture_design": {
+      "required": [
+        "docs/core/architecture/architecture-principles.md",
+        "docs/core/decision-matrix.md",
+        "docs/core/external-landscape.md",
+        "docs/core/templates/component-contract-template.md",
+        "docs/core/templates/interop-boundary-contract-template.md",
+        "docs/core/known-os-issues.md"
+      ],
+      "optional": [
+        "docs/core/cookbook/semantics-cookbook.md",
+        "docs/core/known-os-issues.md",
+        "docs/testing/platform-coverage-matrix.md"
+      ]
+    }
+  }
+}

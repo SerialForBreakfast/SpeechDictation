@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-07",
+  "signals": {
+    "good": [
+      "interactive_elements_labeled",
+      "icon_only_controls_labeled",
+      "state_values_exposed",
+      "grouping_strategy_explicit",
+      "focus_order_task_aligned",
+      "interop_ownership_documented",
+      "inspector_and_voiceover_evidence_present"
+    ],
+    "risky": [
+      "generic_duplicate_labels",
+      "state_updates_not_consistently_announced",
+      "incidental_grouping_behavior",
+      "focus_behavior_unstable_after_async_or_modal",
+      "interop_ownership_implicit_only",
+      "single_mode_validation_only"
+    ],
+    "bad": [
+      "unlabeled_interactive_element",
+      "missing_state_semantics_for_stateful_control",
+      "focus_trap_or_dead_end",
+      "custom_visual_without_semantic_representation",
+      "mixed_framework_without_ownership_model",
+      "no_accessibility_verification_evidence"
+    ]
+  },
+  "auto_fail_conditions": [
+    "unlabeled_interactive_element",
+    "focus_trap_or_dead_end",
+    "no_accessibility_verification_evidence"
+  ]
+}

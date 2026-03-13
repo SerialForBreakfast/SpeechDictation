@@ -1,0 +1,56 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-07",
+  "rules": [
+    {
+      "trigger": "compound_row_or_card",
+      "recommend": [
+        {
+          "option": "combine",
+          "use_when": "single primary row action",
+          "verify": ["inspector_hierarchy", "voiceover_swipe_order"]
+        },
+        {
+          "option": "contain",
+          "use_when": "multiple independent child actions",
+          "verify": ["inspector_hierarchy", "voiceover_action_discovery"]
+        }
+      ]
+    },
+    {
+      "trigger": "complex_visual",
+      "recommend": [
+        {
+          "option": "accessibilityChildren",
+          "use_when": "per-item navigation or values are required",
+          "verify": ["inspector_children_exposure", "voiceover_item_context"]
+        },
+        {
+          "option": "accessibilityRepresentation",
+          "use_when": "alternate high-level semantic model is sufficient",
+          "verify": ["representation_semantic_parity", "voiceover_summary_clarity"]
+        }
+      ]
+    },
+    {
+      "trigger": "interop_boundary",
+      "recommend": [
+        {
+          "option": "explicit_ownership_split",
+          "use_when": "swiftui_uikit_appkit_mixed_surface",
+          "verify": ["interop_contract_present", "modal_focus_lifecycle", "semantic_forwarding_checks"]
+        }
+      ]
+    },
+    {
+      "trigger": "regression_sensitive_change",
+      "recommend": [
+        {
+          "option": "manual_plus_smoke_automation",
+          "use_when": "focus_semantics_or_state_changes",
+          "verify": ["inspector_pass", "voiceover_walkthrough", "xcuitest_smoke"]
+        }
+      ]
+    }
+  ]
+}

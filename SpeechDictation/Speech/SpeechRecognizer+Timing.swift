@@ -84,13 +84,18 @@ extension SpeechRecognizer {
         case .partial(let text, let segments):
             DispatchQueue.main.async { [weak self] in
                 guard let self = self, !text.isEmpty else { return }
-                self.transcribedText = text
+                let mergedText = TimingDataManager.shared.segments.map { $0.text }.joined(separator: " ")
+                self.transcribedText = mergedText.isEmpty ? text : mergedText
 
                 let storedBefore = TimingDataManager.shared.segments.count
                 if !segments.isEmpty {
                     TimingDataManager.shared.mergeSegments(segments)
                 }
                 let storedAfter = TimingDataManager.shared.segments.count
+                let updatedMergedText = TimingDataManager.shared.segments.map { $0.text }.joined(separator: " ")
+                if !updatedMergedText.isEmpty {
+                    self.transcribedText = updatedMergedText
+                }
 
                 TimingDataManager.shared.recordAudit(
                     event: .partial,
@@ -107,13 +112,18 @@ extension SpeechRecognizer {
                 guard let self = self, !text.isEmpty else { return }
 
                 AppLog.debug(.timing, "UI final: text=\(text.count)ch, merging \(segments.count) segments", verboseOnly: true)
-                self.transcribedText = text
+                let mergedText = TimingDataManager.shared.segments.map { $0.text }.joined(separator: " ")
+                self.transcribedText = mergedText.isEmpty ? text : mergedText
 
                 let storedBefore = TimingDataManager.shared.segments.count
                 if !segments.isEmpty {
                     TimingDataManager.shared.mergeSegments(segments)
                 }
                 let storedAfter = TimingDataManager.shared.segments.count
+                let updatedMergedText = TimingDataManager.shared.segments.map { $0.text }.joined(separator: " ")
+                if !updatedMergedText.isEmpty {
+                    self.transcribedText = updatedMergedText
+                }
                 AppLog.debug(.timing, "UI final: segments \(storedBefore) -> \(storedAfter) (delta \(storedAfter - storedBefore))", verboseOnly: true)
 
                 TimingDataManager.shared.recordAudit(

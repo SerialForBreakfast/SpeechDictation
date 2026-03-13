@@ -1,0 +1,392 @@
+SwiftAccessibilityAgent — Research + Documentation Plan
+======================================================
+Date: 2026-03-07
+Last Updated: 2026-03-07
+
+Goal
+----
+Create a citable, source-driven Accessibility Best Practices knowledge base for SwiftUI and UIKit (including interop where it materially affects accessibility).
+The deliverable should be directly usable by AI coding tools (Agent Skills style), and readable by humans.
+
+Execution Defaults
+------------------
+- Owner default: `@agent` unless explicitly reassigned.
+- Status values: `Not Started`, `In Progress`, `Blocked`, `Done`.
+- Priority values: `P0`, `P1`, `P2`.
+- Date format: `YYYY-MM-DD`.
+
+Non-negotiables
+---------------
+- Prefer primary sources (Apple Developer Documentation, Apple HIG, WWDC sessions) when defining platform truth.
+- Every guideline must cite at least one primary (Tier-1) source.
+- If a guideline is derived from non-Apple sources, it must be anchored to Apple docs and/or framed as "practice" instead of "platform truth."
+- Keep guidance testable: each guideline must include a verification method (Accessibility Inspector, VoiceOver walkthrough, UI tests, etc.).
+
+Citation Quality Rules
+----------------------
+- Minimum per guideline: 2+ citations, including >=1 Tier-1 source.
+- Include `Last Verified` date for each guideline and each source reference set.
+- Prefer canonical URLs (Apple docs page root for API/topic, not mirror pages).
+- Use direct quotes only when they add clarity; max 1-2 quotes per guideline and <=25 words per source.
+
+Definition of Done (Global)
+---------------------------
+A task is `Done` only when all are true:
+- Required artifact file exists at the specified path.
+- Required citations are present and meet Citation Quality Rules.
+- Verification steps are written and executable by a reviewer.
+- Review pass completed (content quality + consistency + links check).
+- `Last Updated` metadata is current.
+
+Scope Targets
+-------------
+- SwiftUI track: semantics (labels/values/hints/traits/actions), grouping, focus/navigation order, custom controls, dynamic type, reduced motion, contrast, images/icons, form fields, lists, sheets, alerts.
+- UIKit track: equivalent semantics and controls for UIKit-first apps (views, controls, containers, tables/collections, modal flows, media controls).
+- Tooling: Xcode Accessibility Inspector; manual device testing with VoiceOver.
+- Interop: `UIHostingController`, representables, UIKit containers affecting accessibility tree.
+
+Artifact Map (Expected Outputs)
+-------------------------------
+- `docs/core/sources/registry.md`
+- `docs/core/technology-map.md`
+- `docs/core/taxonomy/semantics-checklist.md`
+- `docs/core/templates/guideline-template.md`
+- `docs/swiftui/guidelines/topic-backlog.md`
+- `docs/swiftui/guidelines/*.md` (topic guidelines)
+- `docs/uikit/guidelines/topic-backlog.md`
+- `docs/uikit/guidelines/*.md` (topic guidelines)
+- `docs/testing/manual-test-scripts.md`
+- `docs/testing/inspector-audit-checklist.md`
+- `docs/testing/xcuitest-hooks.md`
+- `SKILL.md` (agent-facing package)
+- `docs/changelog.md`
+
+Research Workstreams
+====================
+
+A) Build a "Sources of Truth" Registry
+--------------------------------------
+Owner: `@agent`
+Priority: `P0`
+Status: `Done`
+Target Date: `2026-03-10`
+Output: `docs/core/sources/registry.md`
+
+[x] Research: confirm Tier-1 canonical source URLs and title accuracy.
+[x] Write: define registry format (source ID, title, URL, authority tier, last-reviewed date, notes).
+[x] Write: seed Tier-1 sources:
+    - Apple SwiftUI accessibility docs (View-Accessibility, Creating Accessible Views, Accessible Descriptions, Traits, Actions, Rotors, sort priority).
+    - Apple Human Interface Guidelines (Accessibility + VoiceOver).
+    - Apple Accessibility documentation hub + Accessibility Inspector.
+    - WWDC sessions on SwiftUI accessibility.
+    - App Store Connect Accessibility Nutrition Labels criteria (VoiceOver, Sufficient Contrast, Larger Text, Reduced Motion, etc.).
+[x] Write: seed Tier-2 sources (high-quality, widely trusted):
+    - SwiftLee (Antoine van der Lee) accessibility articles.
+    - Hacking with Swift (SwiftUI accessibility chapters).
+    - Swift with Majid (accessibilityRepresentation, rotors, general SwiftUI a11y).
+    - Use Your Loaf (SwiftUI accessibility updates / modifier changes).
+    - CVS Health: iOS SwiftUI Accessibility Techniques (open-source techniques + examples).
+[x] Write: seed Tier-3 sources (reference only / caution): conference slide decks, vendor blogs, community posts.
+[x] Verify: dead-link scan and duplicate source ID scan (static URL-hygiene + duplicate-ID scan).
+
+DoD (Workstream A)
+- Registry has tiering policy and freshness policy.
+- All seeded sources have `last_reviewed`.
+- Tier-2/3 entries include caveat notes.
+
+Tiering Policy Notes
+- Open-source repos can be Tier-2 if they are maintained by reputable orgs and demonstrate techniques consistent with Apple guidance.
+- Any repo-based technique must still be cross-referenced to at least one Tier-1 Apple source before becoming a rule.
+
+B) Define the Accessibility "Technology Map"
+--------------------------------------------
+Owner: `@agent`
+Priority: `P0`
+Status: `Done`
+Target Date: `2026-03-11`
+Output: `docs/core/technology-map.md`
+
+[x] Research: confirm technology list relevance for iOS-first scope.
+[x] Write: enumerate assistive technologies and key user interactions that impact app semantics:
+    - VoiceOver (focus + rotor navigation)
+    - Switch Control (scanning and activation)
+    - Voice Control (command-driven interaction)
+    - Dynamic Type / Larger Text
+    - Increase Contrast / Differentiate Without Color
+    - Reduce Motion
+    - Captions / Audio Descriptions (for media-centric UIs)
+[x] Write: for each technology define:
+    - What the user does (interaction model)
+    - What the UI needs to expose (label/value/hint/traits/actions, reading order, focus behavior)
+    - What we can test (Inspector checks + manual flows)
+[x] Verify: each technology includes at least one actionable test statement.
+
+DoD (Workstream B)
+- Map covers all listed technologies.
+- Each technology row/section contains user model + UI contract + test method.
+- Interop risk notes included.
+
+C) Build a Shared "Semantics Checklist" Taxonomy
+------------------------------------------------
+Owner: `@agent`
+Priority: `P0`
+Status: `Done`
+Target Date: `2026-03-12`
+Outputs:
+- `docs/core/taxonomy/semantics-checklist.md`
+- `docs/core/templates/guideline-template.md`
+- `docs/swiftui/guidelines/topic-backlog.md`
+
+[x] Research: validate canonical semantics fields and API mapping.
+[x] Write: define canonical semantic fields:
+    - Label, Value, Hint, Traits/Role, Actions
+[x] Write: map each field to:
+    - SwiftUI APIs/modifiers
+    - UIKit equivalents (for interop)
+    - Common failure modes (icons without labels, wrong grouping, duplicate labels, misleading hints, etc.)
+[x] Write: finalize guideline template sections:
+    - Title
+    - Problem statement
+    - Rule
+    - Rationale
+    - How to implement (SwiftUI-first, UIKit interop notes)
+    - How to test
+    - Citations
+[x] Write: maintain prioritized topic backlog with status and citation readiness fields.
+[x] Verify: taxonomy and template are internally consistent and reusable for all topics.
+
+DoD (Workstream C)
+- Taxonomy includes semantics + grouping + focus coverage.
+- Template enforces required citations and testing.
+- Backlog exists with priority and status columns.
+
+D) Gather "Best Practices" With Citations and Minimal Quoting
+--------------------------------------------------------------
+Owner: `@agent`
+Priority: `P0`
+Status: `Done`
+Target Date: `2026-03-20`
+Output: `docs/swiftui/guidelines/*.md`
+
+[x] Research: for each topic, collect >=2 citations (>=1 Tier-1 Apple).
+[x] Write: include 1-2 short compliant quotes only when clarity improves.
+[x] Write: add a do/don't example list (pseudocode is fine; avoid large code dumps).
+[x] Verify: each topic file passes Citation Quality Rules and includes explicit test steps.
+
+Topic List
+- Labels and meaningful names (especially for images/icons)
+- Hints: when to use vs when to omit
+- Values: stateful controls and readouts
+- Traits/roles: headers, buttons, selected, adjustable
+- Grouping and containment (combine/contain/ignore)
+- Focus and reading order (including sort priority)
+- Custom controls: exposing actions and representations
+- Accessibility actions and custom actions
+- Rotors (when and why)
+- Dynamic Type and layout resilience
+- Color/contrast and do not rely on color alone
+- Reduced Motion handling
+- Modal/sheet behavior and focus containment
+- Lists, forms, toggles, sliders, and complex rows
+- Media: captions, audio descriptions, VoiceOver media controls
+
+DoD (Workstream D)
+- Each guideline has at least one Tier-1 citation.
+- Each guideline has Inspector + VoiceOver verification steps.
+- Each guideline has metadata (`Status`, `Last Reviewed`, platform scope).
+
+E) Verification Plan (Make Guidelines Enforceable)
+--------------------------------------------------
+Owner: `@agent`
+Priority: `P0`
+Status: `Done`
+Target Date: `2026-03-22`
+Outputs:
+- `docs/testing/manual-test-scripts.md`
+- `docs/testing/inspector-audit-checklist.md`
+- `docs/testing/xcuitest-hooks.md`
+
+[x] Research: define realistic manual and tooling checks for a documentation-first repo.
+[x] Write: manual testing scripts:
+    - VoiceOver smoke test per screen
+    - Larger Text / Dynamic Type sweeps
+    - Contrast / differentiate-without-color sweeps
+    - Reduce Motion sweeps
+[x] Write: tool-driven checks:
+    - Accessibility Inspector audit checklist (issues to look for)
+[x] Write: automation hooks (where feasible):
+    - XCUITest expectations for accessibility identifiers/labels/order (limited but useful)
+[x] Verify: test scripts are executable by another reviewer without additional context.
+
+DoD (Workstream E)
+- All three testing artifacts exist.
+- At least one sample pass/fail criterion per test type.
+- Automation section clearly marks limits and assumptions.
+
+F) Agent Skill Packaging
+------------------------
+Owner: `@agent`
+Priority: `P1`
+Status: `Done`
+Target Date: `2026-03-24`
+Outputs:
+- `SKILL.md`
+- Optional compact checklist (path TBD)
+
+[x] Research: map documentation outputs into agent skill consumption format.
+[x] Write: finalize output format strategy:
+    - `SKILL.md` style knowledge base for AI tools
+    - `docs/` pages for humans (same rules, richer narrative)
+    - Optional compact checklist for prompt insertion
+[x] Write: create "Agent rules" section:
+    - When modifying UI, always preserve/verify accessibility semantics
+    - Require citations for any new guideline added
+    - Require a verification step per change
+[x] Verify: skill content references source registry and testing artifacts.
+
+DoD (Workstream F)
+- `SKILL.md` is self-sufficient and points to canonical docs.
+- Agent rules are explicit and enforceable.
+- Packaging does not duplicate conflicting guidance.
+
+G) Maintenance + Freshness
+--------------------------
+Owner: `@agent`
+Priority: `P1`
+Status: `Done`
+Target Date: `2026-03-25`
+Outputs:
+- `docs/changelog.md`
+- Freshness review checklist section (in registry or standalone doc)
+
+[x] Write: source freshness policy:
+    - Apple docs: review quarterly or when OS major versions ship
+    - WWDC: review annually
+    - Community sources: review annually and downgrade if stale
+[x] Write: changelog section for guideline updates.
+[x] Verify: stale-source downgrade rules are documented and actionable.
+
+DoD (Workstream G)
+- Freshness intervals explicitly documented.
+- Changelog format defined and initialized.
+- Review trigger conditions are stated.
+
+H) Platform Expansion (tvOS + macOS)
+------------------------------------
+Owner: `@agent`
+Priority: `P0`
+Status: `Done`
+Target Date: `2026-03-31`
+Outputs:
+- `docs/tvos/README.md`
+- `docs/tvos/guidelines/topic-backlog.md`
+- `docs/macos/README.md`
+- `docs/macos/guidelines/topic-backlog.md`
+- Updates to `docs/core/sources/registry.md`, `docs/core/technology-map.md`, `README.md`, and `SKILL.md`
+
+[x] Research: identify Tier-1 Apple sources for tvOS focus behavior and macOS/AppKit accessibility.
+[x] Write: add tvOS and macOS track scaffolding with prioritized backlog IDs.
+[x] Write: extend source registry with platform-specific Tier-1 references and automation-focused Tier-2 references.
+[x] Write: update skill packaging and top-level README to include platform selection workflow.
+[x] Verify: consistency sweep for backlog fields, citation tiers, and cross-file links.
+[x] Verify: draft first P0 guideline file in each new track (`T-001`, `M-001`).
+
+DoD (Workstream H)
+- tvOS and macOS tracks exist with backlogs and consistent metadata fields.
+- Source registry includes Tier-1 references for tvOS focus and macOS `NSAccessibility`.
+- `SKILL.md` instructs platform-aware track selection before implementation guidance.
+- First P0 guideline draft exists for both tvOS and macOS tracks.
+
+Milestones
+==========
+M1 - Registry + Technology Map Complete
+Owner: `@agent`
+Target Date: `2026-03-11`
+Required Outputs:
+- `docs/core/sources/registry.md`
+- `docs/core/technology-map.md`
+Acceptance:
+- Registry exists with Tier-1 sources + version targets.
+- Technology map drafted with testable fields.
+
+M2 - Taxonomy + Guideline Templates Complete
+Owner: `@agent`
+Target Date: `2026-03-12`
+Required Outputs:
+- `docs/core/taxonomy/semantics-checklist.md`
+- `docs/core/templates/guideline-template.md`
+- `docs/swiftui/guidelines/topic-backlog.md`
+Acceptance:
+- Template agreed and reusable.
+- Topic list prioritized and trackable.
+
+M3 - First Pass Guideline Set (Core Semantics + Testing)
+Owner: `@agent`
+Target Date: `2026-03-20`
+Required Outputs:
+- Initial P0 guideline files under `docs/swiftui/guidelines/`
+- Draft testing scripts under `docs/testing/`
+Acceptance:
+- Labels/values/hints/traits/actions guidance documented.
+- Inspector and VoiceOver testing scripts documented.
+
+M4 - Advanced SwiftUI/UIKit Topics
+Owner: `@agent`
+Target Date: `2026-03-23`
+Required Outputs:
+- Advanced topic guideline files for both `docs/swiftui/guidelines/` and `docs/uikit/guidelines/`
+- Interop notes included in each relevant guideline
+Acceptance:
+- Advanced behavior documented with citations and verification.
+
+M5 - Agent Skill Packaging
+Owner: `@agent`
+Target Date: `2026-03-24`
+Required Outputs:
+- `SKILL.md`
+- Agent rules section complete
+Acceptance:
+- Skill doc structure matches Agent Skills style.
+- Agent rules included and linked to verification workflow.
+
+M6 - Platform Coverage Expansion
+Owner: `@agent`
+Target Date: `2026-03-31`
+Required Outputs:
+- `docs/tvos/guidelines/topic-backlog.md`
+- `docs/macos/guidelines/topic-backlog.md`
+- Updated `docs/core/sources/registry.md` with tvOS/macOS entries
+- Updated `SKILL.md` and `README.md` platform instructions
+Acceptance:
+- tvOS and macOS are first-class tracks with prioritized topic backlogs.
+- Core source registry includes platform-specific Tier-1 entries.
+- Agent workflow includes explicit platform-target selection.
+
+Risk Log
+========
+R1 - API Drift / Deprecation
+- Impact: outdated modifiers or behavior guidance.
+- Mitigation: quarterly Apple source review + changelog entries.
+
+R2 - Source Conflict (Tier-1 vs community)
+- Impact: inconsistent recommendations.
+- Mitigation: Tier-1 always wins; mark community guidance as practice.
+
+R3 - Untestable Guidelines
+- Impact: guidance cannot be enforced in review.
+- Mitigation: enforce Inspector + VoiceOver checks in every guideline.
+
+R4 - Ambiguous Interop Behavior
+- Impact: accessibility tree differs between SwiftUI-only and UIKit-hosted contexts.
+- Mitigation: require interop notes and on-device checks for interop topics.
+
+Review Cadence
+==============
+- Weekly status review: every Friday.
+- Milestone review: at completion of each M1-M5 target.
+- Freshness review: quarterly (Apple docs) + annually (WWDC/community).
+
+Notes
+=====
+- Keep a hard boundary between platform truth (Apple docs) and best practice (community), but allow both with citations.
+- Every guideline must tell the developer (or agent) how to verify correctness.

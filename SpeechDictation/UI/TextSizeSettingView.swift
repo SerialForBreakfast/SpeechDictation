@@ -25,6 +25,9 @@ struct TextSizeSettingView: View {
             Slider(value: $viewModel.fontSize, in: 12...60)
                 .accentColor(.accentColor)
                 .padding(.horizontal)
+                .accessibilityLabel("Transcription text size")
+                .accessibilityValue("\(Int(viewModel.fontSize)) points")
+                .accessibilityHint("Adjust the font size of the transcript")
         }
         .padding()
         .background(sectionBackgroundColor)

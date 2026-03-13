@@ -1,0 +1,38 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-07",
+  "platform_presets": {
+    "ios": {
+      "required": [
+        "docs/testing/manual-test-scripts.md"
+      ],
+      "optional": [
+        "docs/testing/xcuitest-hooks.md"
+      ]
+    },
+    "ipados": {
+      "required": [
+        "docs/testing/manual-test-scripts.md"
+      ],
+      "optional": [
+        "docs/testing/xcuitest-hooks.md"
+      ]
+    },
+    "tvos": {
+      "required": [
+        "docs/testing/tvos-manual-test-scripts.md"
+      ],
+      "optional": [
+        "docs/testing/xcuitest-hooks.md"
+      ]
+    },
+    "macos": {
+      "required": [
+        "docs/testing/macos-manual-test-scripts.md"
+      ],
+      "optional": [
+        "docs/testing/xcuitest-hooks.md"
+      ]
+    }
+  }
+}

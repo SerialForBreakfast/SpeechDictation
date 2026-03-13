@@ -4,7 +4,7 @@ globs: *.swift
 alwaysApply: false
 ---
 11. Swift Specific
-  - Maintain a memlog folder(include a changelog, directory_tree, and tasks.md)
+  - Maintain a memlog folder(include a changelog, directory_tree, and tasks.txt)
   - only update the memlog when changes are accepted, not before.
   - All files/functions should have up-to-date comments which describe the intentions(and leverage Xcode quickhelp formatting)
   - If you make a change to a type, change the access level, change the async property, you must search for all uses of it and update their implementation across the entire repo.
@@ -29,6 +29,7 @@ alwaysApply: false
  - Don't assume youve fixed anything until I verify.  You are FAR too confident with your edits, and update documentation prematurely causing false positives.  Only update upon human validation.
  - Produce terse and effective logging.  Debounce duplicates.  Consider that console will be used for debugging with LLMs and consider how best to limit the length of this output.  Use OSLog, and properly assess how what level of verbosity is necessary, group items by features for selective logging.
  - DO NOT MODIFY FILES OUTSIDE OF THE REPOSITORY.
+ - Prefer .txt to .md and extra formatting.  Use language.
 
 ConcurrencyGuidelines.md:
 	1.	Embrace Swift’s Structured Concurrency:

@@ -1,0 +1,110 @@
+{
+  "version": "1.1.0",
+  "last_updated": "2026-03-07",
+  "entries": [
+    {
+      "id": "AX-BUG-001",
+      "symptom_class": "performance_hang",
+      "platforms": ["ios", "ipados"],
+      "frameworks": ["swiftui"],
+      "title": "SwiftUI nested lazy containers can hang under Inspector/VoiceOver",
+      "introduced_in": "ios_26_reported",
+      "affected_range": "ios_26_plus_reported",
+      "fixed_in": "unknown",
+      "status": "open",
+      "evidence_confidence": "high",
+      "catalog_path": "docs/core/known-os-issues.md"
+    },
+    {
+      "id": "AX-BUG-002",
+      "symptom_class": "extra_announcements",
+      "platforms": ["ios", "ipados"],
+      "frameworks": ["swiftui", "uikit"],
+      "title": "VoiceOver reads OCR text inside images in addition to provided label",
+      "introduced_in": "unknown",
+      "affected_range": "configuration_dependent",
+      "fixed_in": "n_a",
+      "status": "configuration_dependent",
+      "evidence_confidence": "high",
+      "catalog_path": "docs/core/known-os-issues.md"
+    },
+    {
+      "id": "AX-BUG-003",
+      "symptom_class": "wrong_semantics",
+      "platforms": ["ios", "ipados"],
+      "frameworks": ["swiftui"],
+      "title": "SwiftUI Link trait behavior may not match expected role semantics",
+      "introduced_in": "unknown",
+      "affected_range": "ios_17_era_reported",
+      "fixed_in": "unknown",
+      "status": "needs_revalidation",
+      "evidence_confidence": "medium",
+      "catalog_path": "docs/core/known-os-issues.md"
+    },
+    {
+      "id": "AX-BUG-004",
+      "symptom_class": "announcement_regression",
+      "platforms": ["ios", "ipados"],
+      "frameworks": ["swiftui"],
+      "title": "List reorder announcements regressed in iOS 15->16 era",
+      "introduced_in": "ios_16_reported",
+      "affected_range": "ios_16_reported_current_unknown",
+      "fixed_in": "unknown",
+      "status": "needs_revalidation",
+      "evidence_confidence": "medium",
+      "catalog_path": "docs/core/known-os-issues.md"
+    },
+    {
+      "id": "AX-BUG-005",
+      "symptom_class": "focus_trap",
+      "platforms": ["ios", "tvos"],
+      "frameworks": ["uikit"],
+      "title": "VoiceOver focus can become trapped in UIKit container compositions",
+      "introduced_in": "unknown",
+      "affected_range": "version_unspecified",
+      "fixed_in": "unknown",
+      "status": "needs_revalidation",
+      "evidence_confidence": "medium",
+      "catalog_path": "docs/core/known-os-issues.md"
+    },
+    {
+      "id": "AX-BUG-006",
+      "symptom_class": "missing_tree_exposure",
+      "platforms": ["ios", "ipados", "tvos", "macos", "visionos"],
+      "frameworks": ["swiftui", "uikit", "appkit"],
+      "title": "Accessibility tree exposure mismatches can break users and XCUITest",
+      "introduced_in": "n_a",
+      "affected_range": "all_supported_versions",
+      "fixed_in": "n_a",
+      "status": "open",
+      "evidence_confidence": "high",
+      "catalog_path": "docs/core/known-os-issues.md"
+    },
+    {
+      "id": "AX-BUG-007",
+      "symptom_class": "major_release_regression",
+      "platforms": ["ios", "ipados", "macos"],
+      "frameworks": ["system_accessibility_services"],
+      "title": "Major-release regressions require cross-version verification",
+      "introduced_in": "release_cycle_dependent",
+      "affected_range": "major_minor_release_dependent",
+      "fixed_in": "release_note_dependent",
+      "status": "open",
+      "evidence_confidence": "medium",
+      "catalog_path": "docs/core/known-os-issues.md"
+    },
+    {
+      "id": "AX-BUG-008",
+      "symptom_class": "web_content_regression",
+      "platforms": ["ios", "macos"],
+      "frameworks": ["webkit", "safari"],
+      "title": "Web content accessibility regressions can impact in-app web experiences",
+      "introduced_in": "release_cycle_dependent",
+      "affected_range": "browser_os_dependent",
+      "fixed_in": "release_note_dependent",
+      "status": "open",
+      "evidence_confidence": "medium",
+      "catalog_path": "docs/core/known-os-issues.md"
+    }
+  ]
+}

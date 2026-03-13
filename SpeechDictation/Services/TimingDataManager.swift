@@ -183,37 +183,21 @@ class TimingDataManager: ObservableObject {
         }
         guard !validNewSegments.isEmpty else { return }
 
-        func key(for segment: TranscriptionSegment) -> Int {
-            Int((segment.startTime * 1000).rounded())
-        }
-
-        var mergedByStartTime: [Int: TranscriptionSegment] = Dictionary(
-            uniqueKeysWithValues: segments.map { (key(for: $0), $0) }
-        )
+        var mergedSegments = segments
 
         for segment in validNewSegments {
-            // Deduplication: if we already have this exact segment (text + times), skip it.
-            // But if times match and text differs, we overwrite (it's a correction).
-            let k = key(for: segment)
-            if let existing = mergedByStartTime[k] {
-                // If it's effectively a duplicate, keep the existing one (or overwrite if identical - same result)
-                // But we want to allow *correction* (same time, new text).
-                // The tricky case is if we receive the *same* text again. We shouldn't duplicate it.
-                // Our map logic handles "same time replaces old", which is correct for corrections.
-                //
-                // What about *duplicates*? If we just assign, we replace.
-                // The only problem is if we have multiple segments mapping to the same key *in the input*.
-                // But `validNewSegments` is a list.
-                
-                // If it's an exact duplicate (text + start + end match), we don't need to do anything.
-                // If it's a correction (text differs, confidence higher/differs), we update.
-                mergedByStartTime[k] = segment
-            } else {
-                mergedByStartTime[k] = segment
+            mergedSegments.removeAll { existing in
+                let overlap = min(segment.endTime, existing.endTime) - max(segment.startTime, existing.startTime)
+                let overlapThreshold: TimeInterval = 0.02
+                let startTimeThreshold: TimeInterval = 0.05
+                let overlaps = overlap > overlapThreshold
+                let nearStart = abs(segment.startTime - existing.startTime) <= startTimeThreshold
+                return overlaps || nearStart
             }
+            mergedSegments.append(segment)
         }
 
-        let mergedSegments = mergedByStartTime.values.sorted { $0.startTime < $1.startTime }
+        mergedSegments.sort { $0.startTime < $1.startTime }
         updateSegments(mergedSegments)
     }
 

@@ -1,0 +1,60 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-07",
+  "examples": [
+    {
+      "name": "tvos_swiftui_ui_change",
+      "selection": {
+        "platform": "tvos",
+        "framework": "swiftui",
+        "task_type": "ui_change"
+      },
+      "resolved_load": [
+        "docs/core/sources/registry.md",
+        "docs/core/technology-map.md",
+        "docs/core/taxonomy/semantics-checklist.md",
+        "docs/tvos/guidelines/topic-backlog.md",
+        "docs/testing/tvos-manual-test-scripts.md",
+        "docs/core/templates/guideline-template.md"
+      ]
+    },
+    {
+      "name": "macos_appkit_regression_triage",
+      "selection": {
+        "platform": "macos",
+        "framework": "appkit",
+        "task_type": "regression_triage"
+      },
+      "resolved_load": [
+        "docs/core/sources/registry.md",
+        "docs/core/technology-map.md",
+        "docs/core/taxonomy/semantics-checklist.md",
+        "docs/macos/guidelines/topic-backlog.md",
+        "docs/testing/macos-manual-test-scripts.md",
+        "docs/core/known-os-issues.md",
+        "docs/testing/regression-triage-playbook.md",
+        "docs/testing/xcuitest-hooks.md",
+        "docs/testing/inspector-audit-checklist.md"
+      ]
+    },
+    {
+      "name": "ios_uikit_new_guideline",
+      "selection": {
+        "platform": "ios",
+        "framework": "uikit",
+        "task_type": "new_guideline"
+      },
+      "resolved_load": [
+        "docs/core/sources/registry.md",
+        "docs/core/technology-map.md",
+        "docs/core/taxonomy/semantics-checklist.md",
+        "docs/uikit/guidelines/topic-backlog.md",
+        "docs/testing/manual-test-scripts.md",
+        "docs/core/architecture/architecture-principles.md",
+        "docs/core/templates/guideline-template.md",
+        "docs/core/templates/component-contract-template.md",
+        "docs/core/templates/interop-boundary-contract-template.md"
+      ]
+    }
+  ]
+}

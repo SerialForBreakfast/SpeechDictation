@@ -60,6 +60,7 @@ struct SecureRecordingsView: View {
                                 Image(systemName: "plus.circle.fill")
                                     .foregroundColor(.accentColor)
                             }
+                            .accessibilityLabel("Add new recording")
                         }
                     }
                 }

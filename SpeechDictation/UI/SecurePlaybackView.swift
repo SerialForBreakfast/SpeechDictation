@@ -77,6 +77,9 @@ struct SecurePlaybackView: View {
                             isSliderEditing = editing
                         }
                     )
+                    .accessibilityLabel("Playback position")
+                    .accessibilityValue("\(playbackManager.getFormattedCurrentTime()) of \(playbackManager.getFormattedDuration())")
+                    .accessibilityHint("Swipe up or down to adjust position")
                     
                     Text(playbackManager.getFormattedDuration())
                         .font(.caption)
@@ -89,6 +92,7 @@ struct SecurePlaybackView: View {
                         Image(systemName: "gobackward.15")
                             .font(.title2)
                     }
+                    .accessibilityLabel("Rewind 15 seconds")
                     
                     Button(action: {
                         if playbackManager.playbackState == .playing {
@@ -100,11 +104,14 @@ struct SecurePlaybackView: View {
                         Image(systemName: playbackManager.playbackState == .playing ? "pause.circle.fill" : "play.circle.fill")
                             .font(.system(size: 56))
                     }
+                    .accessibilityLabel(playbackManager.playbackState == .playing ? "Pause" : "Play")
+                    .accessibilityHint(playbackManager.playbackState == .playing ? "Pauses playback" : "Starts playback")
                     
                     Button(action: { playbackManager.seekToTime(playbackManager.currentTime + 15) }) {
                         Image(systemName: "goforward.15")
                             .font(.title2)
                     }
+                    .accessibilityLabel("Forward 15 seconds")
                 }
                 .padding(.vertical, 8)
                 

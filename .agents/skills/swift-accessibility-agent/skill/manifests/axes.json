@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-07",
+  "platforms": ["ios", "ipados", "tvos", "macos", "visionos"],
+  "frameworks": ["swiftui", "uikit", "appkit"],
+  "task_types": ["ui_change", "code_review", "new_guideline", "test_plan", "regression_triage", "architecture_design"],
+  "notes": [
+    "Use appkit only for macOS.",
+    "Use uikit for iOS/iPadOS/tvOS and Catalyst-specific guidance if needed.",
+    "Use swiftui for visionOS by default.",
+    "If platform is unknown, default to ios + swiftui and ask only if ambiguity is risky."
+  ]
+}

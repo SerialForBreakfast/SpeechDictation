@@ -18,3 +18,5 @@ Focus: Documentation refresh to reflect repository state
 - Run a long-form transcription session with pauses and verify transcript accumulation.
 - Verify secure recording and playback flows.
 - Exercise camera permission flow and model loading on device.
+
+

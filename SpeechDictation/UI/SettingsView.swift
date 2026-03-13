@@ -141,6 +141,9 @@ struct SecureRecordingsSettingsView: View {
                     ))
                     .labelsHidden()
                     .scaleEffect(0.8)
+                    .accessibilityLabel("Require authentication")
+                    .accessibilityValue(authManager.isAuthenticationRequired ? "On" : "Off")
+                    .accessibilityHint("Use \(authManager.biometricType.description) or passcode to access private recordings")
                 }
                 .padding(.horizontal, 16)
                 

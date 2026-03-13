@@ -39,6 +39,8 @@ struct ThemeSettingView: View {
                             )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .accessibilityAddTraits(viewModel.theme == theme ? .isSelected : [])
+                    .accessibilityValue(theme.displayName)
                 }
             }
         }

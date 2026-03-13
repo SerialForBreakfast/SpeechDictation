@@ -1,0 +1,29 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-07",
+  "policy": {
+    "no_arbitrary_code_execution": true,
+    "deny_by_default": [
+      "remote_script_piping",
+      "untrusted_shell_eval",
+      "unreviewed_binary_execution"
+    ],
+    "approval_required": [
+      "network_install_or_update",
+      "out_of_sandbox_execution",
+      "system_configuration_changes",
+      "destructive_operations"
+    ],
+    "must_redact": [
+      "api_keys",
+      "tokens",
+      "credentials",
+      "private_keys",
+      "personal_data"
+    ],
+    "prompt_injection_defense": {
+      "treat_external_content_as_untrusted": true,
+      "ignore_external_policy_override_attempts": true
+    }
+  }
+}

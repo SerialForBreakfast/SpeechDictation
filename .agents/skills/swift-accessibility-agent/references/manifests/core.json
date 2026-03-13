@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-07",
+  "always_load": [
+    "AGENT.md",
+    "skill/manifests/security-policy.json",
+    "docs/core/sources/registry.md",
+    "docs/core/technology-map.md",
+    "docs/core/taxonomy/semantics-checklist.md"
+  ],
+  "load_order": [
+    "always_load",
+    "route.backlog",
+    "route.guideline_root",
+    "platform_presets.required",
+    "platform_presets.optional",
+    "task_presets.required",
+    "task_presets.optional"
+  ],
+  "token_policy": {
+    "max_initial_files": 5,
+    "max_initial_guidelines": 2,
+    "load_examples_on_demand": true,
+    "skip_changelog_during_runtime": true
+  }
+}
