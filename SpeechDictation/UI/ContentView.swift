@@ -22,6 +22,7 @@ struct ContentView: View {
     @State private var showJumpToLiveButton = false
     @State private var lastTranscriptLength = 0
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         ZStack {
@@ -47,6 +48,9 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(transcriptBackgroundColor)
                         .cornerRadius(10)
+                        .accessibilityElement(children: .contain)
+                        .accessibilityLabel("Live transcript")
+                        .accessibilityValue(viewModel.transcribedText.isEmpty ? "Empty" : viewModel.transcribedText)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(transcriptBorderColor, lineWidth: 1)
@@ -86,8 +90,9 @@ struct ContentView: View {
                         }
                         .padding(.trailing, 16)
                         .padding(.bottom, 16)
-                        .transition(.scale.combined(with: .opacity))
-                        .animation(.easeInOut(duration: 0.3), value: showJumpToLiveButton)
+                        .transition(reduceMotion ? .opacity : .scale.combined(with: .opacity))
+                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: showJumpToLiveButton)
+                        .accessibilityHint("Scrolls to the latest transcript")
                     }
                 }
 
@@ -105,6 +110,9 @@ struct ContentView: View {
                     .onTapGesture {
                         self.viewModel.showSettings.toggle()
                     }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel("Dismiss settings")
+                    .accessibilityHint("Double tap to close settings")
 
                 SettingsView(viewModel: viewModel)
                     .transition(.move(edge: .bottom))

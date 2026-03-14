@@ -93,6 +93,9 @@ struct MicSensitivityView: View {
         ZStack(alignment: .leading) {
             Slider(value: $viewModel.volume, in: 0...100, step: 1)
                 .accentColor(.accentColor)
+                .accessibilityLabel("Mic sensitivity")
+                .accessibilityValue("\(Int(viewModel.volume)) percent")
+                .accessibilityHint("Adjust input gain for speech recognition")
             GeometryReader { geometry in
                 let width = geometry.size.width
                 let markerPosition = width * CGFloat(recommendedVolume / 100.0)

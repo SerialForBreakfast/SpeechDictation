@@ -385,6 +385,8 @@ struct SecureRecordingRow: View {
                 
                 Spacer()
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(secureRecordingStatusLabel)
         }
         .padding(.vertical, 4)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -392,6 +394,15 @@ struct SecureRecordingRow: View {
                 onDelete()
             }
         }
+    }
+    
+    /// Accessibility label summarizing recording status (encrypted, on-device, consent)
+    private var secureRecordingStatusLabel: String {
+        var parts = ["Encrypted", "Stored on device only"]
+        if session.hasConsent {
+            parts.append("Consent recorded")
+        }
+        return parts.joined(separator: ". ")
     }
     
     /// Formats file size for display

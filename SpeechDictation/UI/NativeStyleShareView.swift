@@ -33,12 +33,13 @@ struct NativeStyleShareView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Handle bar
+            // Handle bar (decorative)
             Capsule()
                 .fill(Color.secondary.opacity(0.5))
                 .frame(width: 36, height: 5)
                 .padding(.top, 8)
                 .padding(.bottom, 20)
+                .accessibilityHidden(true)
             
             // Title
             Text("Export Transcription")

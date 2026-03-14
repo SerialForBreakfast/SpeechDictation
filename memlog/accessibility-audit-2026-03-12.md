@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-The app has **strong accessibility** in EntryView, CameraExperienceView, CameraPermissionsView, and MicSensitivityView. Several core flows (ContentView, SettingsView, SecureRecordingsView, SecurePlaybackView) have **P0 gaps** that block or degrade assistive-technology usability. This audit follows G-001 through G-015 and the Inspector Audit Checklist.
+The app has **strong accessibility** in EntryView, CameraExperienceView, CameraPermissionsView, and MicSensitivityView. All P0, P1, and P2 recommendations from this audit have been **implemented** (2026-03-12). This audit follows G-001 through G-015 and the Inspector Audit Checklist.
 
 ---
 
@@ -146,14 +146,24 @@ The app has **strong accessibility** in EntryView, CameraExperienceView, CameraP
 4. **ThemeSettingView** — Added `.accessibilityAddTraits(.isSelected)` when selected and `.accessibilityValue(theme.displayName)` to theme buttons.
 5. **SecureRecordingsSettingsView** — Added `.accessibilityLabel`, `.accessibilityValue`, `.accessibilityHint` to auth toggle.
 
-### P1 (High)
+### P1 (High) — IMPLEMENTED 2026-03-12
 
-7. **SettingsView** — Add `.accessibilityAddTraits(.isHeader)` and `.accessibilityHeading(.h1)` to "Settings" header.
-8. **ContentView** — Add `.accessibilityLabel("Live transcript")` and `.accessibilityValue(viewModel.transcribedText)` to transcript area; handle empty state.
-9. **MicSensitivityView** — Add `.accessibilityValue` to slider.
-10. **DepthBasedDistanceView** — Add `.accessibilityLabel` to toggle.
-11. **SecureRecordingsView** — Add `.accessibilityLabel("Authentication information")` to info button.
-12. **ContentView** — Verify Settings overlay focus containment; consider `.accessibilityHidden` on background when overlay is shown.
+7. **SettingsView** — Added `.accessibilityAddTraits(.isHeader)` and `.accessibilityHeading(.h1)` to "Settings" header.
+8. **ContentView** — Added `.accessibilityElement(children: .contain)`, `.accessibilityLabel("Live transcript")`, `.accessibilityValue` (empty/non-empty) to transcript area.
+9. **MicSensitivityView** — Added `.accessibilityLabel`, `.accessibilityValue`, `.accessibilityHint` to slider.
+10. **DepthBasedDistanceView** — Added `.accessibilityLabel`, `.accessibilityValue`, `.accessibilityHint` to toggle.
+11. **SecureRecordingsSettingsView** — Added `.accessibilityLabel("Authentication information")` and `.accessibilityHint` to info button.
+12. **ContentView** — Added `.accessibilityLabel("Dismiss settings")` and `.accessibilityHint` to overlay tap target.
+13. **SecurePlaybackView** — Added `.accessibilityLabel` and `.accessibilityValue` to Speed Picker.
+14. **SecureRecordingRow** — Added `.accessibilityElement(children: .combine)` and descriptive `.accessibilityLabel` for status indicators.
+15. **SecurityStatusRow** — Added `.accessibilityElement(children: .combine)` and `.accessibilityLabel` with Enabled/Disabled state.
+16. **iCloud Backup toggle** — Added `.accessibilityLabel`, `.accessibilityValue`, `.accessibilityHint`.
+
+### P2 (Minor) — IMPLEMENTED 2026-03-12
+
+17. **ContentView** — Added `.accessibilityHint` to Jump to Live button; reduced-motion transition for Jump to Live.
+18. **NativeStyleShareView** — Added `.accessibilityHidden(true)` to handle bar (decorative).
+19. **TranscriptAuditView** — Added `.accessibilityElement(children: .combine)` and combined label for header stats.
 
 ---
 

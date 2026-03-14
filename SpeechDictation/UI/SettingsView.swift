@@ -36,6 +36,8 @@ struct SettingsView: View {
                     .frame(maxWidth: .infinity)
                     .background(headerBackgroundColor)
                     .cornerRadius(10)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityHeading(.h1)
 
                 TextSizeSettingView(viewModel: viewModel)
                 ThemeSettingView(viewModel: viewModel)
@@ -116,6 +118,8 @@ struct SecureRecordingsSettingsView: View {
                         .foregroundColor(.secondary)
                         .font(.subheadline)
                 }
+                .accessibilityLabel("Authentication information")
+                .accessibilityHint("Shows details about secure recordings authentication")
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
@@ -186,6 +190,9 @@ struct SecureRecordingsSettingsView: View {
                         .labelsHidden()
                         .scaleEffect(0.8)
                         .disabled(true) // Disabled for future implementation
+                        .accessibilityLabel("iCloud Backup")
+                        .accessibilityValue(iCloudSyncEnabled ? "On" : "Off")
+                        .accessibilityHint("Optionally sync secure recordings to iCloud. Coming soon.")
                 }
                 .padding(.horizontal, 16)
                 
@@ -321,6 +328,8 @@ struct SecurityStatusRow: View {
                 .foregroundColor(isEnabled ? .green : .red)
                 .font(.caption)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(isEnabled ? "Enabled" : "Disabled")")
     }
 }
 
@@ -351,6 +360,9 @@ struct DepthBasedDistanceView: View {
                 Toggle("", isOn: $cameraSettings.enableDepthBasedDistance)
                     .labelsHidden()
                     .scaleEffect(0.8)
+                    .accessibilityLabel("Depth-based distance estimation")
+                    .accessibilityValue(cameraSettings.enableDepthBasedDistance ? "On" : "Off")
+                    .accessibilityHint("Use hardware sensors and ML models to measure distances to objects")
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)

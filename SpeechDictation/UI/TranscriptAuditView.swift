@@ -53,6 +53,8 @@ struct TranscriptAuditView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(timingDataManager.auditEntries.count) entries, \(replacementCount) replacements")
                 Spacer()
                 VStack(alignment: .leading, spacing: 4) {
                     Toggle("Only replacements", isOn: $showOnlyReplacements)

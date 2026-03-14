@@ -126,6 +126,8 @@ struct SecurePlaybackView: View {
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .padding(.horizontal)
+                .accessibilityLabel("Playback speed")
+                .accessibilityValue(playbackManager.playbackSpeed.displayName)
             }
             .padding()
             .background(Color(UIColor.secondarySystemBackground))
