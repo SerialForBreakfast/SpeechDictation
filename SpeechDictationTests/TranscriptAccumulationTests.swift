@@ -280,14 +280,57 @@ class TranscriptAccumulationTests: XCTestCase {
     
     // MARK: - Helper Methods
     
-    /// Mirrors the LegacyTranscriptionEngine.composeTranscript logic
+    /// Uses shared TranscriptComposition (overlap stripping + deduplication)
     private func composeTranscript(accumulated: String, partial: String) -> String {
-        if accumulated.isEmpty {
-            return partial
-        } else if partial.isEmpty {
-            return accumulated
-        } else {
-            return accumulated + " " + partial
-        }
+        TranscriptComposition.compose(accumulated: accumulated, partial: partial)
+    }
+
+    // MARK: - Overlap Stripping Tests
+
+    func testComposeTranscript_OverlappingPartial_StripsOverlap() {
+        let accumulated = "the cat sat"
+        let partial = "the cat sat on the mat"
+
+        let result = TranscriptComposition.compose(accumulated: accumulated, partial: partial)
+
+        XCTAssertEqual(result, "the cat sat on the mat", "Should strip overlapping prefix from partial")
+    }
+
+    func testComposeTranscript_PartialOverlapTail_StripsOverlap() {
+        let accumulated = "Hello world"
+        let partial = "world how are you"
+
+        let result = TranscriptComposition.compose(accumulated: accumulated, partial: partial)
+
+        XCTAssertEqual(result, "Hello world how are you", "Should strip overlapping 'world' prefix")
+    }
+
+    func testComposeTranscript_NoOverlap_ConcatenatesNormally() {
+        let accumulated = "Hello world"
+        let partial = "How are you"
+
+        let result = TranscriptComposition.compose(accumulated: accumulated, partial: partial)
+
+        XCTAssertEqual(result, "Hello world How are you", "No overlap should concatenate with space")
+    }
+
+    // MARK: - Consecutive Word Deduplication Tests
+
+    func testComposeTranscript_ConsecutiveDuplicates_RemovesThem() {
+        let accumulated = ""
+        let partial = "hello hello world"
+
+        let result = TranscriptComposition.compose(accumulated: accumulated, partial: partial)
+
+        XCTAssertEqual(result, "hello world", "Should remove consecutive duplicate words")
+    }
+
+    func testComposeTranscript_NonConsecutiveDuplicates_PreservesThem() {
+        let accumulated = ""
+        let partial = "hello world hello"
+
+        let result = TranscriptComposition.compose(accumulated: accumulated, partial: partial)
+
+        XCTAssertEqual(result, "hello world hello", "Non-consecutive duplicates should be preserved")
     }
 }

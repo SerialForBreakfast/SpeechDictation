@@ -40,3 +40,14 @@ Status
 Notes
 - CameraExperienceView falls back to CameraErrorView; retry logic is TODO.
 
+================================================================================
+Failure 005 - Transcript duplication at task boundaries
+================================================================================
+Status
+- Mitigated 2026-03-14; needs device validation.
+
+Notes
+- Speech model can re-emit prior text when a new recognition task starts.
+- TranscriptComposition strips suffix-overlap and deduplicates consecutive words.
+- Applied in LegacyTranscriptionEngine, ModernTranscriptionEngine, SpeechRecognizer.
+

@@ -335,10 +335,9 @@ class SpeechRecognizer: ObservableObject {
     // MARK: - Transcript composition & restart helpers
 
     /// Combines accumulated finalized transcript with the current partial transcript.
+    /// Uses overlap stripping and deduplication to avoid duplication as the model revises.
     func composeTranscript(accumulated: String, partial: String) -> String {
-        guard !accumulated.isEmpty else { return partial }
-        guard !partial.isEmpty else { return accumulated }
-        return accumulated + " " + partial
+        TranscriptComposition.compose(accumulated: accumulated, partial: partial)
     }
 
     /// Appends the current partial transcript to the accumulated transcript and clears the partial buffer.

@@ -503,12 +503,6 @@ actor LegacyTranscriptionEngine: TranscriptionEngine {
     }
     
     private func composeTranscript(accumulated: String, partial: String) -> String {
-        if accumulated.isEmpty {
-            return partial
-        } else if partial.isEmpty {
-            return accumulated
-        } else {
-            return accumulated + " " + partial
-        }
+        TranscriptComposition.compose(accumulated: accumulated, partial: partial)
     }
 }
