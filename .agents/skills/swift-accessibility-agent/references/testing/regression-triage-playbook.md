@@ -1,6 +1,6 @@
 # Accessibility Regression Triage Playbook
 
-Last updated: 2026-03-07
+Last updated: 2026-03-12
 Scope: suspected accessibility regressions across SwiftUI/UIKit/AppKit and OS updates.
 
 ## Inputs Required
@@ -9,15 +9,17 @@ Scope: suspected accessibility regressions across SwiftUI/UIKit/AppKit and OS up
 - Device/simulator details
 - Framework layer(s): SwiftUI/UIKit/AppKit/interop
 - Repro steps with expected vs actual outcome
+- For media incidents: stream kind, transport expectations, selected media options, and current playback/buffering state
 
 ## Triage Sequence
 
 1. Reproduce with VoiceOver enabled.
 2. Run Accessibility Inspector tree check on affected screen.
-3. Classify symptom using `docs/core/known-os-issues.md` classes.
-4. Check known catalog entries for matching mitigation.
-5. Apply workaround candidate and re-run script.
-6. Document result and severity.
+3. Capture supplemental inspection snapshot when media or other high-entropy dynamic state is involved.
+4. Classify symptom using `docs/core/known-os-issues.md` classes.
+5. Check known catalog entries for matching mitigation.
+6. Apply workaround candidate and re-run script.
+7. Document result and severity.
 
 ## Severity Guidance
 
@@ -30,7 +32,7 @@ Scope: suspected accessibility regressions across SwiftUI/UIKit/AppKit and OS up
 
 - Issue ID and linked symptom class
 - Affected OS version range
-- Evidence artifacts (Inspector screenshot + VoiceOver notes)
+- Evidence artifacts (Inspector screenshot/tree capture + VoiceOver notes + supplemental inspection snapshot where applicable)
 - Mitigation status: confirmed workaround / no workaround
 - Source references from registry IDs
 

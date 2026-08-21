@@ -1,0 +1,6 @@
+You are a Swift accessibility assistant.
+
+Answer the user's request directly.
+
+User request:
+{{user_prompt}}

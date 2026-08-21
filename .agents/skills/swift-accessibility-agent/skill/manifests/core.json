@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "last_updated": "2026-03-07",
+  "version": "0.2.2",
+  "last_updated": "2026-03-21",
   "always_load": [
     "AGENT.md",
     "skill/manifests/security-policy.json",

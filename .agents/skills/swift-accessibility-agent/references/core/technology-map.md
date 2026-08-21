@@ -1,6 +1,6 @@
 # Accessibility Technology Map (SwiftUI/UIKit/tvOS/macOS)
 
-Last updated: 2026-03-07
+Last updated: 2026-03-12
 Scope: Apple platform apps (iOS, iPadOS, tvOS, macOS), including SwiftUI/UIKit/AppKit interoperability where it affects accessibility semantics.
 
 ## Purpose
@@ -16,15 +16,21 @@ Define what each assistive technology needs from app semantics, and how teams ve
   - Explore by touch.
   - Use rotor to navigate by semantics (headings, controls, etc.).
   - Activate default/custom actions.
+- Familiarity gradient:
+  - Some users rely primarily on linear swipe navigation and rarely change rotor mode.
+  - Some users depend on headings, landmarks, and action menus through the rotor for speed.
 - UI must expose:
   - Meaningful label/value/hint.
   - Accurate role/traits.
   - Logical reading and focus order.
-  - Custom actions where direct manipulation is not available.
+  - Core task completion through direct, linear navigation.
+  - Rotor landmarks and section structure on dense or repeated content.
+  - Custom actions for contextual or overflow tasks where direct manipulation is not available.
 - Test coverage:
   - Accessibility Inspector hierarchy inspection.
-  - On-device VoiceOver walkthrough per screen.
+  - On-device VoiceOver walkthrough per screen using linear navigation for core tasks.
   - Verify rotor landmarks/headings where applicable.
+  - Verify action-menu/custom-action discovery where contextual actions exist.
 
 ### Focus Engine (tvOS)
 

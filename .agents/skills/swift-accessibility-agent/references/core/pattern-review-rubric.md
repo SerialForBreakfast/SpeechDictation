@@ -1,6 +1,6 @@
 # Accessibility Pattern Review Rubric (Good vs Bad)
 
-Last updated: 2026-03-07
+Last updated: 2026-03-12
 Scope: SwiftUI/UIKit/AppKit code review and generation checks.
 
 ## Purpose
@@ -94,6 +94,20 @@ Risky:
 
 Bad:
 - No verification evidence for accessibility-affecting change.
+
+### 8) Rotor and Navigation Acceleration
+
+Good:
+- Dense surfaces expose headings or landmarks that match real task structure.
+- Custom actions accelerate contextual tasks without hiding primary actions.
+
+Risky:
+- Some landmarks exist, but section structure is inconsistent after dynamic updates.
+- Custom actions exist, but primary-vs-contextual action ownership is unclear.
+
+Bad:
+- Dense content has no rotor-friendly landmarks despite repeated sections or long traversal paths.
+- Core task completion depends on rotor-only discovery or custom-action menus.
 
 ## Scoring Guidance
 

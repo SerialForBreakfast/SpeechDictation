@@ -4,6 +4,10 @@ All notable changes to this documentation project are tracked here.
 
 ## [Unreleased]
 
+- No unreleased changes recorded yet.
+
+## [0.2.2] - 2026-03-21
+
 ### Added
 
 - `docs/tvos/README.md`
@@ -82,6 +86,19 @@ All notable changes to this documentation project are tracked here.
 
 ### Changed
 
+- Established explicit public version baseline `0.2.2` via `VERSION`.
+- Added versioning strategy docs in `docs/core/versioning-strategy.md` and `references/core/versioning-strategy.md`.
+- Added promptfoo evaluation scaffold under `evals/promptfoo/` for `C0` / `C1` / `C2` comparisons.
+- Updated `SKILL.md` with explicit agent identity, mandatory `ROUTING:` output, and trust-footer requirements.
+- Refined the response contract so agent identity appears on the first response only, while `ROUTING:` and the trust footer appear only when repository guidance is actually used.
+- Expanded trigger coverage in `SKILL.md` and promptfoo evals for common Apple UI terms such as `UILabel`, `UITableView`, and `NSWindow`.
+- Added negative eval protections so generic Apple UI questions without accessibility scope do not emit `ROUTING:` or the trust footer.
+- Updated `README.md` to surface current version, routing/trust-language expectations, and promptfoo evaluation guidance.
+- Aligned runtime core manifest version to `0.2.2`.
+- Expanded the promptfoo gold-prompt set to use more user-like Swift developer questions across UIKit, SwiftUI, tvOS, macOS, and regression-triage coverage.
+- Added an optional Xcode compatibility install path via `scripts/install-for-xcode.sh` and documented how to link the canonical skill into Xcode's Codex agent directory while keeping `npx skills` as the primary install workflow.
+- Rewrote the README install flow for new users to cover prerequisites, Homebrew/Node.js setup, project-directory installation, verification, and troubleshooting.
+- Expanded Inspector, triage, and media-guideline guidance so AV reviews capture stream-level state when relevant (live/VOD mode, seekability, buffering, playback rate, selected media options, PiP/external playback, ad state) and use a narrow supplemental inspection contract when spoken output is intentionally smaller.
 - Expanded top-level track coverage in `README.md` to include tvOS and macOS backlogs.
 - Expanded `SKILL.md` to include tvOS/macOS canonical inputs and explicit platform-target selection rules.
 - Extended `docs/core/sources/registry.md` with Tier-1 tvOS/macOS sources (`Accessibility for UIKit`, tvOS focus interactions, `NSAccessibility`, WWDC25 macOS accessibility) and Tier-2 automation reference (`AccessibilitySnapshot`).
@@ -138,6 +155,8 @@ All notable changes to this documentation project are tracked here.
 - Updated architecture task preset to load external landscape references for discovery and pattern selection.
 - Expanded known-issues catalog with explicit version status fields (`introduced_in`, `affected_range`, `fixed_in`, `status`, `evidence_confidence`).
 - Added accessibility version matrix to centralize per-issue OS-range status and confidence.
+- Expanded rotor guidance to cover container strategy, contextual action exposure, and the rule that rotor/custom actions accelerate navigation without becoming the only path for core tasks.
+- Updated architecture principles, decision matrix, pattern review rubric, and technology map to treat rotor support as an architectural concern for dense surfaces and mixed-framework containers.
 - Updated triage/runtime docs so regression triage loads both known-issues catalog and version matrix.
 - Added accessibility pattern review rubric to classify implementations as good/risky/bad with category-based scoring and auto-fail conditions.
 - Added machine-readable pattern signal definitions and integrated them into runtime task presets and skill requirements.

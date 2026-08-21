@@ -24,6 +24,12 @@ Use for any reusable UI component in SwiftUI/UIKit/AppKit.
 - Semantic strings source:
 - State-to-spoken-value mapping:
 
+## Supplemental Inspection Contract (If Needed)
+
+- Owner:
+- Fields exposed to debug/test tooling:
+- Why these fields are not part of spoken output:
+
 ## Known Limitations
 
 - OS/version caveats:
@@ -32,6 +38,7 @@ Use for any reusable UI component in SwiftUI/UIKit/AppKit.
 ## Verification
 
 - Inspector checks:
+- Supplemental inspection checks:
 - VoiceOver walkthrough:
 - Platform-specific checks (tvOS focus / macOS keyboard):
 - Optional automated checks:

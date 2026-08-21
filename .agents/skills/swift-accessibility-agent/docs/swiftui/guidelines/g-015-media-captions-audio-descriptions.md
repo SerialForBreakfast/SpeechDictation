@@ -23,11 +23,13 @@ Media accessibility requires both content alternatives and operable controls. Us
 - Ensure play/pause/seek/speed controls have clear labels, values, and roles.
 - Expose current playback state and timing readouts accessibly.
 - Provide caption/subtitle availability where spoken media exists.
+- Define a narrow debug/test inspection contract when stream state includes live/on-demand mode, seekability, buffering, playback rate, or selected media options that are useful for verification but too noisy for spoken output.
 - Avoid gesture-only media controls without accessible action alternatives.
 
 ### UIKit Interop Notes
 
 - When wrapping AVKit/UIKit media controllers, verify control labels and states are exposed correctly.
+- Assign one owner for supplemental stream-state metadata so host overlays and embedded players report one consistent state model.
 - Ensure custom overlay controls do not block or duplicate native accessible media controls.
 
 ## How To Test
@@ -37,6 +39,7 @@ Media accessibility requires both content alternatives and operable controls. Us
 - Verify all media controls are discoverable and labeled.
 - Verify state/value updates (playing/paused, position) are exposed.
 - Verify caption-related controls/options are reachable when available.
+- Capture stream kind, seekability, buffering/loading state, playback rate, and selected media-option context where supported.
 
 ### VoiceOver Walkthrough
 
@@ -46,6 +49,7 @@ Media accessibility requires both content alternatives and operable controls. Us
 ### Optional XCUITest Hook
 
 - Add smoke tests for playback-state transitions and caption-toggle control availability.
+- Assert supplemental inspection snapshot fields when playback state exceeds what the spoken response should include.
 
 ## Do / Don't
 

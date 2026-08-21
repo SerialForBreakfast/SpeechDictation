@@ -1,6 +1,6 @@
 # XCUITest Hooks for Accessibility Regression Checks
 
-Last updated: 2026-03-07
+Last updated: 2026-03-12
 Scope: lightweight automated assertions that complement manual and inspector audits.
 
 ## Intent
@@ -14,6 +14,7 @@ Use it as a guardrail for deterministic regressions in labels, values, identifie
 - Presence of critical user-facing labels for top-priority controls.
 - Basic state transitions reflected in visible labels/values.
 - Modal entry/exit flow checks (presented element exists; anchor element exists after dismiss).
+- Debug/test inspection snapshots for components whose internal state is richer than the spoken surface.
 
 ## Suggested Hook Patterns
 
@@ -36,6 +37,13 @@ Use it as a guardrail for deterministic regressions in labels, values, identifie
 
 - Present modal/sheet and assert modal title/primary action exists.
 - Dismiss modal and assert trigger anchor exists and is hittable.
+
+### Pattern 5: Supplemental Inspection Snapshot
+
+- For components with richer machine state than user-facing spoken output, expose a narrow debug/test inspection payload.
+- Keep fields stable and scenario-specific: stream kind, live/on-demand state, seekability, buffering state, playback rate, selected caption/audio option, PiP/external playback state, ad state.
+- Assert only fields relevant to the scenario under test.
+- Keep this metadata out of primary user flows; it is verification support, not a substitute for accessible UI.
 
 ## Limits and Assumptions
 

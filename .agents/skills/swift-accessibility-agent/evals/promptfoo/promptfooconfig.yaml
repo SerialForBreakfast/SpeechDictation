@@ -1,0 +1,348 @@
+description: Swift Accessibility Agent eval baseline v0.2.2
+
+prompts:
+  - file://evals/promptfoo/prompts/c0.txt
+  - file://evals/promptfoo/prompts/c1.txt
+  - file://evals/promptfoo/prompts/c2.txt
+
+providers:
+  - id: openai:chat:gpt-5
+
+tests:
+  - vars:
+      user_prompt: "Who are you and what can you help me with?"
+      expected_route: ""
+      expected_source: ""
+      domain_ref_1: ""
+      domain_ref_2: ""
+    assert:
+      - type: icontains
+        value: "Swift Accessibility Agent"
+      - type: icontains
+        value: "v0.2.2"
+      - type: not-icontains
+        value: "generic AI assistant"
+
+  - vars:
+      user_prompt: "What does UILabel do?"
+      expected_route: ""
+      expected_source: ""
+      domain_ref_1: ""
+      domain_ref_2: ""
+    assert:
+      - type: not-icontains
+        value: "ROUTING:"
+      - type: not-icontains
+        value: "Sources:"
+      - type: not-icontains
+        value: "Freshness:"
+      - type: not-icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "How do I animate a UILabel fading in?"
+      expected_route: ""
+      expected_source: ""
+      domain_ref_1: ""
+      domain_ref_2: ""
+    assert:
+      - type: not-icontains
+        value: "ROUTING:"
+      - type: not-icontains
+        value: "Sources:"
+      - type: not-icontains
+        value: "Freshness:"
+      - type: not-icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "How do I change the title color of a UIButton for the disabled state?"
+      expected_route: ""
+      expected_source: ""
+      domain_ref_1: ""
+      domain_ref_2: ""
+    assert:
+      - type: not-icontains
+        value: "ROUTING:"
+      - type: not-icontains
+        value: "Sources:"
+      - type: not-icontains
+        value: "Freshness:"
+      - type: not-icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "How do I center a view in SwiftUI?"
+      expected_route: ""
+      expected_source: ""
+      domain_ref_1: ""
+      domain_ref_2: ""
+    assert:
+      - type: not-icontains
+        value: "ROUTING:"
+      - type: not-icontains
+        value: "Sources:"
+      - type: not-icontains
+        value: "Freshness:"
+      - type: not-icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "What does NSWindow do?"
+      expected_route: ""
+      expected_source: ""
+      domain_ref_1: ""
+      domain_ref_2: ""
+    assert:
+      - type: not-icontains
+        value: "ROUTING:"
+      - type: not-icontains
+        value: "Sources:"
+      - type: not-icontains
+        value: "Freshness:"
+      - type: not-icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "Tell me about UILabel accessibility."
+      expected_route: "uikit:u-001-labels-meaningful-names.md"
+      expected_source: "docs/uikit/guidelines/u-001-labels-meaningful-names.md"
+      domain_ref_1: "UIKit label guidance: every meaningful interactive element and non-decorative content element must expose a clear accessibility label that reflects user intent, not implementation details."
+      domain_ref_2: "UIKit role guidance: static labels should expose accurate traits, and heading semantics should be used only when text acts as a true section landmark."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "uikit:u-004-traits-roles.md"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "I have a settings screen with a title, subtitle, and a switch in the same row. Should VoiceOver land on one thing or multiple things?"
+      expected_route: "uikit:u-005-grouping-containment.md"
+      expected_source: "docs/uikit/guidelines/u-005-grouping-containment.md"
+      domain_ref_1: "UIKit grouping guidance: grouped rows combine related text without hiding required child actions. Keep child controls separately reachable when they support distinct actions."
+      domain_ref_2: "Decision matrix: use contain when the row has multiple independently actionable child controls."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "My player has live or on-demand state, captions, and buffering. What should be spoken, and what should stay out of the spoken output?"
+      expected_route: "swiftui:g-015-media-captions-audio-descriptions.md"
+      expected_source: "docs/swiftui/guidelines/g-015-media-captions-audio-descriptions.md"
+      domain_ref_1: "SwiftUI media guidance: define a narrow debug or test inspection contract when stream state includes live or on-demand mode, seekability, buffering, playback rate, or selected media options that are too noisy for spoken output."
+      domain_ref_2: "Inspector checklist: capture stream kind, transport constraints, buffering or stalled state, playback rate, and selected media-option context where supported."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "This started breaking only on a newer OS build and feels framework-related. What repo guidance should I follow before I call it an Apple bug?"
+      expected_route: "core:known-os-issues-workflow.md"
+      expected_source: "docs/core/known-os-issues-workflow.md"
+      domain_ref_1: "Known issues workflow: reproduce, corroborate, classify the symptom, record the affected versions, and track mitigation or retirement status."
+      domain_ref_2: "Regression triage playbook: reproduce with VoiceOver, run Accessibility Inspector, classify the symptom, check known catalog entries, apply workaround, and document result."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "My SwiftUI dashboard has a lot of cards and section titles. How do I make it faster for VoiceOver users without forcing them to use special tricks?"
+      expected_route: "swiftui:g-009-rotors-when-and-why.md"
+      expected_source: "docs/swiftui/guidelines/g-009-rotors-when-and-why.md"
+      domain_ref_1: "SwiftUI rotor guidance: use heading semantics for real landmarks, expose contextual actions where useful, and keep primary task completion possible through linear navigation."
+      domain_ref_2: "Decision matrix: choose heading or region landmarks when screens have repeated sections, dashboards, long forms, or summary and detail regions."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "On tvOS, focus sometimes jumps to the wrong button after a modal closes. What should I check first?"
+      expected_route: "tvos:t-001-focus-order-directional-navigation.md"
+      expected_source: "docs/tvos/guidelines/t-001-focus-order-directional-navigation.md"
+      domain_ref_1: "tvOS focus guidance: every screen needs predictable directional navigation, one clear initial focus anchor, and no trapped paths before primary actions are reachable."
+      domain_ref_2: "tvOS modal guidance: modal presenter owns restoration to the prior focus anchor after dismiss."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "In a macOS window, some controls are skipped when tabbing. Is this an accessibility bug or just keyboard setup?"
+      expected_route: "macos:m-002-keyboard-focus-order.md"
+      expected_source: "docs/macos/guidelines/m-002-keyboard-focus-order.md"
+      domain_ref_1: "macOS keyboard guidance: every workflow must support full keyboard traversal with predictable order, visible focus feedback, and reachable primary and secondary actions."
+      domain_ref_2: "macOS testing guidance: verify no required controls are skipped in keyboard traversal paths and confirm modal or window transitions restore focus logically."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "Why does VoiceOver lose its place after I close a sheet in an NSWindow?"
+      expected_route: "macos:m-007-modal-window-focus-containment.md"
+      expected_source: "docs/macos/guidelines/m-007-modal-window-focus-containment.md"
+      domain_ref_1: "macOS modal guidance: when a modal sheet or window takes focus, focus must remain within that context until dismissal, then restore to the originating control or nearest meaningful anchor."
+      domain_ref_2: "macOS testing guidance: open each modal or window flow, confirm focus lands on the intended initial control, then dismiss and confirm focus returns to the launch anchor."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "I embedded SwiftUI inside an AppKit container with NSHostingView and now VoiceOver reads less than before. What usually went wrong?"
+      expected_route: "macos:m-005-swiftui-appkit-interop-forwarding.md"
+      expected_source: "docs/macos/guidelines/m-005-swiftui-appkit-interop-forwarding.md"
+      domain_ref_1: "Interop guidance: hosting boundaries can flatten or drop roles, labels, values, and actions, so semantic forwarding has to be validated explicitly."
+      domain_ref_2: "Architecture guidance: each interop boundary needs an owner for focus transitions, element semantics, and any supplemental inspection contract."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "I have a table row with swipe actions and extra commands. When should I keep real buttons visible versus using accessibility actions?"
+      expected_route: "uikit:u-007-accessibility-custom-actions.md"
+      expected_source: "docs/uikit/guidelines/u-007-accessibility-custom-actions.md"
+      domain_ref_1: "UIKit custom actions guidance: expose custom actions for contextual or overflow operations, but do not hide primary or safety-critical actions behind the action menu."
+      domain_ref_2: "Decision matrix: visible direct controls fit primary actions, while custom accessibility actions fit overflow or contextual operations that would overload the row."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "How should I handle accessibility in a UITableView cell that has text, a detail label, and a switch?"
+      expected_route: "uikit:u-014-table-collection-form-semantics.md"
+      expected_source: "docs/uikit/guidelines/u-014-table-collection-form-semantics.md"
+      domain_ref_1: "UIKit table and form guidance: decide per row whether content should be combined or separately actionable, and ensure each item exposes clear label, value, role, and action behavior."
+      domain_ref_2: "UIKit grouping guidance: grouped rows combine related text without hiding required child actions, and child controls should stay separately reachable when they support distinct actions."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "uikit:u-005-grouping-containment.md"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"
+
+  - vars:
+      user_prompt: "My form has toggles, sliders, and nested rows. What are the common semantic mistakes to watch for?"
+      expected_route: "swiftui:g-014-lists-forms-complex-rows.md"
+      expected_source: "docs/swiftui/guidelines/g-014-lists-forms-complex-rows.md"
+      domain_ref_1: "SwiftUI forms guidance: decide whether complex rows should be combined or keep child controls separately actionable, and keep value or state announcements accurate for toggles, sliders, and selection rows."
+      domain_ref_2: "Semantics checklist: verify label, value, role, actions, grouping strategy, and focus order for each interactive control."
+    assert:
+      - type: icontains
+        value: "ROUTING:"
+      - type: icontains
+        value: "{{expected_route}}"
+      - type: icontains
+        value: "{{expected_source}}"
+      - type: icontains
+        value: "Sources:"
+      - type: icontains
+        value: "Freshness:"
+      - type: icontains
+        value: "Assumptions:"

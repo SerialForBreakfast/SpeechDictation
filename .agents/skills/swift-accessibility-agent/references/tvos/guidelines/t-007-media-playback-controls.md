@@ -23,11 +23,13 @@ Media is a primary tvOS use case. Accessibility failures in playback controls bl
 - Use native playback controls where possible to inherit expected semantics.
 - Ensure play/pause, scrub, captions, and audio options are reachable by directional focus.
 - Provide stateful values (playing/paused, elapsed/remaining time, selected caption track).
+- Define a narrow debug/test inspection contract when live/VOD mode, seekability, buffering, playback rate, selected media options, or ad state are useful for verification but too noisy for spoken output.
 - Keep control naming stable and disambiguated when multiple media actions are present.
 
 ### SwiftUI/UIKit Interop Notes
 
 - Validate semantic forwarding for custom player overlays hosted across SwiftUI/UIKit boundaries.
+- Assign one owner for supplemental stream-state metadata so host overlays and embedded players report one consistent state model.
 - Ensure overlay presentation/dismissal does not hide required controls from focus.
 
 ## Interop Ownership
@@ -42,6 +44,7 @@ Media is a primary tvOS use case. Accessibility failures in playback controls bl
 
 - Verify transport controls expose correct roles and labels.
 - Verify time/progress and selected media-option values are available when stateful.
+- Capture live/VOD state, seekability, buffering/loading state, playback rate, and ad or alternate-track context where those states affect transport behavior.
 
 ### VoiceOver Walkthrough
 
@@ -52,6 +55,7 @@ Media is a primary tvOS use case. Accessibility failures in playback controls bl
 ### Optional XCUITest Hook
 
 - Add playback state tests asserting label/value changes after play/pause/seek actions.
+- Assert supplemental inspection snapshot fields when playback state exceeds what the spoken response should include.
 
 ## Do / Don't
 

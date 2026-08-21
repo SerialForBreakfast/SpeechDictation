@@ -23,11 +23,13 @@ Media accessibility requires both perceivable alternatives and operable controls
 - Ensure play/pause/seek/speed controls expose clear labels, values, and roles.
 - Expose current playback state and timing readouts accessibly.
 - Provide caption/subtitle options where spoken media exists.
+- Define a narrow debug/test inspection contract when stream state includes live/on-demand mode, seekability, buffering, playback rate, or selected media options that are useful for verification but too noisy for spoken output.
 - Avoid gesture-only media controls without accessible action alternatives.
 
 ### SwiftUI Interop Notes
 
 - In mixed AVKit/SwiftUI flows, ensure control labels and state are consistent across layers.
+- Assign one owner for supplemental stream-state metadata so host overlays and embedded players report one consistent state model.
 - Verify custom overlays do not block native accessible controls.
 
 ## How To Test
@@ -37,6 +39,7 @@ Media accessibility requires both perceivable alternatives and operable controls
 - Verify all media controls are discoverable and labeled.
 - Verify playback state/value updates are exposed.
 - Verify caption-related controls are reachable when available.
+- Capture stream kind, seekability, buffering/loading state, playback rate, and selected media-option context where supported.
 
 ### VoiceOver Walkthrough
 
@@ -46,6 +49,7 @@ Media accessibility requires both perceivable alternatives and operable controls
 ### Optional XCUITest Hook
 
 - Add smoke tests for playback-state transitions and caption-toggle availability.
+- Assert supplemental inspection snapshot fields when playback state exceeds what the spoken response should include.
 
 ## Do / Don't
 

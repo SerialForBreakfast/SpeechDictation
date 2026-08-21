@@ -14,6 +14,7 @@ Use when mixing SwiftUI, UIKit, and/or AppKit.
 - Screen-level focus owner:
 - Element semantics owner:
 - Modal presentation/dismissal focus owner:
+- Supplemental inspection owner:
 
 ## Semantic Forwarding
 
@@ -25,6 +26,7 @@ Use when mixing SwiftUI, UIKit, and/or AppKit.
 
 - Query/identifier strategy for UI tests:
 - Inspector validation targets:
+- Supplemental inspection snapshot fields:
 - VoiceOver regression steps:
 
 ## Known Issues and Workarounds
